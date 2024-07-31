@@ -4,15 +4,22 @@ MoonBit HTTP server library
 
 ## Usage
 
+### Prerequisites
+- MoonBit SDK installed
+- Node.js installed
+
+### Linux/MacOS:
 ```bash
 sudo chmod +x ./start.sh
 ./start.sh
 ```
 
+### Windows:
 ```bat
 start.bat
 ```
 
+## Example usage
 ```rust
 // Example usage of mocket package in MoonBit
 
