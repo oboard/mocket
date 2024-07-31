@@ -1,6 +1,11 @@
 # oboard/mocket
 
-MoonBit HTTP server library
+A web framework for MoonBit.
+
+![logo](logo.png)
+
+
+![screenshots](screenshots/1.png)
 
 ## Usage
 
@@ -66,5 +71,3 @@ fn main {
   )
 }
 ```
-
-![screenshots](screenshots/1.png)
