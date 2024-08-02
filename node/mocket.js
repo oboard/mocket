@@ -1,4 +1,5 @@
 import http from "node:http";
+import fs from "node:fs";
 
 export default class Mocket {
   init(heaven) {
@@ -74,6 +75,16 @@ export default class Mocket {
       // 如果data是对象，则转化为JSON字符串
 
       if (typeof data === "object") {
+        if (data.type === "file") {
+          const filePath = data.path;
+          const file = fs.readFileSync(filePath);
+          const contentType = data.contentType || "application/octet-stream";
+          response.writeHead(200, {
+            "Content-Type": contentType,
+          });
+          response.end(file);
+          return;
+        }
         response.end(JSON.stringify(data));
       } else {
         response.end(data);

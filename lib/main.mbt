@@ -31,6 +31,19 @@ pub fn html(data : String) -> @json.JsonValue {
   { "type": "html", "data": String(data) }
 }
 
+pub fn file(path : String) -> @json.JsonValue {
+  let mime = @mimetype.T::new()
+  let mimeType = mime.getType(path)
+  {
+    "type": "file",
+    "path": String(path),
+    "contentType": match mimeType {
+      Some(mimeType) => String(mimeType)
+      None => "application/octet-stream"
+    },
+  }
+}
+
 pub fn listen(
   context : (
     (String, (@json.JsonValue) -> Unit) -> Unit,
@@ -52,14 +65,35 @@ pub fn listen(
               { "id": Number(id) },
             ) => {
               let response = { id, }
-              match server.mappings.get(method + " " + url) {
+              let urlObject = URL::parse(url)
+              match server.mappings.get(method + " " + urlObject.path) {
                 Some(handler) => {
-                  let result = handler(req, res)
+                  let result = handler(
+                    {
+                      "url": String(url),
+                      "path": String(urlObject.path),
+                      "query": match urlObject.query {
+                        Some(query) =>
+                          query.iter().map(
+                            fn(pair) {
+                              let (key, value) = pair
+                              (key, @json.String(value))
+                            },
+                          ).to_array()
+                          |> from_array
+                          |> Object
+                        None => []
+                      },
+                    },
+                    res,
+                  )
                   match result {
                     Object({ "type": "html", "data": data }) => {
                       response.writeHead(200, { "Content-Type": "text/html" })
                       response.end(data)
                     }
+                    Object({ "type": "file", "path": _ }) =>
+                      response.end(result)
                     Object(_) => {
                       response.writeHead(
                         200,

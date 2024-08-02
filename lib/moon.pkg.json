@@ -1,1 +1,8 @@
-{}
+{
+  "import": [
+    {
+      "path": "oboard/mimetype/lib",
+      "alias": "mimetype"
+    }
+  ]
+}
