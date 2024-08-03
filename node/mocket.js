@@ -39,7 +39,6 @@ export default class Mocket {
     });
 
     heaven.defineEvent("http.createServer", () => {
-      console.log("Creating server");
       server = http.createServer((req, res) => {
         const callRequest = (data) => {
           heaven.callFunction("http.request", [

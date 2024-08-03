@@ -226,7 +226,6 @@ pub fn writeHead(
   statusCode : @json.JsonValue,
   headers : @json.JsonValue
 ) -> Unit {
-  println("writeHead \(statusCode) \(headers)")
   (binding.send)("http.writeHead", [Number(self.id), statusCode, headers])
 }
 
