@@ -2,7 +2,7 @@
 
 A web framework for MoonBit.
 
-![logo](logo.png)
+![logo](logo.jpg)
 
 ![screenshots](screenshots/1.png)
 
@@ -76,7 +76,7 @@ fn main {
 
   // file serving example
   server.get("/image", fn(_req, _res) {
-    @mocket.file("logo.png")
+    @mocket.file("logo.jpg")
   })
 }
 ```

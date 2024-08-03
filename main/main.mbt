@@ -22,5 +22,5 @@ fn main {
     },
   )
   // file serving example
-  server.get("/image", fn(_req, _res) { @mocket.file("logo.png") })
+  server.get("/image", fn(_req, _res) { @mocket.file("logo.jpg") })
 }
