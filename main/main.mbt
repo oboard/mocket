@@ -15,12 +15,22 @@ fn main {
   server.post(
     "/echo",
     fn(req, _res) {
-      match req {
-        { "body": data } => data
+      match req.body {
+        Some(data) => data
         _ => String("No data received")
       }
     },
   )
   // file serving example
   server.get("/image", fn(_req, _res) { @mocket.file("logo.jpg") })
+  // file serving example with query parameters
+  server.get(
+    "/file",
+    fn(req, _res) {
+      match req.query {
+        { "path": path } => @mocket.file(path)
+        _ => String("No file path provided")
+      }
+    },
+  )
 }

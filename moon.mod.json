@@ -1,6 +1,6 @@
 {
   "name": "oboard/mocket",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "deps": {
     "oboard/mimetype": "0.1.1"
   },

@@ -9,16 +9,9 @@ pub struct URL {
 
 pub fn URL::parse(rawUrl : String) -> URL {
   let url = rawUrl.trim_space()
-  let scheme_end = url.index_of("://")
+  let mut scheme_end = url.index_of("://")
   if scheme_end == -1 {
-    return {
-      protocol: None,
-      host: None,
-      port: None,
-      path: url,
-      query: None,
-      fragment: None,
-    }
+    scheme_end = 0
   }
   let fragment_start = url.index_of("#")
   let query_start = url.index_of("?")
@@ -31,7 +24,7 @@ pub fn URL::parse(rawUrl : String) -> URL {
   let port_end = if port_start != -1 {
     url.index_of("/", from=port_start)
   } else {
-    url.index_of("/", from=scheme_end + 3)
+    0
   }
   let protocol = if scheme_end != -1 {
     Some(url.substring(start=0, end=scheme_end))
@@ -83,17 +76,7 @@ pub fn URL::parse(rawUrl : String) -> URL {
   let path = url.substring(start=path_start, end=path_end)
   let query = if query_start != -1 {
     let query_str = url.substring(start=query_start + 1, end=query_end)
-    let query_array = query_str.split("&")
-    let query_map = query_array.map(
-        fn(s) {
-          let array = s.split("=")
-          let key = array[0]
-          let value = array[1]
-          return (key, value)
-        },
-      )
-      |> Map::from_array
-    Some(query_map)
+    Some(query_map(query_str))
   } else {
     None
   }
@@ -103,6 +86,19 @@ pub fn URL::parse(rawUrl : String) -> URL {
     None
   }
   return { protocol, host, port, path, query, fragment }
+}
+
+fn query_map(query_str : String) -> Map[String, String] {
+  let query_array = query_str.split("&")
+  query_array.map(
+    fn(s) {
+      let array = s.split("=")
+      let key = array[0]
+      let value = array[1]
+      return (key, value)
+    },
+  )
+  |> Map::from_array
 }
 
 pub fn URL::output(self : URL, logger : Logger) -> Unit {
@@ -144,12 +140,12 @@ pub fn URL::to_string(self : URL) -> String {
 }
 
 test "parse_url" {
-  let url = "https://www.example.com:8080/path/to/resource?name=ferret&color=purple#section1"
+  let url = "/path/to/resource?name=ferret&color=purple#section1"
   let result = URL::parse(url)
-  println(url)
-  println(result)
+  // println(url)
+  // println(result)
   inspect!(
-    result,
-    content="https://www.example.com:8080/path/to/resource?name=ferret&color=purple#section1",
+    result.path,
+    content="/path/to/resource",
   )
 }

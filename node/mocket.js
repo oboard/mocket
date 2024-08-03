@@ -16,6 +16,27 @@ export default class Mocket {
       responses[index] = res;
       return index;
     };
+    
+    heaven.defineEvent("fetch", (url) => {
+      return new Promise((resolve, reject) => {
+        const req = http.get(url, (res) => {
+          let data = "";
+          res.on("data", (chunk) => {
+            data += chunk;
+          });
+          res.on("end", () => {
+            resolve({
+              status: res.statusCode,
+              headers: res.headers,
+              body: data,
+            });
+          });
+        });
+        req.on("error", (err) => {
+          reject(err);
+        });
+      });
+    });
 
     heaven.defineEvent("http.createServer", () => {
       console.log("Creating server");
@@ -78,10 +99,6 @@ export default class Mocket {
         if (data.type === "file") {
           const filePath = data.path;
           const file = fs.readFileSync(filePath);
-          const contentType = data.contentType || "application/octet-stream";
-          response.writeHead(200, {
-            "Content-Type": contentType,
-          });
           response.end(file);
           return;
         }
