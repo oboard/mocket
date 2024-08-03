@@ -4,27 +4,30 @@ A web framework for MoonBit.
 
 ![logo](logo.png)
 
-
 ![screenshots](screenshots/1.png)
 
 ## Usage
 
 ### Prerequisites
+
 - MoonBit SDK installed
 - Node.js installed
 
 ### Linux/MacOS:
+
 ```bash
 sudo chmod +x ./start.sh
 ./start.sh
 ```
 
 ### Windows:
+
 ```bat
 start.bat
 ```
 
 ## Example usage
+
 ```rust
 // Example usage of mocket package in MoonBit
 
@@ -72,8 +75,8 @@ fn main {
 
 
   // file serving example
-  server.get("/image", fn(_req, _res) { 
-    @mocket.file("logo.png") 
+  server.get("/image", fn(_req, _res) {
+    @mocket.file("logo.png")
   })
 }
 ```
