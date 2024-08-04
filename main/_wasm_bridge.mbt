@@ -3,15 +3,31 @@
 pub struct Receiver {
   buffer : Buffer
   listener_map : Map[String, (@json.JsonValue) -> Unit]
-  mut result : @json.JsonValue
 }
 
 pub fn get_context() ->
      (
        (String, (@json.JsonValue) -> Unit) -> Unit,
        (String, @json.JsonValue) -> Unit,
+       (String, @json.JsonValue, (@json.JsonValue) -> Unit) -> Unit,
      ) {
-  (listen_event, send_event)
+  (listen_event, send_event, call_event)
+}
+
+pub fn call_event(
+  event_name : String,
+  data : @json.JsonValue,
+  callback : (@json.JsonValue) -> Unit
+) -> Unit {
+  let id = receiver.listener_map.keys().count().to_string()
+  listen_event(
+    id,
+    fn(data) {
+      callback(data)
+      receiver.listener_map.remove(id)
+    },
+  )
+  { "type": String(event_name), "data": data, "id": String(id) } |> send
 }
 
 pub fn h_ss() = "__h" "h_ss"
@@ -20,11 +36,7 @@ pub fn h_sd(data : Int) = "__h" "h_sd"
 
 pub fn h_se() = "__h" "h_se"
 
-let receiver : Receiver = {
-  buffer: Buffer::new(),
-  listener_map: Map::new(),
-  result: Null,
-}
+let receiver : Receiver = { buffer: Buffer::new(), listener_map: Map::new() }
 
 pub fn h_rs() -> Unit {
   receiver.buffer.reset()
@@ -39,38 +51,35 @@ pub fn h_rd(data : Int) -> Unit {
 pub fn h_re() -> Unit {
   let message = receiver.buffer.to_string()
   match @json.parse?(message) {
-    Ok(Object({ "type": String(event_type), "data": event_data })) =>
-      match event_type {
-        "result" => receiver.result = event_data
+    Ok(Object({ "type": String(event_name), "data": event_data })) =>
+      match event_name {
         _ =>
-          match receiver.listener_map[event_type] {
+          match receiver.listener_map[event_name] {
             Some(listener) => listener(event_data)
-            None => println("No listener for event type: " + event_type)
+            None => println("No listener for event type: " + event_name)
           }
       }
-    Ok(Object({ "type": String("result") })) => receiver.result = Null
     Ok(json) => println("type and data not found in \(json)")
     Err(e) => println("Error parsing JSON: \(e)")
   }
 }
 
 pub fn listen_event(
-  event_type : String,
+  event_name : String,
   callback : (@json.JsonValue) -> Unit
 ) -> Unit {
-  receiver.listener_map[event_type] = callback
+  receiver.listener_map[event_name] = callback
 }
 
-pub fn send_event(event_type : String, event_data : @json.JsonValue) -> Unit {
-  let body = @json.stringify({ "type": String(event_type), "data": event_data })
-  let chars = body.to_array().map(fn(c) { c.to_int() })
-  // receiver.result = @json.JsonValue::Null
+pub fn send_event(event_name : String, event_data : @json.JsonValue) -> Unit {
+  { "type": String(event_name), "data": event_data } |> send
+}
+
+fn send(body : @json.JsonValue) -> Unit {
+  let chars = @json.stringify(body).to_array().map(fn(c) { c.to_int() })
   h_ss()
   chars.each(fn(c) { h_sd(c) })
   h_se()
-  // while receiver.result == @json.JsonValue::Null {
-  // }
-  // return receiver.result
 }
 
 pub fn addEventListener(

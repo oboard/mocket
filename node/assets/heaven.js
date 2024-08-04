@@ -4,7 +4,7 @@ import fs from "fs";
 export default class Heaven {
   _mbt_callbacks = null;
   _mbt_listeners = {};
-  defineEvent(type, callback) {
+  listenEvent(type, callback) {
     this._mbt_listeners[type] = callback;
   }
 
@@ -18,7 +18,7 @@ export default class Heaven {
     }
     const properties = Object.getOwnPropertyNames(prototype);
 
-    this.defineEvent(`${prefix}.addEventListener`, (type, listener) => {
+    this.listenEvent(`${prefix}.addEventListener`, (type, listener) => {
       obj.addEventListener(type, (...args) => {
         function getCompleteObject(obj) {
           const result = {};
@@ -28,28 +28,28 @@ export default class Heaven {
           }
           return result;
         }
-        callFunction(listener, args.map(getCompleteObject));
+        sendEvent(listener, args.map(getCompleteObject));
       });
     });
     for (const methodName of properties) {
       const method = obj[methodName];
 
       if (typeof method === "function") {
-        this.defineEvent(`${prefix}.${methodName}`, (...args) => {
+        this.listenEvent(`${prefix}.${methodName}`, (...args) => {
           method.apply(obj, args);
         });
       } else if (typeof method === "object") {
         this.bindObject(`${prefix}.${methodName}`, method);
       } else {
-        this.defineEvent(`${prefix}.${methodName}`, () => method);
-        this.defineEvent(`${prefix}.${methodName}.set`, (value) => {
+        this.listenEvent(`${prefix}.${methodName}`, () => method);
+        this.listenEvent(`${prefix}.${methodName}.set`, (value) => {
           obj[methodName] = value;
         });
       }
     }
   }
 
-  callFunction(eventType, data) {
+  sendEvent(eventType, data) {
     const json = JSON.stringify({ type: eventType, data });
     const uint8array = new TextEncoder("utf-16")
       .encode(json)
@@ -65,19 +65,6 @@ export default class Heaven {
   }
 
   init() {
-    function prototypeToFFI(prototype) {
-      return Object.fromEntries(
-        Object.entries(Object.getOwnPropertyDescriptors(prototype))
-          .filter(([_key, value]) => value.value)
-          .map(([key, value]) => [
-            key,
-            typeof value.value === "function"
-              ? Function.prototype.call.bind(value.value)
-              : () => value.value,
-          ])
-      );
-    }
-
     const [log, flush] = (() => {
       let buffer = [];
       return [
@@ -119,7 +106,6 @@ export default class Heaven {
 
     const importObject = {
       __h: { h_ss, h_sd, h_se },
-      math: prototypeToFFI(Math),
       spectest: { print_char: log },
     };
 
@@ -133,16 +119,12 @@ export default class Heaven {
           break;
         default:
           if (res.type in this._mbt_listeners) {
-            if (Array.isArray(res.data)) {
-              this.callFunction(
-                "result",
-                this._mbt_listeners[res.type](...res.data)
-              );
-            } else {
-              this.callFunction(
-                "result",
-                this._mbt_listeners[res.type](res.data)
-              );
+            const f = this._mbt_listeners[res.type];
+            const result = Array.isArray(res.data)
+              ? f(...res.data)
+              : f(res.data);
+            if (res.id !== undefined) {
+              this.sendEvent(res.id, result);
             }
           }
       }

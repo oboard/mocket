@@ -3,21 +3,21 @@ import fs from "node:fs";
 
 export default class Mocket {
   init(heaven) {
-    const responses = [];
+    const objPool = [];
     let server = undefined;
 
-    const createResponse = (res) => {
+    const pushObj = (res) => {
       // 查找responses中的空位，如果没有空位，则添加到末尾
-      const index = responses.findIndex((r) => r === undefined);
+      const index = objPool.findIndex((r) => r === undefined);
       if (index === -1) {
-        responses.push(res);
-        return responses.length - 1;
+        objPool.push(res);
+        return objPool.length - 1;
       }
-      responses[index] = res;
+      objPool[index] = res;
       return index;
     };
-    
-    heaven.defineEvent("fetch", (url) => {
+
+    heaven.listenEvent("fetch", (url) => {
       return new Promise((resolve, reject) => {
         const req = http.get(url, (res) => {
           let data = "";
@@ -38,17 +38,38 @@ export default class Mocket {
       });
     });
 
-    heaven.defineEvent("http.createServer", () => {
+    heaven.listenEvent("fs.readFileSync", (path) => {
+      let id = pushObj(fs.readFileSync(path));
+      return { id };
+    });
+
+    heaven.listenEvent("fs.readDirSync", (path) => {
+      return fs.readdirSync(path);
+    });
+
+    heaven.listenEvent("fs.writeFileSync", (path, id) => {
+      const data = objPool[id];
+      if (!data) {
+        throw new Error(`Data ${id} not found`);
+      }
+      fs.writeFileSync(path, data);
+    });
+
+    heaven.listenEvent("fs.destroy", (id) => {
+      objPool[id] = undefined;
+    });
+
+    heaven.listenEvent("http.createServer", () => {
       server = http.createServer((req, res) => {
         const callRequest = (data) => {
-          heaven.callFunction("http.request", [
+          heaven.sendEvent("http.request", [
             {
               url: req.url,
               method: req.method,
               headers: req.headers,
               body: data,
             },
-            { id: createResponse(res) },
+            { id: pushObj(res) },
           ]);
         };
 
@@ -70,7 +91,7 @@ export default class Mocket {
       });
     });
 
-    heaven.defineEvent("http.listen", (port) => {
+    heaven.listenEvent("http.listen", (port) => {
       if (!server) {
         throw new Error("Server not created");
       }
@@ -79,16 +100,16 @@ export default class Mocket {
       });
     });
 
-    heaven.defineEvent("http.writeHead", (id, statusCode, headers) => {
-      const response = responses[id];
+    heaven.listenEvent("http.writeHead", (id, statusCode, headers) => {
+      const response = objPool[id];
       if (!response) {
         throw new Error("Response not created");
       }
       response.writeHead(statusCode, headers);
     });
 
-    heaven.defineEvent("http.end", (id, data) => {
-      const response = responses[id];
+    heaven.listenEvent("http.end", (id, data) => {
+      const response = objPool[id];
       if (!response) {
         throw new Error(`Response ${id} not created`);
       }
@@ -96,8 +117,10 @@ export default class Mocket {
 
       if (typeof data === "object") {
         if (data.type === "file") {
-          const filePath = data.path;
-          const file = fs.readFileSync(filePath);
+          const file = objPool[data.id];
+          if (!file) {
+            throw new Error(`File ${data.id} not found`);
+          }
           response.end(file);
           return;
         }
@@ -105,7 +128,7 @@ export default class Mocket {
       } else {
         response.end(data);
       }
-      responses[id] = undefined;
+      objPool[id] = undefined;
     });
   }
 }

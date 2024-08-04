@@ -1,6 +1,8 @@
 // Example usage of mocket package in MoonBit
 
 fn main {
+  // readDirSync example  
+  // call_event("fs.readDirSync", ["./"], fn(data) { println(data) })
   let server = @mocket.listen(get_context(), 4000)
   // html response example
   server.get("/", fn(_req, _res) { @mocket.html("<h1>Hello, World!</h1>") })

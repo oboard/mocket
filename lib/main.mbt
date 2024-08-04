@@ -1,6 +1,7 @@
 pub struct HeavenBinding {
   mut listen : (String, (@json.JsonValue) -> Unit) -> Unit
   mut send : (String, @json.JsonValue) -> Unit
+  mut call : (String, @json.JsonValue, (@json.JsonValue) -> Unit) -> Unit
 }
 
 pub struct HttpResponse {
@@ -15,13 +16,14 @@ pub struct HttpRequest {
 }
 
 pub struct HttpServer {
-  port : Double
+  port : Int
   mappings : Map[String, (HttpRequest, HttpResponse) -> @json.JsonValue]
 }
 
 let binding : HeavenBinding = {
   listen: fn(_a, _b) { println("Please bind heaven.") },
   send: fn(_a, _b) { println("Please bind heaven.") },
+  call: fn(_a, _b, _c) { println("Please bind heaven.") },
 }
 
 pub fn html(data : String) -> @json.JsonValue {
@@ -36,11 +38,13 @@ pub fn listen(
   context : (
     (String, (@json.JsonValue) -> Unit) -> Unit,
     (String, @json.JsonValue) -> Unit,
+    (String, @json.JsonValue, (@json.JsonValue) -> Unit) -> Unit,
   ),
-  port : Double
+  port : Int
 ) -> HttpServer {
   binding.listen = context.0
   binding.send = context.1
+  binding.call = context.2
   let server = { port, mappings: of([]) }
   (binding.listen)(
     "http.request",
@@ -120,8 +124,6 @@ pub fn listen(
 
               let reqHead = method + " " + urlObject.path
               println(reqHead)
-              // doHandler(server.mappings.get(method + " " + urlObject.path))
-              // doHandler(server.mappings.get("ALL " + urlObject.path))
               doHandler(
                 if server.mappings.contains(reqHead) {
                   server.mappings.get(reqHead)
@@ -137,7 +139,7 @@ pub fn listen(
     },
   )
   (binding.send)("http.createServer", {  })
-  (binding.send)("http.listen", Number(server.port))
+  (binding.send)("http.listen", Number(server.port.to_double()))
   server
 }
 
