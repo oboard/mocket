@@ -40,7 +40,7 @@ export default class Mocket {
 
     heaven.listenEvent("fs.readFile", (path) => {
       let uint8array = fs.readFileSync(path);
-      return uint8array.buffer;
+      return Array.from(new Uint8Array(uint8array));
     });
 
     heaven.listenEvent("fs.readDir", (path) => {
@@ -49,10 +49,6 @@ export default class Mocket {
 
     heaven.listenEvent("fs.writeFile", (path, data) => {
       fs.writeFileSync(path, Buffer.from(data));
-    });
-
-    heaven.listenEvent("fs.destroy", (id) => {
-      objPool[id] = undefined;
     });
 
     heaven.listenEvent("http.createServer", () => {
