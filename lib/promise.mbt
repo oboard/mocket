@@ -56,6 +56,16 @@ pub fn Promise::capture[T](
   self
 }
 
+pub fn Promise::finally[T](self : Promise[T], callback : (T) -> Unit) -> Unit {
+  match (self.status, self.value) {
+    (Fulfilled, Some(value)) | (Rejected, Some(value)) => callback(value)
+    _ => {
+      self.then_callbacks.push(callback)
+      self.capture_callbacks.push(callback)
+    }
+  }
+}
+
 pub fn Promise::resolve[T](self : Promise[T], value : T) -> Unit {
   self.value = Some(value)
   self.then_callbacks.each(fn(callback) { callback(value) })

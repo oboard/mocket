@@ -234,3 +234,42 @@ pub fn writeHead(
 pub fn end(self : HttpResponse, data : @json.JsonValue) -> Unit {
   (binding.send)("http.end", [Number(self.id), data])
 }
+
+// pub fn readDir(callback : (@json.JsonValue) -> Unit, path : String) -> Unit {
+//   (binding.call)("fs.readDirSync", String(path), callback)
+// }
+
+pub fn readDir(path : String) -> Promise[@json.JsonValue] {
+  Promise::new(
+    fn(
+      resolve : (@json.JsonValue) -> Unit,
+      _reject : (@json.JsonValue) -> Unit
+    ) {
+      (binding.call)("fs.readDir", String(path), resolve)
+    },
+  )
+}
+
+pub fn readFile(path : String) -> Promise[Bytes] {
+  Promise::new(
+    fn(resolve, reject) {
+      (binding.call)(
+        "fs.readFile",
+        String(path),
+        fn {
+          Array(bytes) =>
+            bytes.map(
+              fn {
+                Number(n) => n.to_int().to_byte()
+                _ => (0).to_byte()
+              },
+            )
+            |> FixedArray::from_array
+            |> Bytes::of
+            |> resolve
+          _ => reject(Bytes::new(0))
+        },
+      )
+    },
+  )
+}

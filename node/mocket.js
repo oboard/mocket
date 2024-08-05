@@ -38,21 +38,17 @@ export default class Mocket {
       });
     });
 
-    heaven.listenEvent("fs.readFileSync", (path) => {
-      let id = pushObj(fs.readFileSync(path));
-      return { id };
+    heaven.listenEvent("fs.readFile", (path) => {
+      let uint8array = fs.readFileSync(path);
+      return uint8array.buffer;
     });
 
-    heaven.listenEvent("fs.readDirSync", (path) => {
+    heaven.listenEvent("fs.readDir", (path) => {
       return fs.readdirSync(path);
     });
 
-    heaven.listenEvent("fs.writeFileSync", (path, id) => {
-      const data = objPool[id];
-      if (!data) {
-        throw new Error(`Data ${id} not found`);
-      }
-      fs.writeFileSync(path, data);
+    heaven.listenEvent("fs.writeFile", (path, data) => {
+      fs.writeFileSync(path, Buffer.from(data));
     });
 
     heaven.listenEvent("fs.destroy", (id) => {
