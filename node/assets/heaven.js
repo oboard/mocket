@@ -123,7 +123,7 @@ export default class Heaven {
             const result = Array.isArray(res.data)
               ? f(...res.data)
               : f(res.data);
-            if (res.id !== undefined) {
+            if (res.id !== undefined && result !== undefined) {
               this.sendEvent(res.id, result);
             }
           }

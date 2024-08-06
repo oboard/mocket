@@ -3,6 +3,10 @@
     {
       "path": "oboard/mimetype/lib",
       "alias": "mimetype"
+    },
+    {
+      "path": "yj-qin/regexp",
+      "alias": "regexp"
     }
   ]
 }

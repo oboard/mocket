@@ -18,24 +18,13 @@ export default class Mocket {
     };
 
     heaven.listenEvent("fetch", (url) => {
-      return new Promise((resolve, reject) => {
-        const req = http.get(url, (res) => {
-          let data = "";
-          res.on("data", (chunk) => {
-            data += chunk;
-          });
-          res.on("end", () => {
-            resolve({
-              status: res.statusCode,
-              headers: res.headers,
-              body: data,
-            });
-          });
+      fetch(url)
+        .then((res) => res.text())
+        .then((text) => {
+          heaven.sendEvent("fetch.text", [url, text]);
         });
-        req.on("error", (err) => {
-          reject(err);
-        });
-      });
+
+      return undefined;
     });
 
     heaven.listenEvent("fs.readFile", (path) => {
@@ -44,7 +33,30 @@ export default class Mocket {
     });
 
     heaven.listenEvent("fs.readDir", (path) => {
-      return fs.readdirSync(path);
+      // return fs.readdirSync(path);
+      // 遍历目录，返回文件名数组
+      function readDir(path) {
+        const files = fs.readdirSync(path);
+        const result = [];
+        files.forEach((file) => {
+          const stats = fs.statSync(path + "/" + file);
+          if (stats.isFile()) {
+            result.push(file);
+          } else if (stats.isDirectory()) {
+            result.push({
+              name: file,
+              type: "directory",
+              children: readDir(path + "/" + file),
+            });
+          }
+        });
+        return result;
+      }
+      return readDir(path);
+    });
+
+    heaven.listenEvent("fs.stat", (path) => {
+      return fs.statSync(path);
     });
 
     heaven.listenEvent("fs.writeFile", (path, data) => {
@@ -106,17 +118,19 @@ export default class Mocket {
         throw new Error(`Response ${id} not created`);
       }
       // 如果data是对象，则转化为JSON字符串
-
       if (typeof data === "object") {
-        if (data.type === "file") {
-          const file = objPool[data.id];
-          if (!file) {
-            throw new Error(`File ${data.id} not found`);
-          }
-          response.end(file);
-          return;
+        switch (data.type) {
+          case "file":
+            const file = fs.readFileSync(data.path);
+            response.end(file);
+            break;
+          case "buffer":
+            const buffer = Buffer.from(data.data);
+            response.end(file);
+            break;
+          default:
+            response.end(JSON.stringify(data));
         }
-        response.end(JSON.stringify(data));
       } else {
         response.end(data);
       }

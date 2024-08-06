@@ -34,6 +34,16 @@ pub fn file(path : String) -> @json.JsonValue {
   { "type": "file", "path": String(path) }
 }
 
+pub fn buffer(data : Bytes) -> @json.JsonValue {
+  {
+    "type": "buffer",
+    "data": data.to_array().map(
+      fn(n : Byte) -> @json.JsonValue { Number(n.to_int().to_double()) },
+    )
+    |> Array,
+  }
+}
+
 pub fn listen(
   context : (
     (String, (@json.JsonValue) -> Unit) -> Unit,
@@ -123,12 +133,18 @@ pub fn listen(
               }
 
               let reqHead = method + " " + urlObject.path
+              let reqHeadAll = "ALL " + urlObject.path
+              let reqHeadAllMethod = method + " *"
               println(reqHead)
               doHandler(
                 if server.mappings.contains(reqHead) {
                   server.mappings.get(reqHead)
+                } else if server.mappings.contains(reqHeadAll) {
+                  server.mappings.get(reqHeadAll)
+                } else if server.mappings.contains(reqHeadAllMethod) {
+                  server.mappings.get(reqHeadAllMethod)
                 } else {
-                  server.mappings.get("ALL " + urlObject.path)
+                  server.mappings.get("ALL *")
                 },
               )
             }
