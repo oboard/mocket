@@ -1,7 +1,8 @@
 // Example usage of mocket package in MoonBit
 
 fn main {
-  let server = @mocket.listen(get_context(), 4000)
+  let port = 4000
+  let server = @mocket.listen(get_context(), port)
   // readFile example  
   // @mocket.readFile("./logo.jpg").finally(
   //   fn(data : Bytes) { println(data.length()) },
@@ -45,24 +46,23 @@ fn main {
     },
   )
 
-  // static file serving example
-  fn staticMap(files : @json.JsonValue) {
-    match files {
-      Array(array) => array.each(staticMap)
-      String(path) =>
-        server.get(
-          "/" + path,
-          fn(req : @mocket.HttpRequest, _res : @mocket.HttpResponse) {
-            match req.path {
-              Some(path) => @mocket.file("./" + path)
-              _ => @mocket.file("index.html")
-            }
-          },
-        )
-      _ => ()
-    }
-  }
+  // buffer serving example
+  server.get(
+    "/buffer",
+    fn(_req : @mocket.HttpRequest, _res : @mocket.HttpResponse) {
+      @mocket.buffer(
+        [
+          72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33, 32, 84, 104, 105,
+          115, 32, 105, 115, 32, 97, 32, 116, 101, 115, 116, 32, 115, 116, 114, 105,
+          110, 103, 32, 102, 111, 114, 32, 116, 101, 115, 116, 105, 110, 103, 32,
+          112, 117, 114, 112, 111, 115, 101,
+        ].map(fn(x) { x.to_byte() })
+        |> Bytes::from_array,
+      )
+    },
+  )
 
-  // readDir example  
-  @mocket.readDir("./").then(println).finally(staticMap)
+  // static file serving example
+  // Example: http://localhost:4000/static/logo.jpg => ./logo.jpg
+  server.static("/static/", "./")
 }

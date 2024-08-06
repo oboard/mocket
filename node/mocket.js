@@ -99,9 +99,7 @@ export default class Mocket {
       if (!server) {
         throw new Error("Server not created");
       }
-      server.listen(port, () => {
-        console.info(`Server running on port ${port}`);
-      });
+      server.listen(port, () => {});
     });
 
     heaven.listenEvent("http.writeHead", (id, statusCode, headers) => {
@@ -119,14 +117,14 @@ export default class Mocket {
       }
       // 如果data是对象，则转化为JSON字符串
       if (typeof data === "object") {
-        switch (data.type) {
+        switch (data._T) {
           case "file":
             const file = fs.readFileSync(data.path);
             response.end(file);
             break;
           case "buffer":
             const buffer = Buffer.from(data.data);
-            response.end(file);
+            response.end(buffer);
             break;
           default:
             response.end(JSON.stringify(data));

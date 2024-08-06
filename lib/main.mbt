@@ -27,16 +27,16 @@ let binding : HeavenBinding = {
 }
 
 pub fn html(data : String) -> @json.JsonValue {
-  { "type": "html", "data": String(data) }
+  { "_T": "html", "data": String(data) }
 }
 
 pub fn file(path : String) -> @json.JsonValue {
-  { "type": "file", "path": String(path) }
+  { "_T": "file", "path": String(path) }
 }
 
 pub fn buffer(data : Bytes) -> @json.JsonValue {
   {
-    "type": "buffer",
+    "_T": "buffer",
     "data": data.to_array().map(
       fn(n : Byte) -> @json.JsonValue { Number(n.to_int().to_double()) },
     )
@@ -84,11 +84,11 @@ pub fn listen(
                   Some(handler) => {
                     let result = handler(request, response)
                     match result {
-                      Object({ "type": "html", "data": data }) => {
+                      Object({ "_T": "html", "data": data }) => {
                         response.writeHead(200, { "Content-Type": "text/html" })
                         response.end(data)
                       }
-                      Object({ "type": "file", "path": String(path) }) => {
+                      Object({ "_T": "file", "path": String(path) }) => {
                         let mime = @mimetype.new()
                         let mimeType = mime.getType(path)
                         response.writeHead(
@@ -135,7 +135,7 @@ pub fn listen(
               let reqHead = method + " " + urlObject.path
               let reqHeadAll = "ALL " + urlObject.path
               let reqHeadAllMethod = method + " *"
-              println(reqHead)
+              println(@chalk.Chalk(reqHead).color(Green))
               doHandler(
                 if server.mappings.contains(reqHead) {
                   server.mappings.get(reqHead)
@@ -144,7 +144,23 @@ pub fn listen(
                 } else if server.mappings.contains(reqHeadAllMethod) {
                   server.mappings.get(reqHeadAllMethod)
                 } else {
-                  server.mappings.get("ALL *")
+                  match
+                    server.mappings.keys().find_first(
+                      fn(key) {
+                        match request.path {
+                          Some(path) =>
+                            match @regexp.compile?(key) {
+                              Ok(compiled) => compiled.matches(path).success()
+                              _ => false
+                            }
+                          None => false
+                        }
+                      },
+                    ) {
+                    Some(key) => server.mappings.get(key)
+                    None => None
+                  }
+                  // server.mappings.get("ALL *")
                 },
               )
             }
@@ -156,6 +172,7 @@ pub fn listen(
   )
   (binding.send)("http.createServer", {  })
   (binding.send)("http.listen", Number(server.port.to_double()))
+  println(@chalk.Chalk("Server listening on port \(port)").color(Green))
   server
 }
 
@@ -288,4 +305,18 @@ pub fn readFile(path : String) -> Promise[Bytes] {
       )
     },
   )
+}
+
+pub fn static(self : HttpServer, from : String, to : String) -> Unit {
+  println(@chalk.Chalk("Route \(from) -> \(to)").color(Yellow))
+  let fromRegExp : String = "\(from).*"
+  self.mappings[fromRegExp] = fn(req, res) {
+    match req.path {
+      Some(path) => file(to + path.substring(start=from.length()))
+      _ => {
+        res.writeHead(404, { "Content-Type": "text/plain" })
+        String("Not Found")
+      }
+    }
+  }
 }
