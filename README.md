@@ -8,6 +8,8 @@ A web framework for MoonBit.
 
 ## Usage
 
+Minimum Example: https://github.com/oboard/mocket_example
+
 ### Prerequisites
 
 - MoonBit SDK installed
