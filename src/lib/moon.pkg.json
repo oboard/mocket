@@ -9,7 +9,7 @@
       "alias": "regexp"
     },
     {
-      "path": "Lampese/moonbit-chalk",
+      "path": "Lampese/moonbit-chalk/lib",
       "alias": "chalk"
     }
   ]

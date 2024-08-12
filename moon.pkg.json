@@ -1,8 +1,0 @@
-{
-  "import": [
-    {
-      "path": "oboard/mocket/lib",
-      "alias": "mocket"
-    }
-  ]
-}

@@ -92,13 +92,13 @@ fn query_map(query_str : String) -> Map[String, String] {
   let query_array = query_str.split("&")
   query_array.map(
     fn(s) {
-      let array = s.split("=")
+      let array = s.split("=").to_array()
       let key = array[0]
       let value = array[1]
       return (key, value)
     },
   )
-  |> Map::from_array
+  |> Map::from_iter
 }
 
 pub fn URL::output(self : URL, logger : Logger) -> Unit {
@@ -124,12 +124,16 @@ pub fn URL::to_string(self : URL) -> String {
   }
   let query_str = match query {
     Some(q) =>
-      "?" + q.to_array().map(
+      "?" +
+      q
+      .to_array()
+      .map(
         fn(item) {
           let (k, v) = item
           k + "=" + v
         },
-      ).join("&")
+      )
+      .join("&")
     None => ""
   }
   let fragment_str = match fragment {
@@ -144,8 +148,5 @@ test "parse_url" {
   let result = URL::parse(url)
   // println(url)
   // println(result)
-  inspect!(
-    result.path,
-    content="/path/to/resource",
-  )
+  inspect!(result.path, content="/path/to/resource")
 }

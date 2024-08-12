@@ -59,8 +59,8 @@ pub fn h_re() -> Unit {
             None => println("No listener for event type: " + event_name)
           }
       }
-    Ok(json) => println("type and data not found in \(json)")
-    Err(e) => println("Error parsing JSON: \(e)")
+    Ok(json) => println("type and data not found in \{json}")
+    Err(e) => println("Error parsing JSON: \{e}")
   }
 }
 
@@ -89,9 +89,9 @@ pub fn addEventListener(
 ) -> Unit {
   ignore(
     send_event(
-      "\(objectName).addEventListener",
-      [String(eventName), String("\(objectName).\(eventName)")],
+      "\{objectName}.addEventListener",
+      [String(eventName), String("\{objectName}.\{eventName}")],
     ),
   )
-  listen_event("\(objectName).\(eventName)", callback)
+  listen_event("\{objectName}.\{eventName}", callback)
 }

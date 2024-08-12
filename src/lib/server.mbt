@@ -37,9 +37,9 @@ pub fn file(path : String) -> @json.JsonValue {
 pub fn buffer(data : Bytes) -> @json.JsonValue {
   {
     "_T": "buffer",
-    "data": data.to_array().map(
-      fn(n : Byte) -> @json.JsonValue { Number(n.to_int().to_double()) },
-    )
+    "data": data
+    .to_array()
+    .map(fn(n : Byte) -> @json.JsonValue { Number(n.to_int().to_double()) })
     |> Array,
   }
 }
@@ -135,7 +135,7 @@ pub fn listen(
               let reqHead = method + " " + urlObject.path
               let reqHeadAll = "ALL " + urlObject.path
               let reqHeadAllMethod = method + " *"
-              println(@chalk.Chalk(reqHead).color(Green))
+              println(@chalk.chalk().color(Green).render(reqHead))
               doHandler(
                 if server.mappings.contains(reqHead) {
                   server.mappings.get(reqHead)
@@ -145,7 +145,9 @@ pub fn listen(
                   server.mappings.get(reqHeadAllMethod)
                 } else {
                   match
-                    server.mappings.keys().find_first(
+                    server.mappings
+                    .keys()
+                    .find_first(
                       fn(key) {
                         match request.path {
                           Some(path) =>
@@ -172,7 +174,12 @@ pub fn listen(
   )
   (binding.send)("http.createServer", {  })
   (binding.send)("http.listen", Number(server.port.to_double()))
-  println(@chalk.Chalk("Server listening on port \(port)").color(Green))
+  println(
+    @chalk.chalk().color(Green).render("Server listening on port \{port}"),
+  )
+  println(
+    @chalk.chalk().color(@chalk.Colors::Blue).render("Local: http://127.0.0.1:\{port}/"),
+  )
   server
 }
 
@@ -308,8 +315,8 @@ pub fn readFile(path : String) -> Promise[Bytes] {
 }
 
 pub fn static(self : HttpServer, from : String, to : String) -> Unit {
-  println(@chalk.Chalk("Route \(from) -> \(to)").color(Yellow))
-  let fromRegExp : String = "\(from).*"
+  println(@chalk.chalk().color(Yellow).render("Route \{from} -> \{to}"))
+  let fromRegExp : String = "\{from}.*"
   self.mappings[fromRegExp] = fn(req, res) {
     match req.path {
       Some(path) => file(to + path.substring(start=from.length()))
