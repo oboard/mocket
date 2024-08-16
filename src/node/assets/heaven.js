@@ -57,7 +57,6 @@ export default class Heaven {
         acc.push(byte, 0);
         return acc;
       }, []);
-    this._mbt_callbacks.h_rs();
     for (let i = 0; i < uint8array.length; i++) {
       this._mbt_callbacks.h_rd(uint8array[i]);
     }
@@ -85,12 +84,9 @@ export default class Heaven {
       ];
     })();
 
-    const [h_ss, h_sd, h_se] = (() => {
+    const [h_sd, h_se] = (() => {
       let buffer = [];
       return [
-        () => {
-          buffer = [];
-        },
         (ch) => buffer.push(ch),
         () => {
           if (buffer.length > 0) {
@@ -105,7 +101,7 @@ export default class Heaven {
     })();
 
     const importObject = {
-      __h: { h_ss, h_sd, h_se },
+      __h: {h_sd, h_se },
       spectest: { print_char: log },
     };
 

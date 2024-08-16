@@ -30,17 +30,11 @@ pub fn call_event(
   { "type": String(event_name), "data": data, "id": String(id) } |> send
 }
 
-pub fn h_ss() = "__h" "h_ss"
-
 pub fn h_sd(data : Int) = "__h" "h_sd"
 
 pub fn h_se() = "__h" "h_se"
 
 let receiver : Receiver = { buffer: Buffer::new(), listener_map: Map::new() }
-
-pub fn h_rs() -> Unit {
-  receiver.buffer.reset()
-}
 
 pub fn h_rd(data : Int) -> Unit {
   if data != 0 {
@@ -62,6 +56,7 @@ pub fn h_re() -> Unit {
     Ok(json) => println("type and data not found in \{json}")
     Err(e) => println("Error parsing JSON: \{e}")
   }
+  receiver.buffer.reset()
 }
 
 pub fn listen_event(
@@ -77,7 +72,6 @@ pub fn send_event(event_name : String, event_data : @json.JsonValue) -> Unit {
 
 fn send(body : @json.JsonValue) -> Unit {
   let chars = @json.stringify(body).to_array().map(fn(c) { c.to_int() })
-  h_ss()
   chars.each(fn(c) { h_sd(c) })
   h_se()
 }
