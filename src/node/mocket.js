@@ -28,7 +28,7 @@ export default class Mocket {
     });
 
     heaven.listenEvent("fs.readFile", (path) => {
-      let uint8array = fs.readFileSync(path);
+      const uint8array = fs.readFileSync(path);
       return Array.from(new Uint8Array(uint8array));
     });
 
@@ -38,18 +38,18 @@ export default class Mocket {
       function readDir(path) {
         const files = fs.readdirSync(path);
         const result = [];
-        files.forEach((file) => {
-          const stats = fs.statSync(path + "/" + file);
+        for (const file of files) {
+          const stats = fs.statSync(`${path}/${file}`);
           if (stats.isFile()) {
             result.push(file);
           } else if (stats.isDirectory()) {
             result.push({
               name: file,
               type: "directory",
-              children: readDir(path + "/" + file),
+              children: readDir(`${path}/${file}`),
             });
           }
-        });
+        }
         return result;
       }
       return readDir(path);
@@ -118,14 +118,16 @@ export default class Mocket {
       // 如果data是对象，则转化为JSON字符串
       if (typeof data === "object") {
         switch (data._T) {
-          case "file":
+          case "file": {
             const file = fs.readFileSync(data.path);
             response.end(file);
             break;
-          case "buffer":
+          }
+          case "buffer": {
             const buffer = Buffer.from(data.data);
             response.end(buffer);
             break;
+          }
           default:
             response.end(JSON.stringify(data));
         }
