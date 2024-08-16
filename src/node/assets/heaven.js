@@ -50,7 +50,7 @@ export default class Heaven {
   }
 
   sendEvent(eventType, data) {
-    const json = JSON.stringify({ type: eventType, data });
+    const json = JSON.stringify([eventType, data]);
     const uint8array = new TextEncoder("utf-16")
       .encode(json)
       .reduce((acc, byte) => {
@@ -101,26 +101,25 @@ export default class Heaven {
     })();
 
     const importObject = {
-      __h: {h_sd, h_se },
+      __h: { h_sd, h_se },
       spectest: { print_char: log },
     };
 
     const handleReceive = (res) => {
-      switch (res.type) {
+      const [type, data, id] = res;
+      switch (type) {
         case "log":
-          console.log(res.data);
+          console.log(data);
           break;
         case "error":
-          console.error(res.data);
+          console.error(data);
           break;
         default:
-          if (res.type in this._mbt_listeners) {
-            const f = this._mbt_listeners[res.type];
-            const result = Array.isArray(res.data)
-              ? f(...res.data)
-              : f(res.data);
-            if (res.id !== undefined && result !== undefined) {
-              this.sendEvent(res.id, result);
+          if (type in this._mbt_listeners) {
+            const f = this._mbt_listeners[type];
+            const result = Array.isArray(data) ? f(...data) : f(data);
+            if (id !== undefined && result !== undefined) {
+              this.sendEvent(id, result);
             }
           }
       }

@@ -27,7 +27,7 @@ pub fn call_event(
       receiver.listener_map.remove(id)
     },
   )
-  { "type": String(event_name), "data": data, "id": String(id) } |> send
+  [String(event_name), data, String(id)] |> send
 }
 
 pub fn h_sd(data : Int) = "__h" "h_sd"
@@ -45,7 +45,7 @@ pub fn h_rd(data : Int) -> Unit {
 pub fn h_re() -> Unit {
   let message = receiver.buffer.to_string()
   match @json.parse?(message) {
-    Ok(Object({ "type": String(event_name), "data": event_data })) =>
+    Ok([String(event_name), event_data]) =>
       match event_name {
         _ =>
           match receiver.listener_map[event_name] {
@@ -67,7 +67,7 @@ pub fn listen_event(
 }
 
 pub fn send_event(event_name : String, event_data : @json.JsonValue) -> Unit {
-  { "type": String(event_name), "data": event_data } |> send
+  [String(event_name), event_data] |> send
 }
 
 fn send(body : @json.JsonValue) -> Unit {
