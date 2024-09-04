@@ -1,9 +1,9 @@
 {
   "name": "oboard/mocket",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "deps": {
     "oboard/mimetype": "0.1.2",
-    "yj-qin/regexp": "0.2.4",
+    "yj-qin/regexp": "0.2.5",
     "Lampese/moonbit-chalk": "0.3.1"
   },
   "readme": "README.md",
