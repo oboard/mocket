@@ -63,43 +63,38 @@ export default class Mocket {
       fs.writeFileSync(path, Buffer.from(data));
     });
 
-    heaven.listenEvent("http.createServer", () => {
-      server = http.createServer((req, res) => {
-        const callRequest = (data) => {
-          heaven.sendEvent("http.request", [
-            {
-              url: req.url,
-              method: req.method,
-              headers: req.headers,
-              body: data,
-            },
-            { id: pushObj(res) },
-          ]);
-        };
-
-        // 检测请求方法是否为POST
-        if (req.method === "POST") {
-          let body = "";
-          // 监听数据事件，将请求体数据累加到body变量
-          req.on("data", (chunk) => {
-            body += chunk.toString(); // 将Buffer转换为字符串
-          });
-
-          // 监听结束事件，完成body的接收
-          req.on("end", () => {
-            callRequest(body);
-          });
-        } else {
-          callRequest();
-        }
-      });
-    });
-
     heaven.listenEvent("http.listen", (port) => {
-      if (!server) {
-        throw new Error("Server not created");
-      }
-      server.listen(port, () => {});
+      server = http
+        .createServer((req, res) => {
+          const callRequest = (data) => {
+            heaven.sendEvent("http.request", [
+              {
+                url: req.url,
+                method: req.method,
+                headers: req.headers,
+                body: data,
+              },
+              { id: pushObj(res) },
+            ]);
+          };
+
+          // 检测请求方法是否为POST
+          if (req.method === "POST") {
+            let body = "";
+            // 监听数据事件，将请求体数据累加到body变量
+            req.on("data", (chunk) => {
+              body += chunk.toString(); // 将Buffer转换为字符串
+            });
+
+            // 监听结束事件，完成body的接收
+            req.on("end", () => {
+              callRequest(body);
+            });
+          } else {
+            callRequest();
+          }
+        })
+        .listen(port, () => {});
     });
 
     heaven.listenEvent("http.writeHead", (id, statusCode, headers) => {
@@ -110,11 +105,12 @@ export default class Mocket {
       response.writeHead(statusCode, headers);
     });
 
-    heaven.listenEvent("http.end", (id, data) => {
+    heaven.listenEvent("http.end", (id, statusCode, headers, data) => {
       const response = objPool[id];
       if (!response) {
         throw new Error(`Response ${id} not created`);
       }
+      response.writeHead(statusCode, headers);
       // 如果data是对象，则转化为JSON字符串
       if (typeof data === "object") {
         switch (data._T) {

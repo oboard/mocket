@@ -6,6 +6,8 @@ pub struct HeavenBinding {
 
 pub struct HttpResponse {
   id : Double
+  mut statusCode : @json.JsonValue
+  mut headers : @json.JsonValue
 }
 
 pub struct HttpRequest {
@@ -76,7 +78,7 @@ pub fn listen(
                   _ => None
                 },
               }
-              let response : HttpResponse = { id, }
+              let response : HttpResponse = { id, statusCode: 200, headers: {} }
               fn doHandler(
                 reqFn : ((HttpRequest, HttpResponse) -> @json.JsonValue)?
               ) {
@@ -172,13 +174,14 @@ pub fn listen(
       }
     },
   )
-  (binding.send)("http.createServer", {  })
   (binding.send)("http.listen", Number(server.port.to_double()))
   println(
     @chalk.chalk().color(Green).render("Server listening on port \{port}"),
   )
   println(
-    @chalk.chalk().color(@chalk.Colors::Blue).render("Local: http://127.0.0.1:\{port}/"),
+    @chalk.chalk()
+    .color(@chalk.Colors::Blue)
+    .render("Local: http://127.0.0.1:\{port}/"),
   )
   server
 }
@@ -268,11 +271,13 @@ pub fn writeHead(
   statusCode : @json.JsonValue,
   headers : @json.JsonValue
 ) -> Unit {
-  (binding.send)("http.writeHead", [Number(self.id), statusCode, headers])
+  // (binding.send)("http.writeHead", [Number(self.id), statusCode, headers])
+  self.statusCode = statusCode
+  self.headers = headers
 }
 
-pub fn end(self : HttpResponse, data : @json.JsonValue) -> Unit {
-  (binding.send)("http.end", [Number(self.id), data])
+pub fn end(self : HttpResponse, body : @json.JsonValue) -> Unit {
+  (binding.send)("http.end", [Number(self.id), self.statusCode, self.headers, body])
 }
 
 // pub fn readDir(callback : (@json.JsonValue) -> Unit, path : String) -> Unit {

@@ -1,8 +1,10 @@
 // Example usage of mocket package in MoonBit
 
 fn main {
+  println("Starting server...")
   let port = 4000
   let server = @mocket.listen(get_context(), port)
+  listen_event("echo", fn(json) { println(json) })
   // readFile example  
   // @mocket.readFile("./logo.jpg").finally(
   //   fn(data : Bytes) { println(data.length()) },
