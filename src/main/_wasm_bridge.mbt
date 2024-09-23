@@ -2,22 +2,22 @@
 
 pub struct Receiver {
   buffer : Buffer
-  listener_map : Map[String, (@json.JsonValue) -> Unit]
+  listener_map : Map[String, (Json) -> Unit]
 }
 
 pub fn get_context() ->
      (
-       (String, (@json.JsonValue) -> Unit) -> Unit,
-       (String, @json.JsonValue) -> Unit,
-       (String, @json.JsonValue, (@json.JsonValue) -> Unit) -> Unit,
+       (String, (Json) -> Unit) -> Unit,
+       (String, Json) -> Unit,
+       (String, Json, (Json) -> Unit) -> Unit,
      ) {
   (listen_event, send_event, call_event)
 }
 
 pub fn call_event(
   event_name : String,
-  data : @json.JsonValue,
-  callback : (@json.JsonValue) -> Unit
+  data : Json,
+  callback : (Json) -> Unit
 ) -> Unit {
   let id = receiver.listener_map.keys().count().to_string()
   listen_event(
@@ -59,18 +59,15 @@ pub fn h_re() -> Unit {
   receiver.buffer.reset()
 }
 
-pub fn listen_event(
-  event_name : String,
-  callback : (@json.JsonValue) -> Unit
-) -> Unit {
+pub fn listen_event(event_name : String, callback : (Json) -> Unit) -> Unit {
   receiver.listener_map[event_name] = callback
 }
 
-pub fn send_event(event_name : String, event_data : @json.JsonValue) -> Unit {
+pub fn send_event(event_name : String, event_data : Json) -> Unit {
   [String(event_name), event_data] |> send
 }
 
-fn send(body : @json.JsonValue) -> Unit {
+fn send(body : Json) -> Unit {
   let chars = @json.stringify(body).to_array().map(fn(c) { c.to_int() })
   chars.each(fn(c) { h_sd(c) })
   h_se()
@@ -79,7 +76,7 @@ fn send(body : @json.JsonValue) -> Unit {
 pub fn addEventListener(
   objectName : String,
   eventName : String,
-  callback : (@json.JsonValue) -> Unit
+  callback : (Json) -> Unit
 ) -> Unit {
   ignore(
     send_event(

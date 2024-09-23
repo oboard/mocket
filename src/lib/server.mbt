@@ -1,25 +1,25 @@
 pub struct HeavenBinding {
-  mut listen : (String, (@json.JsonValue) -> Unit) -> Unit
-  mut send : (String, @json.JsonValue) -> Unit
-  mut call : (String, @json.JsonValue, (@json.JsonValue) -> Unit) -> Unit
+  mut listen : (String, (Json) -> Unit) -> Unit
+  mut send : (String, Json) -> Unit
+  mut call : (String, Json, (Json) -> Unit) -> Unit
 }
 
 pub struct HttpResponse {
   id : Double
-  mut statusCode : @json.JsonValue
-  mut headers : @json.JsonValue
+  mut statusCode : Json
+  mut headers : Json
 }
 
 pub struct HttpRequest {
   url : String?
   path : String?
   query : Map[String, String]
-  body : @json.JsonValue?
+  body : Json?
 }
 
 pub struct HttpServer {
   port : Int
-  mappings : Map[String, (HttpRequest, HttpResponse) -> @json.JsonValue]
+  mappings : Map[String, (HttpRequest, HttpResponse) -> Json]
 }
 
 let binding : HeavenBinding = {
@@ -28,29 +28,29 @@ let binding : HeavenBinding = {
   call: fn(_a, _b, _c) { println("Please bind heaven.") },
 }
 
-pub fn html(data : String) -> @json.JsonValue {
+pub fn html(data : String) -> Json {
   { "_T": "html", "data": String(data) }
 }
 
-pub fn file(path : String) -> @json.JsonValue {
+pub fn file(path : String) -> Json {
   { "_T": "file", "path": String(path) }
 }
 
-pub fn buffer(data : Bytes) -> @json.JsonValue {
+pub fn buffer(data : Bytes) -> Json {
   {
     "_T": "buffer",
     "data": data
     .to_array()
-    .map(fn(n : Byte) -> @json.JsonValue { Number(n.to_int().to_double()) })
+    .map(fn(n : Byte) -> Json { Number(n.to_int().to_double()) })
     |> Array,
   }
 }
 
 pub fn listen(
   context : (
-    (String, (@json.JsonValue) -> Unit) -> Unit,
-    (String, @json.JsonValue) -> Unit,
-    (String, @json.JsonValue, (@json.JsonValue) -> Unit) -> Unit,
+    (String, (Json) -> Unit) -> Unit,
+    (String, Json) -> Unit,
+    (String, Json, (Json) -> Unit) -> Unit,
   ),
   port : Int
 ) -> HttpServer {
@@ -80,7 +80,7 @@ pub fn listen(
               }
               let response : HttpResponse = { id, statusCode: 200, headers: {} }
               fn doHandler(
-                reqFn : ((HttpRequest, HttpResponse) -> @json.JsonValue)?
+                reqFn : ((HttpRequest, HttpResponse) -> Json)?
               ) {
                 match reqFn {
                   Some(handler) => {
@@ -189,7 +189,7 @@ pub fn listen(
 pub fn get(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> @json.JsonValue
+  handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   self.mappings["GET " + mapping] = handler
 }
@@ -197,7 +197,7 @@ pub fn get(
 pub fn post(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> @json.JsonValue
+  handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   self.mappings["POST " + mapping] = handler
 }
@@ -205,7 +205,7 @@ pub fn post(
 pub fn put(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> @json.JsonValue
+  handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   self.mappings["PUT " + mapping] = handler
 }
@@ -213,7 +213,7 @@ pub fn put(
 pub fn delete(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> @json.JsonValue
+  handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   self.mappings["DELETE " + mapping] = handler
 }
@@ -221,7 +221,7 @@ pub fn delete(
 pub fn patch(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> @json.JsonValue
+  handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   self.mappings["PATCH " + mapping] = handler
 }
@@ -229,7 +229,7 @@ pub fn patch(
 pub fn options(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> @json.JsonValue
+  handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   self.mappings["OPTIONS " + mapping] = handler
 }
@@ -237,7 +237,7 @@ pub fn options(
 pub fn head(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> @json.JsonValue
+  handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   self.mappings["HEAD " + mapping] = handler
 }
@@ -245,7 +245,7 @@ pub fn head(
 pub fn trace(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> @json.JsonValue
+  handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   self.mappings["TRACE " + mapping] = handler
 }
@@ -253,7 +253,7 @@ pub fn trace(
 pub fn connect(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> @json.JsonValue
+  handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   self.mappings["CONNECT " + mapping] = handler
 }
@@ -261,34 +261,34 @@ pub fn connect(
 pub fn all(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> @json.JsonValue
+  handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   self.mappings["ALL " + mapping] = handler
 }
 
 pub fn writeHead(
   self : HttpResponse,
-  statusCode : @json.JsonValue,
-  headers : @json.JsonValue
+  statusCode : Json,
+  headers : Json
 ) -> Unit {
   // (binding.send)("http.writeHead", [Number(self.id), statusCode, headers])
   self.statusCode = statusCode
   self.headers = headers
 }
 
-pub fn end(self : HttpResponse, body : @json.JsonValue) -> Unit {
+pub fn end(self : HttpResponse, body : Json) -> Unit {
   (binding.send)("http.end", [Number(self.id), self.statusCode, self.headers, body])
 }
 
-// pub fn readDir(callback : (@json.JsonValue) -> Unit, path : String) -> Unit {
+// pub fn readDir(callback : (Json) -> Unit, path : String) -> Unit {
 //   (binding.call)("fs.readDirSync", String(path), callback)
 // }
 
-pub fn readDir(path : String) -> Promise[@json.JsonValue] {
+pub fn readDir(path : String) -> Promise[Json] {
   Promise::new(
     fn(
-      resolve : (@json.JsonValue) -> Unit,
-      _reject : (@json.JsonValue) -> Unit
+      resolve : (Json) -> Unit,
+      _reject : (Json) -> Unit
     ) {
       (binding.call)("fs.readDir", String(path), resolve)
     },
