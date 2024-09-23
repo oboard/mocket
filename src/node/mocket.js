@@ -100,7 +100,8 @@ export default class Mocket {
     heaven.listenEvent("http.writeHead", (id, statusCode, headers) => {
       const response = objPool[id];
       if (!response) {
-        throw new Error("Response not created");
+        // throw new Error("Response not created");
+        return;
       }
       response.writeHead(statusCode, headers);
     });
@@ -108,7 +109,8 @@ export default class Mocket {
     heaven.listenEvent("http.end", (id, statusCode, headers, data) => {
       const response = objPool[id];
       if (!response) {
-        throw new Error(`Response ${id} not created`);
+        // throw new Error(`Response ${id} not created`);
+        return;
       }
       response.writeHead(statusCode, headers);
       // 如果data是对象，则转化为JSON字符串

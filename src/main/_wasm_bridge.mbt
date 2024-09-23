@@ -36,9 +36,9 @@ pub fn h_se() = "__h" "h_se"
 
 let receiver : Receiver = { buffer: Buffer::new(), listener_map: Map::new() }
 
-pub fn h_rd(data : Byte) -> Unit {
-  if data.to_int() != 0 {
-    receiver.buffer.write_byte(data)
+pub fn h_rd(data : Int) -> Unit {
+  if data != 0 {
+    receiver.buffer.write_char(Char::from_int(data))
   }
 }
 
