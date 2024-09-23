@@ -146,27 +146,28 @@ pub fn listen(
                 } else if server.mappings.contains(reqHeadAllMethod) {
                   server.mappings.get(reqHeadAllMethod)
                 } else {
-                  match
-                    server.mappings
-                    .keys()
-                    .find_first(
-                      fn(key) {
-                        match request.path {
-                          Some(path) =>
-                            match @regexp.compile?(key) {
-                              Ok(compiled) => compiled.matches(path).success()
-                              _ => false
-                            }
-                          None => false
-                        }
-                      },
-                    ) {
-                    Some(key) => server.mappings.get(key)
-                    None => None
-                  }
-                  // server.mappings.get("ALL *")
+                  // match
+                  //   server.mappings
+                  //   .keys()
+                  //   .find_first(
+                  //     fn(key) {
+                  //       match request.path {
+                  //         Some(path) =>
+                  //           match @regexp.compile?(key) {
+                  //             Ok(compiled) => compiled.matches(path).success()
+                  //             _ => false
+                  //           }
+                  //         None => false
+                  //       }
+                  //     },
+                  //   ) {
+                  //   Some(key) => server.mappings.get(key)
+                  //   None => None
+                  // }
+                  server.mappings.get("ALL *")
                 },
               )
+              response.end("Not Found")
             }
             _ => println("Invalid struct")
           }
