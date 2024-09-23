@@ -30,15 +30,15 @@ pub fn call_event(
   [String(event_name), data, String(id)] |> send
 }
 
-pub fn h_sd(data : Int) = "__h" "h_sd"
+pub fn h_sd(data : Byte) = "__h" "h_sd"
 
 pub fn h_se() = "__h" "h_se"
 
 let receiver : Receiver = { buffer: Buffer::new(), listener_map: Map::new() }
 
-pub fn h_rd(data : Int) -> Unit {
-  if data != 0 {
-    receiver.buffer.write_char(Char::from_int(data))
+pub fn h_rd(data : Byte) -> Unit {
+  if data.to_int() != 0 {
+    receiver.buffer.write_byte(data)
   }
 }
 
@@ -68,8 +68,8 @@ pub fn send_event(event_name : String, event_data : Json) -> Unit {
 }
 
 fn send(body : Json) -> Unit {
-  let chars = @json.stringify(body).to_array().map(fn(c) { c.to_int() })
-  chars.each(fn(c) { h_sd(c) })
+  let chars = @json.stringify(body).to_bytes()
+  chars.iter().each(fn(c) { h_sd(c) })
   h_se()
 }
 
