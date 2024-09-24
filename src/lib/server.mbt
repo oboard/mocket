@@ -72,16 +72,14 @@ pub fn listen(
               let request : HttpRequest = {
                 url: Some(url),
                 path: Some(urlObject.path),
-                query: urlObject.query.or({  }),
+                query: urlObject.query.or({}),
                 body: match req {
                   { "body": body } => Some(body)
                   _ => None
                 },
               }
               let response : HttpResponse = { id, statusCode: 200, headers: {} }
-              fn doHandler(
-                reqFn : ((HttpRequest, HttpResponse) -> Json)?
-              ) {
+              fn doHandler(reqFn : ((HttpRequest, HttpResponse) -> Json)?) {
                 match reqFn {
                   Some(handler) => {
                     let result = handler(request, response)
@@ -187,12 +185,22 @@ pub fn listen(
   server
 }
 
+fn handleFunc(
+  self : HttpServer,
+  method : String,
+  mapping : String,
+  handler : (HttpRequest, HttpResponse) -> Json
+) -> Unit {
+  self.mappings[method + " " + mapping] = handler
+  (binding.send)("http.handle", [String(method), String(mapping)])
+}
+
 pub fn get(
   self : HttpServer,
   mapping : String,
   handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  self.mappings["GET " + mapping] = handler
+  handleFunc(self, "GET", mapping, handler)
 }
 
 pub fn post(
@@ -200,7 +208,7 @@ pub fn post(
   mapping : String,
   handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  self.mappings["POST " + mapping] = handler
+  handleFunc(self, "POST", mapping, handler)
 }
 
 pub fn put(
@@ -208,7 +216,7 @@ pub fn put(
   mapping : String,
   handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  self.mappings["PUT " + mapping] = handler
+  handleFunc(self, "PUT", mapping, handler)
 }
 
 pub fn delete(
@@ -216,7 +224,7 @@ pub fn delete(
   mapping : String,
   handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  self.mappings["DELETE " + mapping] = handler
+  handleFunc(self, "DELETE", mapping, handler)
 }
 
 pub fn patch(
@@ -224,7 +232,7 @@ pub fn patch(
   mapping : String,
   handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  self.mappings["PATCH " + mapping] = handler
+  handleFunc(self, "PATCH", mapping, handler)
 }
 
 pub fn options(
@@ -232,7 +240,7 @@ pub fn options(
   mapping : String,
   handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  self.mappings["OPTIONS " + mapping] = handler
+  handleFunc(self, "OPTIONS", mapping, handler)
 }
 
 pub fn head(
@@ -240,7 +248,7 @@ pub fn head(
   mapping : String,
   handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  self.mappings["HEAD " + mapping] = handler
+  handleFunc(self, "HEAD", mapping, handler)
 }
 
 pub fn trace(
@@ -248,7 +256,7 @@ pub fn trace(
   mapping : String,
   handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  self.mappings["TRACE " + mapping] = handler
+  handleFunc(self, "TRACE", mapping, handler)
 }
 
 pub fn connect(
@@ -256,7 +264,7 @@ pub fn connect(
   mapping : String,
   handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  self.mappings["CONNECT " + mapping] = handler
+  handleFunc(self, "CONNECT", mapping, handler)
 }
 
 pub fn all(
@@ -264,7 +272,7 @@ pub fn all(
   mapping : String,
   handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  self.mappings["ALL " + mapping] = handler
+  handleFunc(self, "ALL", mapping, handler)
 }
 
 pub fn writeHead(
@@ -278,7 +286,10 @@ pub fn writeHead(
 }
 
 pub fn end(self : HttpResponse, body : Json) -> Unit {
-  (binding.send)("http.end", [Number(self.id), self.statusCode, self.headers, body])
+  (binding.send)(
+    "http.end",
+    [Number(self.id), self.statusCode, self.headers, body],
+  )
 }
 
 // pub fn readDir(callback : (Json) -> Unit, path : String) -> Unit {
@@ -287,10 +298,7 @@ pub fn end(self : HttpResponse, body : Json) -> Unit {
 
 pub fn readDir(path : String) -> Promise[Json] {
   Promise::new(
-    fn(
-      resolve : (Json) -> Unit,
-      _reject : (Json) -> Unit
-    ) {
+    fn(resolve : (Json) -> Unit, _reject : (Json) -> Unit) {
       (binding.call)("fs.readDir", String(path), resolve)
     },
   )
