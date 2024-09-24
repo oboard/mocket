@@ -1,6 +1,6 @@
 {
   "name": "oboard/mocket",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "deps": {
     "oboard/mimetype": "0.1.2",
     "yj-qin/regexp": "0.2.5",
