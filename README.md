@@ -10,16 +10,37 @@ A web framework for MoonBit.
 
 Minimum Example: https://github.com/oboard/mocket_example
 
-### Prerequisites
+### MocketGo Runtime (Experimental)
+Download the latest release from:
+https://github.com/oboard/mocketgo/releases
+#### Linux/MacOS:
+```bash
+chmod +x ./mocketgo
+./mocketgo main.wasm
+```
+
+#### Windows:
+```bat
+mocketgo.exe main.wasm
+```
+
+### Node.js Runtime
+#### Prerequisites
 
 - MoonBit SDK installed
 - Node.js installed
 
-### Linux/MacOS:
+#### Linux/MacOS:
 
 ```bash
 sudo chmod +x ./start.sh
 ./start.sh
+```
+
+OR run with make:
+
+```bash
+make serve
 ```
 
 ### Windows:
