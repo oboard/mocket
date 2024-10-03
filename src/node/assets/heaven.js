@@ -3,9 +3,9 @@ import fs from "fs";
 
 export default class Heaven {
   _mbt_callbacks = null;
-  _mbt_listeners = {};
+  _listeners = {};
   listenEvent(type, callback) {
-    this._mbt_listeners[type] = callback;
+    this._listeners[type] = callback;
   }
 
   bindObject(prefix, obj) {
@@ -63,6 +63,11 @@ export default class Heaven {
     this._mbt_callbacks.h_re();
   }
 
+  use(plugin) {
+    plugin.init(this);
+    return this;
+  }
+
   init() {
     const [log, flush] = (() => {
       let buffer = [];
@@ -73,14 +78,27 @@ export default class Heaven {
         },
         () => {
           if (buffer.length > 0) {
+            console.log(
+              new TextDecoder("utf-16")
+                .decode(new Uint16Array(buffer))
+                .replace(/\0/g, "")
+            );
+            buffer = [];
+          }
+        },
+      ];
+    })();
+
+    const [h_sd, h_se] = (() => {
+      let buffer = [];
+      return [
+        (ch) => buffer.push(ch),
+        () => {
+          if (buffer.length > 0) {
             const str = new TextDecoder("utf-16")
-            .decode(new Uint16Array(buffer))
-            .replace(/\0/g, "");
-            if (str.startsWith("\u2039") && str.endsWith("\u203a")) {
-              handleReceive(JSON.parse(str.substring(1, str.length - 1)));
-            } else {
-              console.log(str);
-            }
+              .decode(new Uint16Array(buffer))
+              .replace(/\0/g, "");
+            handleReceive(JSON.parse(str));
             buffer = [];
           }
         },
@@ -88,6 +106,7 @@ export default class Heaven {
     })();
 
     const importObject = {
+      __h: { h_sd, h_se },
       spectest: { print_char: log },
     };
 
@@ -101,11 +120,18 @@ export default class Heaven {
           console.error(data);
           break;
         default:
-          if (type in this._mbt_listeners) {
-            const f = this._mbt_listeners[type];
+          if (type in this._listeners) {
+            const f = this._listeners[type];
             const result = Array.isArray(data) ? f(...data) : f(data);
             if (id !== undefined && result !== undefined) {
-              this.sendEvent(id, result);
+              // 如果是 promise，则等待结果后发送
+              if (result instanceof Promise) {
+                result.then((result) => {
+                  this.sendEvent(id, result);
+                });
+              } else {
+                this.sendEvent(id, result);
+              }
             }
           }
       }

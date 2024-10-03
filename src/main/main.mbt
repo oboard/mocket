@@ -67,4 +67,10 @@ fn main {
   // static file serving example
   // Example: http://localhost:4000/static/logo.jpg => ./logo.jpg
   server.static("/static/", "./")
+
+  // exec example
+  @mocket.exec("ls").finally(println)
+
+  // fetch example
+  @mocket.fetch("https://api64.ipify.org/").finally(println)
 }

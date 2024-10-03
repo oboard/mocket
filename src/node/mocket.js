@@ -1,5 +1,9 @@
 import http from "node:http";
 import fs from "node:fs";
+import util from "node:util";
+import child_process from "node:child_process";
+const exec = util.promisify(child_process.exec);
+const { stdout, stderr } = await exec(`ls`);
 
 export default class Mocket {
   init(heaven) {
@@ -16,16 +20,6 @@ export default class Mocket {
       objPool[index] = res;
       return index;
     };
-
-    heaven.listenEvent("fetch", (url) => {
-      fetch(url)
-        .then((res) => res.text())
-        .then((text) => {
-          heaven.sendEvent("fetch.text", [url, text]);
-        });
-
-      return undefined;
-    });
 
     heaven.listenEvent("fs.readFile", (path) => {
       const uint8array = fs.readFileSync(path);
@@ -55,13 +49,32 @@ export default class Mocket {
       return readDir(path);
     });
 
-    heaven.listenEvent("fs.stat", (path) => {
-      return fs.statSync(path);
-    });
+    heaven.listenEvent("fs.stat", (path) =>
+      fs.statSync(path)
+    );
 
     heaven.listenEvent("fs.writeFile", (path, data) => {
       fs.writeFileSync(path, Buffer.from(data));
     });
+
+    heaven.listenEvent("os.exec", (cmd) =>
+      child_process.execSync(cmd).toString()
+    );
+
+    heaven.listenEvent("fetch", (args) => 
+      fetch(...args).then(async (res) => {
+         const headersObj = {};
+         res.headers.forEach((value, name) => {
+             headersObj[name] = value;
+         });
+        return {
+          "headers": headersObj,
+          "status": res.status,
+          "statusText": res.statusText,
+          "data": await res.text()
+        }
+      })
+    );
 
     heaven.listenEvent("http.listen", (port) => {
       server = http

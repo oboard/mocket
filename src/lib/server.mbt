@@ -341,3 +341,123 @@ pub fn static(self : HttpServer, from : String, to : String) -> Unit {
     }
   }
 }
+
+pub fn exec(cmd : String) -> Promise[String] {
+  Promise::new(
+    fn(resolve, reject) {
+      (binding.call)(
+        "os.exec",
+        String(cmd),
+        fn {
+          String(s) => resolve(s)
+          _ => reject("")
+        },
+      )
+    },
+  )
+}
+
+pub enum FetchCredentials {
+  Omit
+  SameOrigin
+  Include
+}
+
+pub enum FetchMode {
+  CORS
+  NoCORS
+  SameOrigin
+  Navigate
+}
+
+struct FetchResponse {
+  status : Int
+  statusText : String
+  headers : Map[String, String]
+  data : String
+} derive(ToJson, Show, Eq)
+
+pub fn fetch(
+  url : String,
+  ~method? : String,
+  ~body? : String,
+  ~headers? : Map[String, String],
+  ~credentials? : FetchCredentials,
+  ~mode? : FetchMode
+) -> Promise[FetchResponse] {
+  Promise::new(
+    fn(resolve, reject) {
+      let options : Map[String, Json] = {}
+      match method {
+        Some(str) => options["method"] = String(str)
+        _ => ()
+      }
+      match body {
+        Some(str) => options["body"] = String(str)
+        _ => ()
+      }
+      match headers {
+        Some(json) => options["headers"] = json.to_json()
+        _ => ()
+      }
+      match credentials {
+        Some(cred) =>
+          options["credentials"] = match cred {
+            Omit => String("omit")
+            SameOrigin => String("same-origin")
+            Include => String("include")
+          }
+        _ => ()
+      }
+      match mode {
+        Some(m) =>
+          options["mode"] = match m {
+            CORS => String("cors")
+            NoCORS => String("no-cors")
+            SameOrigin => String("same-origin")
+            Navigate => String("navigate")
+          }
+        _ => ()
+      }
+      (binding.call)(
+        "fetch",
+        [[String(url), options.to_json()]],
+        fn {
+          Object(
+            {
+              "data": String(data),
+              "statusText": String(statusText),
+              "status": Number(status),
+              "headers": Object(headers),
+            }
+          ) =>
+            resolve(
+              FetchResponse::{
+                status: status.to_int(),
+                statusText,
+                headers: headers
+                .iter()
+                .map(
+                  fn(i : (String, Json)) -> (String, String) {
+                    (i.0, i.1.as_string().or(""))
+                  },
+                )
+                .to_array()
+                |> from_array,
+                data,
+              },
+            )
+          _ =>
+            reject(
+              FetchResponse::{
+                status: 0,
+                headers: {},
+                statusText: "",
+                data: "",
+              },
+            )
+        },
+      )
+    },
+  )
+}
