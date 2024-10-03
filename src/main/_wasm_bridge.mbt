@@ -30,10 +30,6 @@ pub fn call_event(
   [String(event_name), data, String(id)] |> send
 }
 
-pub fn h_sd(data : Byte) = "__h" "h_sd"
-
-pub fn h_se() = "__h" "h_se"
-
 let receiver : Receiver = { buffer: Buffer::new(), listener_map: Map::new() }
 
 pub fn h_rd(data : Int) -> Unit {
@@ -68,9 +64,8 @@ pub fn send_event(event_name : String, event_data : Json) -> Unit {
 }
 
 fn send(body : Json) -> Unit {
-  let chars = @json.stringify(body).to_bytes()
-  chars.iter().each(fn(c) { h_sd(c) })
-  h_se()
+  let chars = @json.stringify(body)
+  println("\u2039\{chars}\u203a")
 }
 
 pub fn addEventListener(

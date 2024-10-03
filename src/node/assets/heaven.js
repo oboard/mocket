@@ -73,27 +73,14 @@ export default class Heaven {
         },
         () => {
           if (buffer.length > 0) {
-            console.log(
-              new TextDecoder("utf-16")
-                .decode(new Uint16Array(buffer))
-                .replace(/\0/g, "")
-            );
-            buffer = [];
-          }
-        },
-      ];
-    })();
-
-    const [h_sd, h_se] = (() => {
-      let buffer = [];
-      return [
-        (ch) => buffer.push(ch),
-        () => {
-          if (buffer.length > 0) {
             const str = new TextDecoder("utf-16")
-              .decode(new Uint16Array(buffer))
-              .replace(/\0/g, "");
-            handleReceive(JSON.parse(str));
+            .decode(new Uint16Array(buffer))
+            .replace(/\0/g, "");
+            if (str.startsWith("\u2039") && str.endsWith("\u203a")) {
+              handleReceive(JSON.parse(str.substring(1, str.length - 1)));
+            } else {
+              console.log(str);
+            }
             buffer = [];
           }
         },
@@ -101,7 +88,6 @@ export default class Heaven {
     })();
 
     const importObject = {
-      __h: { h_sd, h_se },
       spectest: { print_char: log },
     };
 
