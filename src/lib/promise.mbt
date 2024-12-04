@@ -1,10 +1,10 @@
-pub enum PromiseStatus {
+pub(readonly) enum PromiseStatus {
   Pending
   Fulfilled
   Rejected
 }
 
-pub struct Promise[T] {
+pub(readonly) struct Promise[T] {
   mut status : PromiseStatus
   mut value : T?
   then_callbacks : Array[(T) -> Unit]

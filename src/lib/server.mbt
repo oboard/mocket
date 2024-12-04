@@ -1,23 +1,23 @@
-pub struct HeavenBinding {
+pub(readonly) struct HeavenBinding {
   mut listen : (String, (Json) -> Unit) -> Unit
   mut send : (String, Json) -> Unit
   mut call : (String, Json, (Json) -> Unit) -> Unit
 }
 
-pub struct HttpResponse {
+pub(readonly) struct HttpResponse {
   id : Double
   mut statusCode : Json
   mut headers : Json
 }
 
-pub struct HttpRequest {
+pub(all) struct HttpRequest {
   url : String?
   path : String?
   query : Map[String, String]
   body : Json?
 }
 
-pub struct HttpServer {
+pub(all) struct HttpServer {
   port : Int
   mappings : Map[String, (HttpRequest, HttpResponse) -> Json]
 }
@@ -57,7 +57,7 @@ pub fn listen(
   binding.listen = context.0
   binding.send = context.1
   binding.call = context.2
-  let server = { port, mappings: of([]) }
+  let server = { port, mappings: {} }
   (binding.listen)(
     "http.request",
     fn(result) {
@@ -65,7 +65,7 @@ pub fn listen(
         [req, res] =>
           match (req, res) {
             (
-              { "method": String(method), "url": String(url) },
+              { "method": String(res_method), "url": String(url) },
               { "id": Number(id) },
             ) => {
               let urlObject = URL::parse(url)
@@ -132,9 +132,9 @@ pub fn listen(
                 }
               }
 
-              let reqHead = method + " " + urlObject.path
+              let reqHead = res_method + " " + urlObject.path
               let reqHeadAll = "ALL " + urlObject.path
-              let reqHeadAllMethod = method + " *"
+              let reqHeadAllMethod = res_method + " *"
               println(@chalk.chalk().color(Green).render(reqHead))
               doHandler(
                 if server.mappings.contains(reqHead) {
@@ -144,25 +144,24 @@ pub fn listen(
                 } else if server.mappings.contains(reqHeadAllMethod) {
                   server.mappings.get(reqHeadAllMethod)
                 } else {
-                  // match
-                  //   server.mappings
-                  //   .keys()
-                  //   .find_first(
-                  //     fn(key) {
-                  //       match request.path {
-                  //         Some(path) =>
-                  //           match @regexp.compile?(key) {
-                  //             Ok(compiled) => compiled.matches(path).success()
-                  //             _ => false
-                  //           }
-                  //         None => false
-                  //       }
-                  //     },
-                  //   ) {
-                  //   Some(key) => server.mappings.get(key)
-                  //   None => None
-                  // }
-                  server.mappings.get("ALL *")
+                  match
+                    server.mappings
+                    .keys()
+                    .find_first(
+                      fn(key) {
+                        match request.path {
+                          Some(path) =>
+                            match @regexp.compile?(key) {
+                              Ok(compiled) => compiled.matches(path).success()
+                              _ => false
+                            }
+                          None => false
+                        }
+                      },
+                    ) {
+                    Some(key) => server.mappings.get(key)
+                    None => server.mappings.get("ALL *")
+                  }
                 },
               )
               response.end("Not Found")
@@ -187,12 +186,12 @@ pub fn listen(
 
 fn handleFunc(
   self : HttpServer,
-  method : String,
+  reqMethod : String,
   mapping : String,
   handler : (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  self.mappings[method + " " + mapping] = handler
-  (binding.send)("http.handle", [String(method), String(mapping)])
+  self.mappings[reqMethod + " " + mapping] = handler
+  (binding.send)("http.handle", [String(reqMethod), String(mapping)])
 }
 
 pub fn get(
@@ -328,7 +327,7 @@ pub fn readFile(path : String) -> Promise[Bytes] {
   )
 }
 
-pub fn static(self : HttpServer, from : String, to : String) -> Unit {
+pub fn resource(self : HttpServer, from : String, to : String) -> Unit {
   println(@chalk.chalk().color(Yellow).render("Route \{from} -> \{to}"))
   let fromRegExp : String = "\{from}.*"
   self.mappings[fromRegExp] = fn(req, res) {
@@ -357,13 +356,13 @@ pub fn exec(cmd : String) -> Promise[String] {
   )
 }
 
-pub enum FetchCredentials {
+pub(all) enum FetchCredentials {
   Omit
   SameOrigin
   Include
 }
 
-pub enum FetchMode {
+pub(all) enum FetchMode {
   CORS
   NoCORS
   SameOrigin
@@ -379,16 +378,16 @@ struct FetchResponse {
 
 pub fn fetch(
   url : String,
-  ~method? : String,
-  ~body? : String,
-  ~headers? : Map[String, String],
-  ~credentials? : FetchCredentials,
-  ~mode? : FetchMode
+  reqMethod? : String,
+  body? : String,
+  headers? : Map[String, String],
+  credentials? : FetchCredentials,
+  mode? : FetchMode
 ) -> Promise[FetchResponse] {
   Promise::new(
     fn(resolve, reject) {
       let options : Map[String, Json] = {}
-      match method {
+      match reqMethod {
         Some(str) => options["method"] = String(str)
         _ => ()
       }
@@ -443,7 +442,7 @@ pub fn fetch(
                   },
                 )
                 .to_array()
-                |> from_array,
+                |> Map::from_array,
                 data,
               },
             )

@@ -66,7 +66,7 @@ fn main {
 
   // static file serving example
   // Example: http://localhost:4000/static/logo.jpg => ./logo.jpg
-  server.static("/static/", "./")
+  server.resource("/static/", "./")
 
   // exec example
   @mocket.exec("ls").finally(println)

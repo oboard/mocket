@@ -1,4 +1,4 @@
-pub struct URL {
+pub(readonly) struct URL {
   protocol : String?
   host : String?
   port : Int?
@@ -125,15 +125,17 @@ pub fn URL::to_string(self : URL) -> String {
   let query_str = match query {
     Some(q) =>
       "?" +
-      q
-      .to_array()
-      .map(
-        fn(item) {
-          let (k, v) = item
-          k + "=" + v
-        },
+      String::concat(
+        q
+        .to_array()
+        .map(
+          fn(item) {
+            let (k, v) = item
+            k + "=" + v
+          },
+        ),
+        separator="&",
       )
-      .join("&")
     None => ""
   }
   let fragment_str = match fragment {
