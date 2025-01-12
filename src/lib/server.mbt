@@ -1,15 +1,18 @@
-pub(readonly) struct HeavenBinding {
+///|
+pub struct HeavenBinding {
   mut listen : (String, (Json) -> Unit) -> Unit
   mut send : (String, Json) -> Unit
   mut call : (String, Json, (Json) -> Unit) -> Unit
 }
 
-pub(readonly) struct HttpResponse {
+///|
+pub struct HttpResponse {
   id : Double
   mut statusCode : Json
   mut headers : Json
 }
 
+///|
 pub(all) struct HttpRequest {
   url : String?
   path : String?
@@ -17,25 +20,30 @@ pub(all) struct HttpRequest {
   body : Json?
 }
 
+///|
 pub(all) struct HttpServer {
   port : Int
   mappings : Map[String, (HttpRequest, HttpResponse) -> Json]
 }
 
+///|
 let binding : HeavenBinding = {
   listen: fn(_a, _b) { println("Please bind heaven.") },
   send: fn(_a, _b) { println("Please bind heaven.") },
   call: fn(_a, _b, _c) { println("Please bind heaven.") },
 }
 
+///|
 pub fn html(data : String) -> Json {
   { "_T": "html", "data": String(data) }
 }
 
+///|
 pub fn file(path : String) -> Json {
   { "_T": "file", "path": String(path) }
 }
 
+///|
 pub fn buffer(data : Bytes) -> Json {
   {
     "_T": "buffer",
@@ -46,6 +54,7 @@ pub fn buffer(data : Bytes) -> Json {
   }
 }
 
+///|
 pub fn listen(
   context : (
     (String, (Json) -> Unit) -> Unit,
@@ -58,132 +67,116 @@ pub fn listen(
   binding.send = context.1
   binding.call = context.2
   let server = { port, mappings: {} }
-  (binding.listen)(
-    "http.request",
-    fn(result) {
-      match result {
-        [req, res] =>
-          match (req, res) {
-            (
-              { "method": String(res_method), "url": String(url) },
-              { "id": Number(id) },
-            ) => {
-              let urlObject = URL::parse(url)
-              let request : HttpRequest = {
-                url: Some(url),
-                path: Some(urlObject.path),
-                query: urlObject.query.or({}),
-                body: match req {
-                  { "body": body } => Some(body)
-                  _ => None
-                },
-              }
-              let response : HttpResponse = { id, statusCode: 200, headers: {} }
-              fn doHandler(reqFn : ((HttpRequest, HttpResponse) -> Json)?) {
-                match reqFn {
-                  Some(handler) => {
-                    let result = handler(request, response)
-                    match result {
-                      Object({ "_T": "html", "data": data }) => {
-                        response.writeHead(200, { "Content-Type": "text/html" })
-                        response.end(data)
-                      }
-                      Object({ "_T": "file", "path": String(path) }) => {
-                        let mime = @mimetype.new()
-                        let mimeType = mime.getType(path)
-                        response.writeHead(
-                          200,
-                          {
-                            "Content-Type": mimeType.or(
-                              "application/octet-stream",
-                            )
-                            |> String,
-                          },
-                        )
-                        response.end(result)
-                      }
-                      Object(_) => {
-                        response.writeHead(
-                          200,
-                          { "Content-Type": "application/json" },
-                        )
-                        response.end(result)
-                      }
-                      String(_) => {
-                        response.writeHead(
-                          200,
-                          { "Content-Type": "text/plain" },
-                        )
-                        response.end(result)
-                      }
-                      _ => {
-                        response.writeHead(
-                          200,
-                          { "Content-Type": "text/plain" },
-                        )
-                        response.end(result)
-                      }
+  (binding.listen)("http.request", fn(result) {
+    match result {
+      [req, res] =>
+        match (req, res) {
+          (
+            { "method": String(res_method), "url": String(url) },
+            { "id": Number(id) },
+          ) => {
+            let urlObject = URL::parse(url)
+            let request : HttpRequest = {
+              url: Some(url),
+              path: Some(urlObject.path),
+              query: urlObject.query.or({}),
+              body: match req {
+                { "body": body } => Some(body)
+                _ => None
+              },
+            }
+            let response : HttpResponse = { id, statusCode: 200, headers: {} }
+            fn doHandler(reqFn : ((HttpRequest, HttpResponse) -> Json)?) {
+              match reqFn {
+                Some(handler) => {
+                  let result = handler(request, response)
+                  match result {
+                    Object({ "_T": "html", "data": data }) => {
+                      response.writeHead(200, { "Content-Type": "text/html" })
+                      response.end(data)
+                    }
+                    Object({ "_T": "file", "path": String(path) }) => {
+                      let mime = @mimetype.new()
+                      let mimeType = mime.getType(path)
+                      response.writeHead(200, {
+                        "Content-Type": mimeType.or("application/octet-stream")
+                        |> String,
+                      })
+                      response.end(result)
+                    }
+                    Object(_) => {
+                      response.writeHead(200, {
+                        "Content-Type": "application/json",
+                      })
+                      response.end(result)
+                    }
+                    String(_) => {
+                      response.writeHead(200, { "Content-Type": "text/plain" })
+                      response.end(result)
+                    }
+                    _ => {
+                      response.writeHead(200, { "Content-Type": "text/plain" })
+                      response.end(result)
                     }
                   }
-                  None => {
-                    response.writeHead(404, { "Content-Type": "text/plain" })
-                    response.end("Not Found")
-                  }
+                }
+                None => {
+                  response.writeHead(404, { "Content-Type": "text/plain" })
+                  response.end("Not Found")
                 }
               }
-
-              let reqHead = res_method + " " + urlObject.path
-              let reqHeadAll = "ALL " + urlObject.path
-              let reqHeadAllMethod = res_method + " *"
-              println(@chalk.chalk().color(Green).render(reqHead))
-              doHandler(
-                if server.mappings.contains(reqHead) {
-                  server.mappings.get(reqHead)
-                } else if server.mappings.contains(reqHeadAll) {
-                  server.mappings.get(reqHeadAll)
-                } else if server.mappings.contains(reqHeadAllMethod) {
-                  server.mappings.get(reqHeadAllMethod)
-                } else {
-                  match
-                    server.mappings
-                    .keys()
-                    .find_first(
-                      fn(key) {
-                        match request.path {
-                          Some(path) =>
-                            match @regexp.compile?(key) {
-                              Ok(compiled) => compiled.matches(path).success()
-                              _ => false
-                            }
-                          None => false
-                        }
-                      },
-                    ) {
-                    Some(key) => server.mappings.get(key)
-                    None => server.mappings.get("ALL *")
-                  }
-                },
-              )
-              response.end("Not Found")
             }
-            _ => println("Invalid struct")
+
+            let reqHead = res_method + " " + urlObject.path
+            let reqHeadAll = "ALL " + urlObject.path
+            let reqHeadAllMethod = res_method + " *"
+            println(@chalk.chalk().color(@chalk.Green).render(reqHead))
+            doHandler(
+              if server.mappings.contains(reqHead) {
+                server.mappings.get(reqHead)
+              } else if server.mappings.contains(reqHeadAll) {
+                server.mappings.get(reqHeadAll)
+              } else if server.mappings.contains(reqHeadAllMethod) {
+                server.mappings.get(reqHeadAllMethod)
+              } else {
+                match
+                  server.mappings
+                  .keys()
+                  .find_first(fn(key) {
+                    match request.path {
+                      Some(path) =>
+                        match @regexp.compile?(key) {
+                          Ok(compiled) => compiled.matches(path).success()
+                          _ => false
+                        }
+                      None => false
+                    }
+                  }) {
+                  Some(key) => server.mappings.get(key)
+                  None => server.mappings.get("ALL *")
+                }
+              },
+            )
+            response.end("Not Found")
           }
-        _ => println("Invalid request")
-      }
-    },
-  )
+          _ => println("Invalid struct")
+        }
+      _ => println("Invalid request")
+    }
+  })
   (binding.send)("http.listen", Number(server.port.to_double()))
   println(
-    @chalk.chalk().color(Green).render("Server listening on port \{port}"),
+    @chalk.chalk()
+    .color(@chalk.Green)
+    .render("Server listening on port \{port}"),
   )
   println(
-    @chalk.chalk()
-    .color(@chalk.Colors::Blue)
-    .render("Local: http://127.0.0.1:\{port}/"),
+    @chalk.chalk().color(@chalk.Blue).render("Local: http://127.0.0.1:\{port}/"),
   )
   server
 }
 
+///|
 fn handleFunc(
   self : HttpServer,
   reqMethod : String,
@@ -194,6 +187,7 @@ fn handleFunc(
   (binding.send)("http.handle", [String(reqMethod), String(mapping)])
 }
 
+///|
 pub fn get(
   self : HttpServer,
   mapping : String,
@@ -202,6 +196,7 @@ pub fn get(
   handleFunc(self, "GET", mapping, handler)
 }
 
+///|
 pub fn post(
   self : HttpServer,
   mapping : String,
@@ -210,6 +205,7 @@ pub fn post(
   handleFunc(self, "POST", mapping, handler)
 }
 
+///|
 pub fn put(
   self : HttpServer,
   mapping : String,
@@ -218,6 +214,7 @@ pub fn put(
   handleFunc(self, "PUT", mapping, handler)
 }
 
+///|
 pub fn delete(
   self : HttpServer,
   mapping : String,
@@ -226,6 +223,7 @@ pub fn delete(
   handleFunc(self, "DELETE", mapping, handler)
 }
 
+///|
 pub fn patch(
   self : HttpServer,
   mapping : String,
@@ -234,6 +232,7 @@ pub fn patch(
   handleFunc(self, "PATCH", mapping, handler)
 }
 
+///|
 pub fn options(
   self : HttpServer,
   mapping : String,
@@ -242,6 +241,7 @@ pub fn options(
   handleFunc(self, "OPTIONS", mapping, handler)
 }
 
+///|
 pub fn head(
   self : HttpServer,
   mapping : String,
@@ -250,6 +250,7 @@ pub fn head(
   handleFunc(self, "HEAD", mapping, handler)
 }
 
+///|
 pub fn trace(
   self : HttpServer,
   mapping : String,
@@ -258,6 +259,7 @@ pub fn trace(
   handleFunc(self, "TRACE", mapping, handler)
 }
 
+///|
 pub fn connect(
   self : HttpServer,
   mapping : String,
@@ -266,6 +268,7 @@ pub fn connect(
   handleFunc(self, "CONNECT", mapping, handler)
 }
 
+///|
 pub fn all(
   self : HttpServer,
   mapping : String,
@@ -274,6 +277,7 @@ pub fn all(
   handleFunc(self, "ALL", mapping, handler)
 }
 
+///|
 pub fn writeHead(
   self : HttpResponse,
   statusCode : Json,
@@ -284,51 +288,47 @@ pub fn writeHead(
   self.headers = headers
 }
 
+///|
 pub fn end(self : HttpResponse, body : Json) -> Unit {
-  (binding.send)(
-    "http.end",
-    [Number(self.id), self.statusCode, self.headers, body],
-  )
+  (binding.send)("http.end", [
+    Number(self.id),
+    self.statusCode,
+    self.headers,
+    body,
+  ])
 }
 
 // pub fn readDir(callback : (Json) -> Unit, path : String) -> Unit {
 //   (binding.call)("fs.readDirSync", String(path), callback)
 // }
 
+///|
 pub fn readDir(path : String) -> Promise[Json] {
-  Promise::new(
-    fn(resolve : (Json) -> Unit, _reject : (Json) -> Unit) {
-      (binding.call)("fs.readDir", String(path), resolve)
-    },
-  )
+  Promise::new(fn(resolve : (Json) -> Unit, _reject : (Json) -> Unit) {
+    (binding.call)("fs.readDir", String(path), resolve)
+  })
 }
 
+///|
 pub fn readFile(path : String) -> Promise[Bytes] {
-  Promise::new(
-    fn(resolve, reject) {
-      (binding.call)(
-        "fs.readFile",
-        String(path),
-        fn {
-          Array(bytes) =>
-            bytes.map(
-              fn {
-                Number(n) => n.to_int().to_byte()
-                _ => (0).to_byte()
-              },
-            )
-            |> FixedArray::from_array
-            |> Bytes::of
-            |> resolve
-          _ => reject(Bytes::new(0))
-        },
-      )
-    },
-  )
+  Promise::new(fn(resolve, reject) {
+    (binding.call)("fs.readFile", String(path), fn {
+      Array(bytes) =>
+        bytes.map(fn {
+          Number(n) => n.to_int().to_byte()
+          _ => (0).to_byte()
+        })
+        |> FixedArray::from_array
+        |> Bytes::of
+        |> resolve
+      _ => reject(Bytes::new(0))
+    })
+  })
 }
 
+///|
 pub fn resource(self : HttpServer, from : String, to : String) -> Unit {
-  println(@chalk.chalk().color(Yellow).render("Route \{from} -> \{to}"))
+  println(@chalk.chalk().color(@chalk.Yellow).render("Route \{from} -> \{to}"))
   let fromRegExp : String = "\{from}.*"
   self.mappings[fromRegExp] = fn(req, res) {
     match req.path {
@@ -341,27 +341,24 @@ pub fn resource(self : HttpServer, from : String, to : String) -> Unit {
   }
 }
 
+///|
 pub fn exec(cmd : String) -> Promise[String] {
-  Promise::new(
-    fn(resolve, reject) {
-      (binding.call)(
-        "os.exec",
-        String(cmd),
-        fn {
-          String(s) => resolve(s)
-          _ => reject("")
-        },
-      )
-    },
-  )
+  Promise::new(fn(resolve, reject) {
+    (binding.call)("os.exec", String(cmd), fn {
+      String(s) => resolve(s)
+      _ => reject("")
+    })
+  })
 }
 
+///|
 pub(all) enum FetchCredentials {
   Omit
   SameOrigin
   Include
 }
 
+///|
 pub(all) enum FetchMode {
   CORS
   NoCORS
@@ -369,6 +366,7 @@ pub(all) enum FetchMode {
   Navigate
 }
 
+///|
 struct FetchResponse {
   status : Int
   statusText : String
@@ -376,6 +374,7 @@ struct FetchResponse {
   data : String
 } derive(ToJson, Show, Eq)
 
+///|
 pub fn fetch(
   url : String,
   reqMethod? : String,
@@ -384,79 +383,67 @@ pub fn fetch(
   credentials? : FetchCredentials,
   mode? : FetchMode
 ) -> Promise[FetchResponse] {
-  Promise::new(
-    fn(resolve, reject) {
-      let options : Map[String, Json] = {}
-      match reqMethod {
-        Some(str) => options["method"] = String(str)
-        _ => ()
-      }
-      match body {
-        Some(str) => options["body"] = String(str)
-        _ => ()
-      }
-      match headers {
-        Some(json) => options["headers"] = json.to_json()
-        _ => ()
-      }
-      match credentials {
-        Some(cred) =>
-          options["credentials"] = match cred {
-            Omit => String("omit")
-            SameOrigin => String("same-origin")
-            Include => String("include")
-          }
-        _ => ()
-      }
-      match mode {
-        Some(m) =>
-          options["mode"] = match m {
-            CORS => String("cors")
-            NoCORS => String("no-cors")
-            SameOrigin => String("same-origin")
-            Navigate => String("navigate")
-          }
-        _ => ()
-      }
-      (binding.call)(
-        "fetch",
-        [[String(url), options.to_json()]],
-        fn {
-          Object(
-            {
-              "data": String(data),
-              "statusText": String(statusText),
-              "status": Number(status),
-              "headers": Object(headers),
-            }
-          ) =>
-            resolve(
-              FetchResponse::{
-                status: status.to_int(),
-                statusText,
-                headers: headers
-                .iter()
-                .map(
-                  fn(i : (String, Json)) -> (String, String) {
-                    (i.0, i.1.as_string().or(""))
-                  },
-                )
-                .to_array()
-                |> Map::from_array,
-                data,
-              },
-            )
-          _ =>
-            reject(
-              FetchResponse::{
-                status: 0,
-                headers: {},
-                statusText: "",
-                data: "",
-              },
-            )
-        },
-      )
-    },
-  )
+  Promise::new(fn(resolve, reject) {
+    let options : Map[String, Json] = {}
+    match reqMethod {
+      Some(str) => options["method"] = String(str)
+      _ => ()
+    }
+    match body {
+      Some(str) => options["body"] = String(str)
+      _ => ()
+    }
+    match headers {
+      Some(json) => options["headers"] = json.to_json()
+      _ => ()
+    }
+    match credentials {
+      Some(cred) =>
+        options["credentials"] = match cred {
+          Omit => String("omit")
+          SameOrigin => String("same-origin")
+          Include => String("include")
+        }
+      _ => ()
+    }
+    match mode {
+      Some(m) =>
+        options["mode"] = match m {
+          CORS => String("cors")
+          NoCORS => String("no-cors")
+          SameOrigin => String("same-origin")
+          Navigate => String("navigate")
+        }
+      _ => ()
+    }
+    (binding.call)("fetch", [[String(url), options.to_json()]], fn {
+      Object(
+        {
+          "data": String(data),
+          "statusText": String(statusText),
+          "status": Number(status),
+          "headers": Object(headers),
+        }
+      ) =>
+        resolve(FetchResponse::{
+          status: status.to_int(),
+          statusText,
+          headers: headers
+          .iter()
+          .map(fn(i : (String, Json)) -> (String, String) {
+            (i.0, i.1.as_string().or(""))
+          })
+          .to_array()
+          |> Map::from_array,
+          data,
+        })
+      _ =>
+        reject(FetchResponse::{
+          status: 0,
+          headers: {},
+          statusText: "",
+          data: "",
+        })
+    })
+  })
 }

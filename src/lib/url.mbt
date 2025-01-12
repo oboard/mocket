@@ -1,12 +1,14 @@
-pub(readonly) struct URL {
+///|
+pub struct URL {
   protocol : String?
   host : String?
   port : Int?
   path : String
   query : Map[String, String]?
   fragment : String?
-}
+} derive(Show)
 
+///|
 pub fn URL::parse(rawUrl : String) -> URL {
   let url = rawUrl.trim_space()
   let mut scheme_end = url.index_of("://")
@@ -88,23 +90,24 @@ pub fn URL::parse(rawUrl : String) -> URL {
   return { protocol, host, port, path, query, fragment }
 }
 
+///|
 fn query_map(query_str : String) -> Map[String, String] {
   let query_array = query_str.split("&")
-  query_array.map(
-    fn(s) {
-      let array = s.split("=").to_array()
-      let key = array[0]
-      let value = array[1]
-      return (key, value)
-    },
-  )
+  query_array.map(fn(s) {
+    let array = s.split("=").to_array()
+    let key = array[0]
+    let value = array[1]
+    return (key, value)
+  })
   |> Map::from_iter
 }
 
-pub fn URL::output(self : URL, logger : Logger) -> Unit {
+///|
+pub fn URL::output(self : URL, logger : &Logger) -> Unit {
   logger.write_string(self.to_string())
 }
 
+///|
 pub fn URL::to_string(self : URL) -> String {
   let protocol = match self.protocol {
     Some(p) => p + "://"
@@ -128,12 +131,10 @@ pub fn URL::to_string(self : URL) -> String {
       String::concat(
         q
         .to_array()
-        .map(
-          fn(item) {
-            let (k, v) = item
-            k + "=" + v
-          },
-        ),
+        .map(fn(item) {
+          let (k, v) = item
+          k + "=" + v
+        }),
         separator="&",
       )
     None => ""

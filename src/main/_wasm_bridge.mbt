@@ -43,7 +43,7 @@ pub fn h_rd(data : Int) -> Unit {
 }
 
 pub fn h_re() -> Unit {
-  let message = receiver.buffer.to_unchecked_string()
+  let message = receiver.buffer.to_bytes().to_unchecked_string()
   match @json.parse?(message) {
     Ok([String(event_name), event_data]) =>
       match event_name {
