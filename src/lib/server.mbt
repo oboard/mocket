@@ -8,7 +8,7 @@ type! NetworkError  derive(Show)
 type! ExecError  derive(Show)
 
 ///|
-// fn run_async(f :  async() -> Unit) -> Unit = "%async.run"
+fn run_async(f :  async() -> Unit) -> Unit = "%async.run"
 
 ///|
 async fn suspend[T, E : Error](f : ((T) -> Unit, (E) -> Unit) -> Unit) -> T!E = "%async.suspend"
@@ -38,7 +38,7 @@ pub(all) struct HttpRequest {
 ///|
 pub(all) struct HttpServer {
   port : Int
-  mappings : Map[String, (HttpRequest, HttpResponse) -> Json]
+  mappings : Map[String,  async(HttpRequest, HttpResponse) -> Json]
 }
 
 ///|
@@ -101,40 +101,43 @@ pub fn listen(
               },
             }
             let response : HttpResponse = { id, statusCode: 200, headers: {} }
-            fn doHandler(reqFn : ((HttpRequest, HttpResponse) -> Json)?) {
+            fn doHandler(reqFn : ( async(HttpRequest, HttpResponse) -> Json)?) {
               match reqFn {
-                Some(handler) => {
-                  let result = handler(request, response)
-                  match result {
-                    Object({ "_T": "html", "data": data }) => {
-                      response.writeHead(200, { "Content-Type": "text/html" })
-                      response.end(data)
+                Some(handler) =>
+                  run_async(fn() {
+                    let result = handler!!(request, response)
+                    match result {
+                      Object({ "_T": "html", "data": data }) => {
+                        response.writeHead(200, { "Content-Type": "text/html" })
+                        response.end(data)
+                      }
+                      Object({ "_T": "file", "path": String(path) }) => {
+                        let mime = @mimetype.new()
+                        let mimeType = mime.getType(path)
+                        response.writeHead(200, {
+                          "Content-Type": mimeType.or(
+                            "application/octet-stream",
+                          )
+                          |> String,
+                        })
+                        response.end(result)
+                      }
+                      Object(_) => {
+                        response.writeHead(200, {
+                          "Content-Type": "application/json",
+                        })
+                        response.end(result)
+                      }
+                      String(_) => {
+                        response.writeHead(200, { "Content-Type": "text/plain" })
+                        response.end(result)
+                      }
+                      _ => {
+                        response.writeHead(200, { "Content-Type": "text/plain" })
+                        response.end(result)
+                      }
                     }
-                    Object({ "_T": "file", "path": String(path) }) => {
-                      let mime = @mimetype.new()
-                      let mimeType = mime.getType(path)
-                      response.writeHead(200, {
-                        "Content-Type": mimeType.or("application/octet-stream")
-                        |> String,
-                      })
-                      response.end(result)
-                    }
-                    Object(_) => {
-                      response.writeHead(200, {
-                        "Content-Type": "application/json",
-                      })
-                      response.end(result)
-                    }
-                    String(_) => {
-                      response.writeHead(200, { "Content-Type": "text/plain" })
-                      response.end(result)
-                    }
-                    _ => {
-                      response.writeHead(200, { "Content-Type": "text/plain" })
-                      response.end(result)
-                    }
-                  }
-                }
+                  })
                 None => {
                   response.writeHead(404, { "Content-Type": "text/plain" })
                   response.end("Not Found")
@@ -196,7 +199,7 @@ fn handleFunc(
   self : HttpServer,
   reqMethod : String,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json
+  handler :  async(HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   self.mappings[reqMethod + " " + mapping] = handler
   (binding.send)("http.handle", [String(reqMethod), String(mapping)])
@@ -206,7 +209,7 @@ fn handleFunc(
 pub fn get(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json
+  handler :  async(HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "GET", mapping, handler)
 }
@@ -215,7 +218,7 @@ pub fn get(
 pub fn post(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json
+  handler :  async(HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "POST", mapping, handler)
 }
@@ -224,7 +227,7 @@ pub fn post(
 pub fn put(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json
+  handler :  async(HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "PUT", mapping, handler)
 }
@@ -233,7 +236,7 @@ pub fn put(
 pub fn delete(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json
+  handler :  async(HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "DELETE", mapping, handler)
 }
@@ -242,7 +245,7 @@ pub fn delete(
 pub fn patch(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json
+  handler :  async(HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "PATCH", mapping, handler)
 }
@@ -251,7 +254,7 @@ pub fn patch(
 pub fn options(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json
+  handler :  async(HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "OPTIONS", mapping, handler)
 }
@@ -260,7 +263,7 @@ pub fn options(
 pub fn head(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json
+  handler :  async(HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "HEAD", mapping, handler)
 }
@@ -269,7 +272,7 @@ pub fn head(
 pub fn trace(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json
+  handler :  async(HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "TRACE", mapping, handler)
 }
@@ -278,7 +281,7 @@ pub fn trace(
 pub fn connect(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json
+  handler :  async(HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "CONNECT", mapping, handler)
 }
@@ -287,7 +290,7 @@ pub fn connect(
 pub fn all(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json
+  handler :  async(HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "ALL", mapping, handler)
 }

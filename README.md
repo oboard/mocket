@@ -22,6 +22,18 @@ The library now supports async/await for I/O operations:
 Async functions can be called using the `!!` operator and must be wrapped in
 `run_async` when called from synchronous contexts.
 
+### Async /GET Example
+
+```moonbit
+// async json data example
+server.get("/async_data", async fn(
+  _req : @mocket.HttpRequest,
+  _res : @mocket.HttpResponse
+) {
+  { "name": "John Doe", "age": 30, "city": "New York" }
+})
+```
+
 ```moonbit
 run_async(fn() {
   try {

@@ -40,6 +40,13 @@ fn main {
   ) {
     String("<h1>Hello, World!</h1>")
   })
+  // async json data example
+  server.get("/async_data", async fn(
+    _req : @mocket.HttpRequest,
+    _res : @mocket.HttpResponse
+  ) {
+    { "name": "John Doe", "age": 30, "city": "New York" }
+  })
   // json data example
   server.get("/data", fn(
     _req : @mocket.HttpRequest,
