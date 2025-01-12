@@ -10,21 +10,66 @@ A web framework for MoonBit.
 
 Minimum Example: https://github.com/oboard/mocket_example
 
+## Async Support
+
+The library now supports async/await for I/O operations:
+
+- `readFile`: Asynchronously read files
+- `readDir`: Asynchronously read directories
+- `exec`: Asynchronously execute commands
+- `fetch`: Asynchronously make HTTP requests
+
+Async functions can be called using the `!!` operator and must be wrapped in
+`run_async` when called from synchronous contexts.
+
+```moonbit
+run_async(fn() {
+  try {
+    let result = @mocket.exec!!("ls")
+    println(result)
+  } catch {
+    err => println("Error executing command: \{err}")
+  }
+})
+run_async(fn() {
+  try {
+    let response = @mocket.fetch!!("https://api64.ipify.org/")
+    println(response)
+  } catch {
+    err => println("Error fetching data: \{err}")
+  }
+})
+```
+
+## Error Handling
+
+Async operations return `Result` types or use the `!` error type syntax:
+
+- `readFile`: Returns `Bytes!Error`
+- `exec`: Returns `String!Error`
+- `fetch`: Returns `FetchResponse!NetworkError`
+
+Use `try/catch` blocks to handle potential errors.
+
 ### MocketGo Runtime (Experimental)
-Download the latest release from:
-https://github.com/oboard/mocketgo/releases
+
+Download the latest release from: https://github.com/oboard/mocketgo/releases
+
 #### Linux/MacOS:
+
 ```bash
 chmod +x ./mocketgo
 ./mocketgo main.wasm
 ```
 
 #### Windows:
+
 ```bat
 mocketgo.exe main.wasm
 ```
 
 ### Node.js Runtime
+
 #### Prerequisites
 
 - MoonBit SDK installed
@@ -51,7 +96,7 @@ start.bat
 
 ## Example usage
 
-```rust
+```moonbit
 // Example usage of mocket package in MoonBit
 
 fn main {
@@ -120,5 +165,4 @@ fn main {
   // Example: http://localhost:4000/static/logo.jpg => ./logo.jpg
   server.static("/static/", "./")
 }
-
 ```

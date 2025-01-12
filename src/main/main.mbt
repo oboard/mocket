@@ -84,8 +84,8 @@ fn main {
   // static file serving example
   // Example: http://localhost:4000/static/logo.jpg => ./logo.jpg
   server.resource("/static/", "./")
+  
   run_async(fn() {
-    // 修改exec示例
     try {
       let result = @mocket.exec!!("ls")
       println(result)
@@ -94,7 +94,6 @@ fn main {
     }
   })
   run_async(fn() {
-    // 修改fetch示例
     try {
       let response = @mocket.fetch!!("https://api64.ipify.org/")
       println(response)
