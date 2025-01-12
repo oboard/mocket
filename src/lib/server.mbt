@@ -1,4 +1,19 @@
 ///|
+type! IOError  derive(Show)
+
+///|
+type! NetworkError  derive(Show)
+
+///|
+type! ExecError  derive(Show)
+
+///|
+// fn run_async(f :  async() -> Unit) -> Unit = "%async.run"
+
+///|
+async fn suspend[T, E : Error](f : ((T) -> Unit, (E) -> Unit) -> Unit) -> T!E = "%async.suspend"
+
+///|
 pub struct HeavenBinding {
   mut listen : (String, (Json) -> Unit) -> Unit
   mut send : (String, Json) -> Unit
@@ -298,20 +313,17 @@ pub fn end(self : HttpResponse, body : Json) -> Unit {
   ])
 }
 
-// pub fn readDir(callback : (Json) -> Unit, path : String) -> Unit {
-//   (binding.call)("fs.readDirSync", String(path), callback)
-// }
-
 ///|
-pub fn readDir(path : String) -> Promise[Json] {
-  Promise::new(fn(resolve : (Json) -> Unit, _reject : (Json) -> Unit) {
+pub async fn readDir(path : String) -> Json!Error {
+  suspend!!(fn(resolve, _reject) {
     (binding.call)("fs.readDir", String(path), resolve)
   })
 }
 
+// ///|
 ///|
-pub fn readFile(path : String) -> Promise[Bytes] {
-  Promise::new(fn(resolve, reject) {
+pub async fn readFile(path : String) -> Bytes!Error {
+  suspend!!(fn(resolve, reject) {
     (binding.call)("fs.readFile", String(path), fn {
       Array(bytes) =>
         bytes.map(fn {
@@ -321,7 +333,17 @@ pub fn readFile(path : String) -> Promise[Bytes] {
         |> FixedArray::from_array
         |> Bytes::of
         |> resolve
-      _ => reject(Bytes::new(0))
+      _ => reject(IOError)
+    })
+  })
+}
+
+///|
+pub async fn exec(cmd : String) -> String!Error {
+  suspend!!(fn(resolve, reject) {
+    (binding.call)("os.exec", String(cmd), fn {
+      String(s) => resolve(s)
+      _ => reject(ExecError)
     })
   })
 }
@@ -339,16 +361,6 @@ pub fn resource(self : HttpServer, from : String, to : String) -> Unit {
       }
     }
   }
-}
-
-///|
-pub fn exec(cmd : String) -> Promise[String] {
-  Promise::new(fn(resolve, reject) {
-    (binding.call)("os.exec", String(cmd), fn {
-      String(s) => resolve(s)
-      _ => reject("")
-    })
-  })
 }
 
 ///|
@@ -375,15 +387,15 @@ struct FetchResponse {
 } derive(ToJson, Show, Eq)
 
 ///|
-pub fn fetch(
+pub async fn fetch(
   url : String,
   reqMethod? : String,
   body? : String,
   headers? : Map[String, String],
   credentials? : FetchCredentials,
   mode? : FetchMode
-) -> Promise[FetchResponse] {
-  Promise::new(fn(resolve, reject) {
+) -> FetchResponse!NetworkError {
+  suspend!!(fn(resolve, reject) {
     let options : Map[String, Json] = {}
     match reqMethod {
       Some(str) => options["method"] = String(str)
@@ -437,13 +449,7 @@ pub fn fetch(
           |> Map::from_array,
           data,
         })
-      _ =>
-        reject(FetchResponse::{
-          status: 0,
-          headers: {},
-          statusText: "",
-          data: "",
-        })
+      _ => reject(NetworkError)
     })
   })
 }
