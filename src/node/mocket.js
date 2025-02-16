@@ -61,12 +61,12 @@ export default class Mocket {
       child_process.execSync(cmd).toString()
     );
 
-    heaven.listenEvent("fetch", (args) => 
+    heaven.listenEvent("fetch", (args) =>
       fetch(...args).then(async (res) => {
-         const headersObj = {};
-         res.headers.forEach((value, name) => {
-             headersObj[name] = value;
-         });
+        const headersObj = {};
+        res.headers.forEach((value, name) => {
+          headersObj[name] = value;
+        });
         return {
           "headers": headersObj,
           "status": res.status,
@@ -107,7 +107,7 @@ export default class Mocket {
             callRequest();
           }
         })
-        .listen(port, () => {});
+        .listen(port, () => { });
     });
 
     heaven.listenEvent("http.writeHead", (id, statusCode, headers) => {

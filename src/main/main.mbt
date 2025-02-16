@@ -2,7 +2,7 @@
 
 // `run_async` spawn a new coroutine and execute an async function in it
 ///|
-fn run_async(f :  async() -> Unit) -> Unit = "%async.run"
+fn run_async(f : async () -> Unit) -> Unit = "%async.run"
 
 // `suspend` will suspend the execution of the current coroutine.
 // The suspension will be handled by a callback passed to `suspend`
@@ -91,7 +91,6 @@ fn main {
   // static file serving example
   // Example: http://localhost:4000/static/logo.jpg => ./logo.jpg
   server.resource("/static/", "./")
-  
   run_async(fn() {
     try {
       let result = @mocket.exec!!("ls")

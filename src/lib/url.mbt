@@ -146,6 +146,7 @@ pub fn URL::to_string(self : URL) -> String {
   protocol + host + port_str + path + query_str + fragment_str
 }
 
+///|
 test "parse_url" {
   let url = "/path/to/resource?name=ferret&color=purple#section1"
   let result = URL::parse(url)
