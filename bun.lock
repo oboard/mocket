@@ -1,0 +1,13 @@
+{
+  "lockfileVersion": 1,
+  "workspaces": {
+    "": {
+      "dependencies": {
+        "regexp": "yj-qin/regexp",
+      },
+    },
+  },
+  "packages": {
+    "regexp": ["regexp@github:yj-qin/regexp#2ff4079", {}, "yj-qin-regexp-2ff4079"],
+  }
+}

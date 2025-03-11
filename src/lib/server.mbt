@@ -1,11 +1,11 @@
 ///|
-type! IOError  derive(Show)
+pub type! IOError  derive(Show)
 
 ///|
-type! NetworkError  derive(Show)
+pub type! NetworkError  derive(Show)
 
 ///|
-type! ExecError  derive(Show)
+pub type! ExecError  derive(Show)
 
 ///|
 fn run_async(f : async () -> Unit) -> Unit = "%async.run"
@@ -87,8 +87,8 @@ pub fn listen(
       [req, res] =>
         match (req, res) {
           (
-            { "method": String(res_method), "url": String(url) },
-            { "id": Number(id) },
+            { "method": String(res_method), "url": String(url), .. },
+            { "id": Number(id), .. },
           ) => {
             let urlObject = URL::parse(url)
             let request : HttpRequest = {
@@ -96,7 +96,7 @@ pub fn listen(
               path: Some(urlObject.path),
               query: urlObject.query.or({}),
               body: match req {
-                { "body": body } => Some(body)
+                { "body": body, .. } => Some(body)
                 _ => None
               },
             }
@@ -107,11 +107,11 @@ pub fn listen(
                   run_async(fn() {
                     let result = handler!!(request, response)
                     match result {
-                      Object({ "_T": "html", "data": data }) => {
+                      Object({ "_T": "html", "data": data, .. }) => {
                         response.writeHead(200, { "Content-Type": "text/html" })
                         response.end(data)
                       }
-                      Object({ "_T": "file", "path": String(path) }) => {
+                      Object({ "_T": "file", "path": String(path), .. }) => {
                         let mime = @mimetype.T::new()
                         let mimeType = mime.getType(path)
                         response.writeHead(200, {
@@ -438,6 +438,7 @@ pub async fn fetch(
           "statusText": String(statusText),
           "status": Number(status),
           "headers": Object(headers),
+          ..
         }
       ) =>
         resolve(FetchResponse::{

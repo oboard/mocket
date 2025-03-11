@@ -1,0 +1,43 @@
+package yj-qin/regexp
+
+// Values
+fn compile(String) -> RegExp!
+
+// Types and methods
+type MatchResult
+impl MatchResult {
+  captures(Self) -> Array[String]
+  named_captures(Self) -> Map[String, String]
+  success(Self) -> Bool
+}
+impl Show for MatchResult
+
+pub(all) type! ParseError {
+  InternalParserError
+  UnmatchedGroupBegin(Int)
+  UnmatchedGroupEnd(Int)
+  UnmatchedGroupName(Int)
+  EmptyGroupName(Int)
+  EmptyGroup(Int)
+  UnmatchedCharClassEnd(Int)
+  UnspecifiedLoopTarget(Int)
+  InvalidLoop(Int)
+  LoopCountOutOfRange(Int)
+  LoopMaxCountSmallerThanMinCount(Int)
+  EndPatternAtEscape(Int)
+  ClassMissingBracket(Int)
+  GroupMissingParen(Int)
+}
+impl Eq for ParseError
+impl Show for ParseError
+
+type RegExp
+impl RegExp {
+  matches(Self, String, start~ : Int = .., end~ : Int = ..) -> MatchResult
+  pattern(Self) -> String
+}
+
+// Type aliases
+
+// Traits
+
