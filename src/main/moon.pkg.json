@@ -4,6 +4,10 @@
     {
       "path": "oboard/mocket/lib",
       "alias": "mocket"
+    },
+    {
+      "path": "oboard/mocket/http",
+      "alias": "mio"
     }
   ]
 }

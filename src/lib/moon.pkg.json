@@ -1,8 +1,21 @@
 {
   "import": [
-    "rami3l/js-ffi/js"
-  ],
-  "targets": {
-    "mocket_js.mbt": ["js"]
-  }
+    {
+      "path": "oboard/mimetype/lib",
+      "alias": "mimetype"
+    },
+    {
+      "path": "yj-qin/regexp",
+      "alias": "regexp"
+    },
+    {
+      "path": "Lampese/moonbit-chalk",
+      "alias": "chalk"
+    },
+    {
+      "path": "Yoorkin/rabbit-tea/url",
+      "alias": "url"
+    },
+    "oboard/mocket/http"
+  ]
 }
