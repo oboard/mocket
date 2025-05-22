@@ -11,25 +11,26 @@ pub struct URL {
 ///|
 pub fn URL::parse(rawUrl : String) -> URL {
   let url = rawUrl.trim_space()
-  let mut scheme_end = url.index_of("://")
-  if scheme_end == -1 {
-    scheme_end = 0
-  }
-  let fragment_start = url.index_of("#")
-  let query_start = url.index_of("?")
+  let scheme_end = url.find("://").or(0)
+  let fragment_start = url.find("#").or(-1)
+  let query_start = url.find("?").or(-1)
   let query_end = if fragment_start != -1 {
     fragment_start
   } else {
     url.length()
   }
-  let port_start = url.index_of(":", from=scheme_end + 3)
+  let port_start = if scheme_end + 3 < url.length() {
+    url.charcodes(start=scheme_end + 3).find(":").or(-1)
+  } else {
+    -1
+  }
   let port_end = if port_start != -1 {
-    url.index_of("/", from=port_start)
+    url.charcodes(start=port_start).find("/").or(-1)
   } else {
     0
   }
   let protocol = if scheme_end != -1 {
-    Some(url.substring(start=0, end=scheme_end))
+    Some(url.charcodes(start=0, end=scheme_end).to_string())
   } else {
     None
   }
@@ -44,15 +45,13 @@ pub fn URL::parse(rawUrl : String) -> URL {
     url.length()
   }
   let host = if url.contains(".") {
-    Some(url.substring(start=host_start, end=host_end))
+    Some(url.charcodes(start=host_start, end=host_end).to_string())
   } else {
     None
   }
-  let port_str = url.substring(start=port_start + 1, end=port_end)
+  let port_str = url.charcodes(start=port_start + 1, end=port_end)
   let port = if port_str.length() > 0 {
-    try {
-      Some(@strconv.parse_int!(port_str))
-    } catch {
+    try Some(@strconv.parse_int!(port_str.to_string())) catch {
       _ => None
     }
   } else {
@@ -75,15 +74,15 @@ pub fn URL::parse(rawUrl : String) -> URL {
     url.length()
   }
   // println("path_Start: \(path_start), path_End: \(path_end)")
-  let path = url.substring(start=path_start, end=path_end)
+  let path = url.charcodes(start=path_start, end=path_end).to_string()
   let query = if query_start != -1 {
-    let query_str = url.substring(start=query_start + 1, end=query_end)
-    Some(query_map(query_str))
+    let query_str = url.charcodes(start=query_start + 1, end=query_end)
+    Some(query_map(query_str.to_string()))
   } else {
     None
   }
   let fragment = if fragment_start != -1 {
-    Some(url.substring(start=fragment_start + 1, end=url.length()))
+    Some(url.charcodes(start=fragment_start + 1, end=url.length()).to_string())
   } else {
     None
   }
@@ -95,8 +94,8 @@ fn query_map(query_str : String) -> Map[String, String] {
   let query_array = query_str.split("&")
   query_array.map(fn(s) {
     let array = s.split("=").to_array()
-    let key = array[0]
-    let value = array[1]
+    let key = array[0].to_string()
+    let value = array[1].to_string()
     return (key, value)
   })
   |> Map::from_iter
@@ -128,7 +127,7 @@ pub fn URL::to_string(self : URL) -> String {
   let query_str = match query {
     Some(q) =>
       "?" +
-      String::concat(
+      @string.concat(
         q
         .to_array()
         .map(fn(item) {
@@ -153,4 +152,13 @@ test "parse_url" {
   // println(url)
   // println(result)
   inspect!(result.path, content="/path/to/resource")
+}
+
+///|
+test "empty_url" {
+  let url = ""
+  let result = URL::parse(url)
+  // println(url)
+  // println(result)
+  inspect!(result.path, content="")
 }

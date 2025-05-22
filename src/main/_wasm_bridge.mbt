@@ -27,7 +27,7 @@ pub fn call_event(
     callback(data)
     receiver.listener_map.remove(id)
   })
-  [String(event_name), data, String(id)] |> send
+  [Json::string(event_name), data, Json::string(id)] |> send
 }
 
 ///|
@@ -42,7 +42,7 @@ let receiver : Receiver = { buffer: @buffer.new(), listener_map: Map::new() }
 ///|
 pub fn h_rd(data : Int) -> Unit {
   if data != 0 {
-    receiver.buffer.write_char(Char::from_int(data))
+    receiver.buffer.write_char(Int::unsafe_to_char(data))
   }
 }
 
@@ -53,7 +53,7 @@ pub fn h_re() -> Unit {
     Ok([String(event_name), event_data]) =>
       match event_name {
         _ =>
-          match receiver.listener_map[event_name] {
+          match receiver.listener_map.get(event_name) {
             Some(listener) => listener(event_data)
             None => println("No listener for event type: " + event_name)
           }
@@ -71,7 +71,7 @@ pub fn listen_event(event_name : String, callback : (Json) -> Unit) -> Unit {
 
 ///|
 pub fn send_event(event_name : String, event_data : Json) -> Unit {
-  [String(event_name), event_data] |> send
+  [Json::string(event_name), event_data] |> send
 }
 
 ///|
@@ -89,8 +89,8 @@ pub fn addEventListener(
 ) -> Unit {
   ignore(
     send_event("\{objectName}.addEventListener", [
-      String(eventName),
-      String("\{objectName}.\{eventName}"),
+      Json::string(eventName),
+      Json::string("\{objectName}.\{eventName}"),
     ]),
   )
   listen_event("\{objectName}.\{eventName}", callback)

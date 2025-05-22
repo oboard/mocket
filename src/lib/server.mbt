@@ -8,10 +8,10 @@ pub type! NetworkError  derive(Show)
 pub type! ExecError  derive(Show)
 
 ///|
-fn run_async(f : async () -> Unit) -> Unit = "%async.run"
+fn run_async(f : () -> Unit!Async) -> Unit = "%async.run"
 
 ///|
-async fn suspend[T, E : Error](f : ((T) -> Unit, (E) -> Unit) -> Unit) -> T!E = "%async.suspend"
+async fn[T, E : Error] suspend(f : ((T) -> Unit, (E) -> Unit) -> Unit) -> T!E = "%async.suspend"
 
 ///|
 pub struct HeavenBinding {
@@ -38,7 +38,7 @@ pub(all) struct HttpRequest {
 ///|
 pub(all) struct HttpServer {
   port : Int
-  mappings : Map[String, async (HttpRequest, HttpResponse) -> Json]
+  mappings : Map[String, (HttpRequest, HttpResponse) -> Json!Async]
 }
 
 ///|
@@ -50,12 +50,12 @@ let binding : HeavenBinding = {
 
 ///|
 pub fn html(data : String) -> Json {
-  { "_T": "html", "data": String(data) }
+  { "_T": "html", "data": Json::string(data) }
 }
 
 ///|
 pub fn file(path : String) -> Json {
-  { "_T": "file", "path": String(path) }
+  { "_T": "file", "path": Json::string(path) }
 }
 
 ///|
@@ -64,8 +64,8 @@ pub fn buffer(data : Bytes) -> Json {
     "_T": "buffer",
     "data": data
     .to_array()
-    .map(fn(n : Byte) -> Json { Number(n.to_int().to_double()) })
-    |> Array,
+    .map(fn(n : Byte) -> Json { Json::number(n.to_int().to_double()) })
+    .to_json(),
   }
 }
 
@@ -101,11 +101,11 @@ pub fn listen(
               },
             }
             let response : HttpResponse = { id, statusCode: 200, headers: {} }
-            fn doHandler(reqFn : (async (HttpRequest, HttpResponse) -> Json)?) {
+            fn doHandler(reqFn : ((HttpRequest, HttpResponse) -> Json!Async)?) {
               match reqFn {
                 Some(handler) =>
                   run_async(fn() {
-                    let result = handler!!(request, response)
+                    let result = handler!(request, response)
                     match result {
                       Object({ "_T": "html", "data": data, .. }) => {
                         response.writeHead(200, { "Content-Type": "text/html" })
@@ -113,12 +113,11 @@ pub fn listen(
                       }
                       Object({ "_T": "file", "path": String(path), .. }) => {
                         let mime = @mimetype.T::new()
-                        let mimeType = mime.getType(path)
+                        let mimeType = mime.get_type(path)
                         response.writeHead(200, {
-                          "Content-Type": mimeType.or(
-                            "application/octet-stream",
-                          )
-                          |> String,
+                          "Content-Type": mimeType
+                          .or("application/octet-stream")
+                          .to_json(),
                         })
                         response.end(result)
                       }
@@ -182,7 +181,7 @@ pub fn listen(
       _ => println("Invalid request")
     }
   })
-  (binding.send)("http.listen", Number(server.port.to_double()))
+  (binding.send)("http.listen", server.port.to_json())
   println(
     @chalk.chalk()
     .color(@chalk.Green)
@@ -199,17 +198,17 @@ fn handleFunc(
   self : HttpServer,
   reqMethod : String,
   mapping : String,
-  handler : async (HttpRequest, HttpResponse) -> Json
+  handler : (HttpRequest, HttpResponse) -> Json!Async
 ) -> Unit {
   self.mappings[reqMethod + " " + mapping] = handler
-  (binding.send)("http.handle", [String(reqMethod), String(mapping)])
+  (binding.send)("http.handle", [Json::string(reqMethod), Json::string(mapping)])
 }
 
 ///|
 pub fn get(
   self : HttpServer,
   mapping : String,
-  handler : async (HttpRequest, HttpResponse) -> Json
+  handler : (HttpRequest, HttpResponse) -> Json!Async
 ) -> Unit {
   handleFunc(self, "GET", mapping, handler)
 }
@@ -218,7 +217,7 @@ pub fn get(
 pub fn post(
   self : HttpServer,
   mapping : String,
-  handler : async (HttpRequest, HttpResponse) -> Json
+  handler : (HttpRequest, HttpResponse) -> Json!Async
 ) -> Unit {
   handleFunc(self, "POST", mapping, handler)
 }
@@ -227,7 +226,7 @@ pub fn post(
 pub fn put(
   self : HttpServer,
   mapping : String,
-  handler : async (HttpRequest, HttpResponse) -> Json
+  handler : (HttpRequest, HttpResponse) -> Json!Async
 ) -> Unit {
   handleFunc(self, "PUT", mapping, handler)
 }
@@ -236,7 +235,7 @@ pub fn put(
 pub fn delete(
   self : HttpServer,
   mapping : String,
-  handler : async (HttpRequest, HttpResponse) -> Json
+  handler : (HttpRequest, HttpResponse) -> Json!Async
 ) -> Unit {
   handleFunc(self, "DELETE", mapping, handler)
 }
@@ -245,7 +244,7 @@ pub fn delete(
 pub fn patch(
   self : HttpServer,
   mapping : String,
-  handler : async (HttpRequest, HttpResponse) -> Json
+  handler : (HttpRequest, HttpResponse) -> Json!Async
 ) -> Unit {
   handleFunc(self, "PATCH", mapping, handler)
 }
@@ -254,7 +253,7 @@ pub fn patch(
 pub fn options(
   self : HttpServer,
   mapping : String,
-  handler : async (HttpRequest, HttpResponse) -> Json
+  handler : (HttpRequest, HttpResponse) -> Json!Async
 ) -> Unit {
   handleFunc(self, "OPTIONS", mapping, handler)
 }
@@ -263,7 +262,7 @@ pub fn options(
 pub fn head(
   self : HttpServer,
   mapping : String,
-  handler : async (HttpRequest, HttpResponse) -> Json
+  handler : (HttpRequest, HttpResponse) -> Json!Async
 ) -> Unit {
   handleFunc(self, "HEAD", mapping, handler)
 }
@@ -272,7 +271,7 @@ pub fn head(
 pub fn trace(
   self : HttpServer,
   mapping : String,
-  handler : async (HttpRequest, HttpResponse) -> Json
+  handler : (HttpRequest, HttpResponse) -> Json!Async
 ) -> Unit {
   handleFunc(self, "TRACE", mapping, handler)
 }
@@ -281,7 +280,7 @@ pub fn trace(
 pub fn connect(
   self : HttpServer,
   mapping : String,
-  handler : async (HttpRequest, HttpResponse) -> Json
+  handler : (HttpRequest, HttpResponse) -> Json!Async
 ) -> Unit {
   handleFunc(self, "CONNECT", mapping, handler)
 }
@@ -290,7 +289,7 @@ pub fn connect(
 pub fn all(
   self : HttpServer,
   mapping : String,
-  handler : async (HttpRequest, HttpResponse) -> Json
+  handler : (HttpRequest, HttpResponse) -> Json!Async
 ) -> Unit {
   handleFunc(self, "ALL", mapping, handler)
 }
@@ -309,7 +308,7 @@ pub fn writeHead(
 ///|
 pub fn end(self : HttpResponse, body : Json) -> Unit {
   (binding.send)("http.end", [
-    Number(self.id),
+    Json::number(self.id),
     self.statusCode,
     self.headers,
     body,
@@ -318,16 +317,16 @@ pub fn end(self : HttpResponse, body : Json) -> Unit {
 
 ///|
 pub async fn readDir(path : String) -> Json!Error {
-  suspend!!(fn(resolve, _reject) {
-    (binding.call)("fs.readDir", String(path), resolve)
+  suspend!(fn(resolve, _reject) {
+    (binding.call)("fs.readDir", Json::string(path), resolve)
   })
 }
 
 // ///|
 ///|
 pub async fn readFile(path : String) -> Bytes!Error {
-  suspend!!(fn(resolve, reject) {
-    (binding.call)("fs.readFile", String(path), fn {
+  suspend!(fn(resolve, reject) {
+    (binding.call)("fs.readFile", Json::string(path), fn {
       Array(bytes) =>
         bytes.map(fn {
           Number(n) => n.to_int().to_byte()
@@ -343,8 +342,8 @@ pub async fn readFile(path : String) -> Bytes!Error {
 
 ///|
 pub async fn exec(cmd : String) -> String!Error {
-  suspend!!(fn(resolve, reject) {
-    (binding.call)("os.exec", String(cmd), fn {
+  suspend!(fn(resolve, reject) {
+    (binding.call)("os.exec", Json::string(cmd), fn {
       String(s) => resolve(s)
       _ => reject(ExecError)
     })
@@ -360,7 +359,7 @@ pub fn resource(self : HttpServer, from : String, to : String) -> Unit {
       Some(path) => file(to + path.substring(start=from.length()))
       _ => {
         res.writeHead(404, { "Content-Type": "text/plain" })
-        String("Not Found")
+        Json::string("Not Found")
       }
     }
   }
@@ -398,14 +397,14 @@ pub async fn fetch(
   credentials? : FetchCredentials,
   mode? : FetchMode
 ) -> FetchResponse!NetworkError {
-  suspend!!(fn(resolve, reject) {
+  suspend!(fn(resolve, reject) {
     let options : Map[String, Json] = {}
     match reqMethod {
-      Some(str) => options["method"] = String(str)
+      Some(str) => options["method"] = Json::string(str)
       _ => ()
     }
     match body {
-      Some(str) => options["body"] = String(str)
+      Some(str) => options["body"] = Json::string(str)
       _ => ()
     }
     match headers {
@@ -415,23 +414,23 @@ pub async fn fetch(
     match credentials {
       Some(cred) =>
         options["credentials"] = match cred {
-          Omit => String("omit")
-          SameOrigin => String("same-origin")
-          Include => String("include")
+          Omit => Json::string("omit")
+          SameOrigin => Json::string("same-origin")
+          Include => Json::string("include")
         }
       _ => ()
     }
     match mode {
       Some(m) =>
         options["mode"] = match m {
-          CORS => String("cors")
-          NoCORS => String("no-cors")
-          SameOrigin => String("same-origin")
-          Navigate => String("navigate")
+          CORS => Json::string("cors")
+          NoCORS => Json::string("no-cors")
+          SameOrigin => Json::string("same-origin")
+          Navigate => Json::string("navigate")
         }
       _ => ()
     }
-    (binding.call)("fetch", [[String(url), options.to_json()]], fn {
+    (binding.call)("fetch", [[Json::string(url), options.to_json()]], fn {
       Object(
         {
           "data": String(data),

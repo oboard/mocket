@@ -2,7 +2,7 @@
 
 // `run_async` spawn a new coroutine and execute an async function in it
 ///|
-fn run_async(f : async () -> Unit) -> Unit = "%async.run"
+fn run_async(f : () -> Unit!Async) -> Unit = "%async.run"
 
 // `suspend` will suspend the execution of the current coroutine.
 // The suspension will be handled by a callback passed to `suspend`
@@ -24,7 +24,7 @@ fn main {
 
   // 修改文件读取示例
   // try {
-  //   let data = @mocket.readFile!!("./logo.jpg")
+  //   let data = @mocket.readFile!("./logo.jpg")
   //   println(data.length())
   // } catch {
   //   err => println("Error reading file: \{err}")
@@ -38,7 +38,7 @@ fn main {
     _req : @mocket.HttpRequest,
     _res : @mocket.HttpResponse
   ) {
-    String("<h1>Hello, World!</h1>")
+    Json::string("<h1>Hello, World!</h1>")
   })
   // async json data example
   server.get("/async_data", async fn(
@@ -61,7 +61,7 @@ fn main {
   ) {
     match req.body {
       Some(data) => data
-      _ => String("No data received")
+      _ => Json::string("No data received")
     }
   })
   // file serving example
@@ -93,7 +93,7 @@ fn main {
   server.resource("/static/", "./")
   run_async(fn() {
     try {
-      let result = @mocket.exec!!("ls")
+      let result = @mocket.exec!("ls")
       println(result)
     } catch {
       err => println("Error executing command: \{err}")
@@ -101,7 +101,7 @@ fn main {
   })
   run_async(fn() {
     try {
-      let response = @mocket.fetch!!("https://api64.ipify.org/")
+      let response = @mocket.fetch!("https://api64.ipify.org/")
       println(response)
     } catch {
       err => println("Error fetching data: \{err}")
