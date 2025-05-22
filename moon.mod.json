@@ -2,9 +2,11 @@
   "name": "oboard/mocket",
   "version": "0.2.5",
   "deps": {
-    "oboard/mimetype": "0.1.5",
-    "yj-qin/regexp": "0.3.4",
-    "Lampese/moonbit-chalk": "0.4.0"
+    "oboard/mimetype": "0.1.7",
+    "yj-qin/regexp": "0.3.5",
+    "Lampese/moonbit-chalk": "0.4.0",
+    "ShellWen/sw_router": "0.1.0",
+    "Yoorkin/rabbit-tea": "0.7.9"
   },
   "readme": "README.md",
   "repository": "https://github.com/oboard/mocket",

@@ -11,6 +11,11 @@
     {
       "path": "Lampese/moonbit-chalk",
       "alias": "chalk"
-    }
+    },
+    {
+      "path": "Yoorkin/rabbit-tea/url",
+      "alias": "url"
+    },
+    "oboard/mocket/http"
   ]
 }

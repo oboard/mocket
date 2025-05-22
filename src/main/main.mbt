@@ -2,7 +2,7 @@
 
 // `run_async` spawn a new coroutine and execute an async function in it
 ///|
-fn run_async(f : async () -> Unit) -> Unit = "%async.run"
+// fn run_async(f : () -> Unit!Async) -> Unit = "%async.run"
 
 // `suspend` will suspend the execution of the current coroutine.
 // The suspension will be handled by a callback passed to `suspend`
@@ -19,7 +19,11 @@ fn run_async(f : async () -> Unit) -> Unit = "%async.run"
 fn main {
   println("Starting server...")
   let port = 4000
-  let server = @mocket.listen(get_context(), port)
+  guard @mocket.listen?(port) is Ok(server) else {
+    println("Failed to start server")
+    return
+  }
+  println("Server started on port \{port}")
   listen_event("echo", fn(json) { println(json) })
 
   // 修改文件读取示例
@@ -30,53 +34,38 @@ fn main {
   //   err => println("Error reading file: \{err}")
   // }
 
-  server.get("/", fn(_req : @mocket.HttpRequest, _res : @mocket.HttpResponse) {
+  server.get("/", fn(_req : @mio.HttpRequest, _res : @mio.HttpResponse) {
     @mocket.html("<h1>Hello, World!</h1>")
   })
   // string response example
-  server.get("/text", fn(
-    _req : @mocket.HttpRequest,
-    _res : @mocket.HttpResponse
-  ) {
-    String("<h1>Hello, World!</h1>")
+  server.get("/text", fn(_req : @mio.HttpRequest, _res : @mio.HttpResponse) {
+    "<h1>Hello, World!</h1>"
   })
   // async json data example
   server.get("/async_data", async fn(
-    _req : @mocket.HttpRequest,
-    _res : @mocket.HttpResponse
+    _req : @mio.HttpRequest,
+    _res : @mio.HttpResponse
   ) {
     { "name": "John Doe", "age": 30, "city": "New York" }
   })
   // json data example
-  server.get("/data", fn(
-    _req : @mocket.HttpRequest,
-    _res : @mocket.HttpResponse
-  ) {
+  server.get("/data", fn(_req : @mio.HttpRequest, _res : @mio.HttpResponse) {
     { "name": "John Doe", "age": 30, "city": "New York" }
   })
   // echo server example
-  server.post("/echo", fn(
-    req : @mocket.HttpRequest,
-    _res : @mocket.HttpResponse
-  ) {
+  server.post("/echo", fn(req : @mio.HttpRequest, _res : @mio.HttpResponse) {
     match req.body {
       Some(data) => data
       _ => String("No data received")
     }
   })
   // file serving example
-  server.get("/image", fn(
-    _req : @mocket.HttpRequest,
-    _res : @mocket.HttpResponse
-  ) {
+  server.get("/image", fn(_req : @mio.HttpRequest, _res : @mio.HttpResponse) {
     @mocket.file("logo.jpg")
   })
 
   // buffer serving example
-  server.get("/buffer", fn(
-    _req : @mocket.HttpRequest,
-    _res : @mocket.HttpResponse
-  ) {
+  server.get("/buffer", fn(_req : @mio.HttpRequest, _res : @mio.HttpResponse) {
     @mocket.buffer(
       [
         72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33, 32, 84, 104, 105,
@@ -90,21 +79,21 @@ fn main {
 
   // static file serving example
   // Example: http://localhost:4000/static/logo.jpg => ./logo.jpg
-  server.resource("/static/", "./")
-  run_async(fn() {
-    try {
-      let result = @mocket.exec!!("ls")
-      println(result)
-    } catch {
-      err => println("Error executing command: \{err}")
-    }
-  })
-  run_async(fn() {
-    try {
-      let response = @mocket.fetch!!("https://api64.ipify.org/")
-      println(response)
-    } catch {
-      err => println("Error fetching data: \{err}")
-    }
-  })
+  // server.resource("/static/", "./")
+  // run_async(fn() {
+  //   try {
+  //     let result = @mio.exec!!("ls")
+  //     println(result)
+  //   } catch {
+  //     err => println("Error executing command: \{err}")
+  //   }
+  // })
+  // run_async(fn() {
+  //   try {
+  //     let response = @mio.fetch!!("https://api64.ipify.org/")
+  //     println(response)
+  //   } catch {
+  //     err => println("Error fetching data: \{err}")
+  //   }
+  // })
 }
