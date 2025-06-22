@@ -127,15 +127,13 @@ pub fn URL::to_string(self : URL) -> String {
   let query_str = match query {
     Some(q) =>
       "?" +
-      @string.concat(
-        q
-        .to_array()
-        .map(fn(item) {
-          let (k, v) = item
-          k + "=" + v
-        }),
-        separator="&",
-      )
+      q
+      .to_array()
+      .map(fn(item) {
+        let (k, v) = item
+        k + "=" + v
+      })
+      .join("&")
     None => ""
   }
   let fragment_str = match fragment {

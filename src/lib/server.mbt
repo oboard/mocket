@@ -164,7 +164,7 @@ pub fn listen(
                   .find_first(fn(key) {
                     match request.path {
                       Some(path) =>
-                        match @regexp.compile?(key) {
+                        match (try? @regexp.compile(key)) {
                           Ok(compiled) => compiled.matches(path).success()
                           _ => false
                         }
@@ -212,7 +212,7 @@ pub async fn get(
   mapping : String,
   handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  handleFunc(self, "GET", mapping, handler)
+  self.handleFunc("GET", mapping, handler)
 }
 
 ///|
@@ -221,7 +221,7 @@ pub async fn post(
   mapping : String,
   handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  handleFunc(self, "POST", mapping, handler)
+  self.handleFunc("POST", mapping, handler)
 }
 
 ///|
@@ -230,7 +230,7 @@ pub async fn put(
   mapping : String,
   handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  handleFunc(self, "PUT", mapping, handler)
+  self.handleFunc("PUT", mapping, handler)
 }
 
 ///|
@@ -239,7 +239,7 @@ pub async fn delete(
   mapping : String,
   handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  handleFunc(self, "DELETE", mapping, handler)
+  self.handleFunc("DELETE", mapping, handler)
 }
 
 ///|
@@ -248,7 +248,7 @@ pub async fn patch(
   mapping : String,
   handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  handleFunc(self, "PATCH", mapping, handler)
+  self.handleFunc("PATCH", mapping, handler)
 }
 
 ///|
@@ -257,7 +257,7 @@ pub async fn options(
   mapping : String,
   handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  handleFunc(self, "OPTIONS", mapping, handler)
+  self.handleFunc("OPTIONS", mapping, handler)
 }
 
 ///|
@@ -266,7 +266,7 @@ pub async fn head(
   mapping : String,
   handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  handleFunc(self, "HEAD", mapping, handler)
+  self.handleFunc("HEAD", mapping, handler)
 }
 
 ///|
@@ -275,7 +275,7 @@ pub async fn trace(
   mapping : String,
   handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  handleFunc(self, "TRACE", mapping, handler)
+  self.handleFunc("TRACE", mapping, handler)
 }
 
 ///|
@@ -284,7 +284,7 @@ pub async fn connect(
   mapping : String,
   handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  handleFunc(self, "CONNECT", mapping, handler)
+  self.handleFunc("CONNECT", mapping, handler)
 }
 
 ///|
@@ -293,7 +293,7 @@ pub async fn all(
   mapping : String,
   handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
-  handleFunc(self, "ALL", mapping, handler)
+  self.handleFunc("ALL", mapping, handler)
 }
 
 ///|
@@ -329,9 +329,9 @@ pub async fn readDir(path : String) -> Json raise Error {
 ///|
 pub async fn readFile(path : String) -> Bytes raise Error {
   suspend(fn(resolve, reject) {
-    (binding.call)("fs.readFile", Json::string(path), fn {
+    (binding.call)("fs.readFile", Json::string(path), bytes => match bytes {
       Array(bytes) =>
-        bytes.map(fn {
+        bytes.map(n => match n {
           Number(n) => n.to_int().to_byte()
           _ => (0).to_byte()
         })
@@ -346,7 +346,7 @@ pub async fn readFile(path : String) -> Bytes raise Error {
 ///|
 pub async fn exec(cmd : String) -> String raise Error {
   suspend(fn(resolve, reject) {
-    (binding.call)("os.exec", Json::string(cmd), fn {
+    (binding.call)("os.exec", Json::string(cmd), s => match s {
       String(s) => resolve(s)
       _ => reject(ExecError)
     })
@@ -433,7 +433,8 @@ pub async fn fetch(
         }
       _ => ()
     }
-    (binding.call)("fetch", [[Json::string(url), options.to_json()]], fn {
+    (binding.call)("fetch", [[Json::string(url), options.to_json()]], json => match
+      json {
       Object(
         {
           "data": String(data),
