@@ -51,7 +51,7 @@ pub fn URL::parse(rawUrl : String) -> URL {
   }
   let port_str = url.charcodes(start=port_start + 1, end=port_end)
   let port = if port_str.length() > 0 {
-    try Some(@strconv.parse_int!(port_str.to_string())) catch {
+    Some(@strconv.parse_int(port_str.to_string())) catch {
       _ => None
     }
   } else {
@@ -151,7 +151,7 @@ test "parse_url" {
   let result = URL::parse(url)
   // println(url)
   // println(result)
-  inspect!(result.path, content="/path/to/resource")
+  inspect(result.path, content="/path/to/resource")
 }
 
 ///|
@@ -160,5 +160,5 @@ test "empty_url" {
   let result = URL::parse(url)
   // println(url)
   // println(result)
-  inspect!(result.path, content="")
+  inspect(result.path, content="")
 }

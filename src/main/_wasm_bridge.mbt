@@ -7,12 +7,11 @@ pub(all) struct Receiver {
 }
 
 ///|
-pub fn get_context() ->
-     (
-       (String, (Json) -> Unit) -> Unit,
-       (String, Json) -> Unit,
-       (String, Json, (Json) -> Unit) -> Unit,
-     ) {
+pub fn get_context() -> (
+  (String, (Json) -> Unit) -> Unit,
+  (String, Json) -> Unit,
+  (String, Json, (Json) -> Unit) -> Unit,
+) {
   (listen_event, send_event, call_event)
 }
 
@@ -49,7 +48,7 @@ pub fn h_rd(data : Int) -> Unit {
 ///|
 pub fn h_re() -> Unit {
   let message = receiver.buffer.to_bytes().to_unchecked_string()
-  match @json.parse?(message) {
+  match (try? @json.parse(message)) {
     Ok([String(event_name), event_data]) =>
       match event_name {
         _ =>
@@ -76,7 +75,7 @@ pub fn send_event(event_name : String, event_data : Json) -> Unit {
 
 ///|
 fn send(body : Json) -> Unit {
-  let chars = @json.stringify(body).to_bytes()
+  let chars = body.stringify().to_bytes()
   chars.iter().each(fn(c) { h_sd(c) })
   h_se()
 }

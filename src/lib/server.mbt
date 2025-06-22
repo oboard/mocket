@@ -1,17 +1,19 @@
 ///|
-pub type! IOError  derive(Show)
+pub suberror IOError derive(Show)
 
 ///|
-pub type! NetworkError  derive(Show)
+pub suberror NetworkError derive(Show)
 
 ///|
-pub type! ExecError  derive(Show)
+pub suberror ExecError derive(Show)
 
 ///|
-fn run_async(f : () -> Unit!Async) -> Unit = "%async.run"
+fn run_async(f : async () -> Unit) -> Unit = "%async.run"
 
 ///|
-async fn[T, E : Error] suspend(f : ((T) -> Unit, (E) -> Unit) -> Unit) -> T!E = "%async.suspend"
+async fn[T, E : Error] suspend(
+  f : ((T) -> Unit, (E) -> Unit) -> Unit
+) -> T raise E = "%async.suspend"
 
 ///|
 pub struct HeavenBinding {
@@ -38,7 +40,7 @@ pub(all) struct HttpRequest {
 ///|
 pub(all) struct HttpServer {
   port : Int
-  mappings : Map[String, (HttpRequest, HttpResponse) -> Json!Async]
+  mappings : Map[String, async (HttpRequest, HttpResponse) -> Json]
 }
 
 ///|
@@ -101,11 +103,11 @@ pub fn listen(
               },
             }
             let response : HttpResponse = { id, statusCode: 200, headers: {} }
-            fn doHandler(reqFn : ((HttpRequest, HttpResponse) -> Json!Async)?) {
+            fn doHandler(reqFn : (async (HttpRequest, HttpResponse) -> Json)?) {
               match reqFn {
                 Some(handler) =>
                   run_async(fn() {
-                    let result = handler!(request, response)
+                    let result = handler(request, response)
                     match result {
                       Object({ "_T": "html", "data": data, .. }) => {
                         response.writeHead(200, { "Content-Type": "text/html" })
@@ -194,102 +196,102 @@ pub fn listen(
 }
 
 ///|
-fn handleFunc(
+async fn handleFunc(
   self : HttpServer,
   reqMethod : String,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json!Async
+  handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   self.mappings[reqMethod + " " + mapping] = handler
   (binding.send)("http.handle", [Json::string(reqMethod), Json::string(mapping)])
 }
 
 ///|
-pub fn get(
+pub async fn get(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json!Async
+  handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "GET", mapping, handler)
 }
 
 ///|
-pub fn post(
+pub async fn post(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json!Async
+  handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "POST", mapping, handler)
 }
 
 ///|
-pub fn put(
+pub async fn put(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json!Async
+  handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "PUT", mapping, handler)
 }
 
 ///|
-pub fn delete(
+pub async fn delete(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json!Async
+  handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "DELETE", mapping, handler)
 }
 
 ///|
-pub fn patch(
+pub async fn patch(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json!Async
+  handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "PATCH", mapping, handler)
 }
 
 ///|
-pub fn options(
+pub async fn options(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json!Async
+  handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "OPTIONS", mapping, handler)
 }
 
 ///|
-pub fn head(
+pub async fn head(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json!Async
+  handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "HEAD", mapping, handler)
 }
 
 ///|
-pub fn trace(
+pub async fn trace(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json!Async
+  handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "TRACE", mapping, handler)
 }
 
 ///|
-pub fn connect(
+pub async fn connect(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json!Async
+  handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "CONNECT", mapping, handler)
 }
 
 ///|
-pub fn all(
+pub async fn all(
   self : HttpServer,
   mapping : String,
-  handler : (HttpRequest, HttpResponse) -> Json!Async
+  handler : async (HttpRequest, HttpResponse) -> Json
 ) -> Unit {
   handleFunc(self, "ALL", mapping, handler)
 }
@@ -316,16 +318,17 @@ pub fn end(self : HttpResponse, body : Json) -> Unit {
 }
 
 ///|
-pub async fn readDir(path : String) -> Json!Error {
-  suspend!(fn(resolve, _reject) {
+pub async fn readDir(path : String) -> Json raise Error {
+  suspend(fn(resolve, _reject) {
     (binding.call)("fs.readDir", Json::string(path), resolve)
   })
 }
 
 // ///|
+
 ///|
-pub async fn readFile(path : String) -> Bytes!Error {
-  suspend!(fn(resolve, reject) {
+pub async fn readFile(path : String) -> Bytes raise Error {
+  suspend(fn(resolve, reject) {
     (binding.call)("fs.readFile", Json::string(path), fn {
       Array(bytes) =>
         bytes.map(fn {
@@ -341,8 +344,8 @@ pub async fn readFile(path : String) -> Bytes!Error {
 }
 
 ///|
-pub async fn exec(cmd : String) -> String!Error {
-  suspend!(fn(resolve, reject) {
+pub async fn exec(cmd : String) -> String raise Error {
+  suspend(fn(resolve, reject) {
     (binding.call)("os.exec", Json::string(cmd), fn {
       String(s) => resolve(s)
       _ => reject(ExecError)
@@ -396,8 +399,8 @@ pub async fn fetch(
   headers? : Map[String, String],
   credentials? : FetchCredentials,
   mode? : FetchMode
-) -> FetchResponse!NetworkError {
-  suspend!(fn(resolve, reject) {
+) -> FetchResponse raise NetworkError {
+  suspend(fn(resolve, reject) {
     let options : Map[String, Json] = {}
     match reqMethod {
       Some(str) => options["method"] = Json::string(str)
