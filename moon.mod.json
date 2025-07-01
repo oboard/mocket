@@ -2,9 +2,7 @@
   "name": "oboard/mocket",
   "version": "0.2.7",
   "deps": {
-    "oboard/mimetype": "0.1.7",
-    "yj-qin/regexp": "0.3.6",
-    "Lampese/moonbit-chalk": "0.4.0"
+    "rami3l/js-ffi": "0.3.1"
   },
   "readme": "README.md",
   "repository": "https://github.com/oboard/mocket",

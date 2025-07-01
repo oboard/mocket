@@ -1,16 +1,8 @@
 {
   "import": [
-    {
-      "path": "oboard/mimetype/lib",
-      "alias": "mimetype"
-    },
-    {
-      "path": "yj-qin/regexp",
-      "alias": "regexp"
-    },
-    {
-      "path": "Lampese/moonbit-chalk",
-      "alias": "chalk"
-    }
-  ]
+    "rami3l/js-ffi/js"
+  ],
+  "targets": {
+    "mocket_js.mbt": ["js"]
+  }
 }
