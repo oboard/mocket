@@ -77,7 +77,6 @@ fn templateToRegex(template : String) -> String {
 ///|
 // 匹配路径并提取参数
 fn matchPath(template : String, path : String) -> Map[String, String]? {
-  // println(path)
   // 如果模板中没有参数，直接比较
   if template.find(":").or(-1) == -1 {
     if template == path {
@@ -90,9 +89,7 @@ fn matchPath(template : String, path : String) -> Map[String, String]? {
   // 构建正则表达式
   let regex_str = templateToRegex(template)
   guard (try? @regexp.compile(regex_str)) is Ok(regexp) else { return None }
-  println(regex_str)
   let match_result = regexp.matches(path)
-  println(match_result)
   if not(match_result.success()) {
     return None
   }
