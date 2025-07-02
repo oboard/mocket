@@ -22,9 +22,11 @@ pub extern "js" fn HttpRequestInternal::reqMethod(
 ) -> String = "(s) => s.method"
 
 ///|
-pub extern "js" fn HttpRequestInternal::body(
-  self : HttpRequestInternal
-) -> String = "(s) => s.body"
+pub extern "js" fn HttpRequestInternal::on(
+  self : HttpRequestInternal,
+  event : String,
+  handler : (@js.Value) -> Unit
+) -> Unit = "(s, event, handler) => s.on(event, handler)"
 
 ///|
 pub extern "js" fn HttpRequestInternal::headers(

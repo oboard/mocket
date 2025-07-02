@@ -10,6 +10,19 @@ pub suberror ExecError derive(Show)
 ///|
 fn run_async(f : async () -> Unit) -> Unit = "%async.run"
 
+///| `suspend` 会中断当前协程的运行。
+/// `suspend` 会接受一个回调函数，并让这个回调函数来操作中断的协程
+async fn[T, E : Error] suspend(
+  // `f` 是负责操作中断的协程的回调函数
+  f : (
+    // `f` 的第一个参数用于继续运行被中断的协程
+    (T) -> Unit,
+    // `f` 的第二个参数用于取消被中断的协程。
+    // 取消会被表示为在中断处抛出错误
+    (E) -> Unit,
+  ) -> Unit
+) -> T raise E = "%async.suspend"
+
 ///|
 pub(all) struct Mocket {
   mappings : Map[(String, String), async (HttpEvent) -> Json]
@@ -28,7 +41,7 @@ pub struct HttpRequest {
   reqMethod : String
   url : String
   headers : Map[String, String]
-  body : String
+  mut body : String
 }
 
 ///|
@@ -156,7 +169,7 @@ pub fn serve(self : Mocket, port~ : Int) -> Unit {
         req: {
           reqMethod: req.reqMethod(),
           url: req.url(),
-          body: req.body(),
+          body: "",
           headers: string_headers,
         },
         res: { statusCode: res.statusCode(), headers: {} },
@@ -167,6 +180,17 @@ pub fn serve(self : Mocket, port~ : Int) -> Unit {
         return
       }
       run_async(fn() {
+        // 如果是 post，先等待 data 事件
+        if event.req.reqMethod == "POST" {
+          let body = suspend(fn(res, _) {
+            let buffer = @buffer.new()
+            req.on("data", fn(data) { buffer.write_string(data.to_string()) })
+            req.on("end", fn(_) { res(buffer.to_string()) })
+          }) catch {
+            err => abort(err)
+          }
+          event.req.body = body
+        }
         let result = handler(event)
         let result_str = match result {
           String(str) => str

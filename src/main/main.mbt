@@ -7,6 +7,7 @@ fn main {
     "age": 30,
     "city": "New York",
   })
+  app.post("/echo", _event => _event.req.body.to_json())
   app.serve(port=4000)
   println("Server started on port 4000")
 
