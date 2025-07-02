@@ -230,6 +230,15 @@ pub fn trace(
 }
 
 ///|
+pub fn all(
+  self : Mocket,
+  path : String,
+  handler : async (HttpEvent) -> Json
+) -> Unit {
+  self.on("*", path, handler)
+}
+
+///|
 // 查找匹配的路由和参数
 fn findRoute(
   self : Mocket,
@@ -239,19 +248,24 @@ fn findRoute(
   // 首先尝试精确匹配
   match self.mappings.get((reqMethod, path)) {
     Some(handler) => Some((handler, {}))
-    None => {
-      // 然后尝试参数匹配
-      for route_key, handler in self.mappings {
-        let (route_method, route_path) = route_key
-        if route_method == reqMethod {
-          match matchPath(route_path, path) {
-            Some(params) => return Some((handler, params))
-            None => ignore(())
+    None =>
+      // 尝试通配符方法匹配
+      match self.mappings.get(("*", path)) {
+        Some(handler) => Some((handler, {}))
+        None => {
+          // 然后尝试参数匹配
+          for route_key, handler in self.mappings {
+            let (route_method, route_path) = route_key
+            if route_method == reqMethod || route_method == "*" {
+              match matchPath(route_path, path) {
+                Some(params) => return Some((handler, params))
+                None => ignore(())
+              }
+            }
           }
+          None
         }
       }
-      None
-    }
   }
 }
 
