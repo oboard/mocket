@@ -1,6 +1,7 @@
 {
   "import": [
-    "rami3l/js-ffi/js"
+    "rami3l/js-ffi/js",
+    "yj-qin/regexp"
   ],
   "targets": {
     "mocket_js.mbt": ["js"]

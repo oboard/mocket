@@ -10,6 +10,10 @@ fn main {
   app.get("/async_data", async fn(_event) {
     { "name": "John Doe", "age": 30, "city": "New York" }
   })
+  app.get("/hello/:name", fn(event) {
+    let name = event.params.get("name").or("World")
+    "Hello, \{name}!"
+  })
   app.post("/echo", e => e.req.body.to_json())
   app.get("/404", e => {
     e.res.statusCode = 404

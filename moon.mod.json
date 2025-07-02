@@ -2,7 +2,8 @@
   "name": "oboard/mocket",
   "version": "0.2.7",
   "deps": {
-    "rami3l/js-ffi": "0.3.1"
+    "rami3l/js-ffi": "0.3.1",
+    "yj-qin/regexp": "0.3.6"
   },
   "readme": "README.md",
   "repository": "https://github.com/oboard/mocket",

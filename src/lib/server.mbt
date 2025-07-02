@@ -55,6 +55,73 @@ pub(all) struct HttpResponse {
 pub struct HttpEvent {
   req : HttpRequest
   res : HttpResponse
+  mut params : Map[String, String]
+}
+
+///|
+// 将路径模板转换为正则表达式
+fn templateToRegex(template : String) -> String {
+  // 将 :param 替换为 ([^/]+)
+  let parts = template.split("/").to_array()
+  let mut i = 0
+  while i < parts.length() {
+    let part = parts[i].to_string()
+    if part.find(":").or(-1) == 0 {
+      parts[i] = "([^/]+)"
+    }
+    i = i + 1
+  }
+  "^" + parts.map(fn(p) { p.to_string() }).join("/") + "$"
+}
+
+///|
+// 匹配路径并提取参数
+fn matchPath(template : String, path : String) -> Map[String, String]? {
+  // println(path)
+  // 如果模板中没有参数，直接比较
+  if template.find(":").or(-1) == -1 {
+    if template == path {
+      return Some({})
+    } else {
+      return None
+    }
+  }
+
+  // 构建正则表达式
+  let regex_str = templateToRegex(template)
+  guard (try? @regexp.compile(regex_str)) is Ok(regexp) else { return None }
+  println(regex_str)
+  let match_result = regexp.matches(path)
+  println(match_result)
+  if not(match_result.success()) {
+    return None
+  }
+
+  // 提取参数名
+  let template_parts = template.split("/").to_array()
+  let param_names = []
+  let mut i = 0
+  while i < template_parts.length() {
+    let part = template_parts[i].to_string()
+    if part.find(":").or(-1) == 0 {
+      param_names.push(part.charcodes(start=1).to_string())
+    }
+    i = i + 1
+  }
+
+  // 构建参数映射
+  let params = {}
+  let captures = match_result.captures()
+  let mut param_index = 0
+  let mut capture_index = 1 // 跳过第一个完整匹配
+  while param_index < param_names.length() && capture_index < captures.length() {
+    let param_name = param_names[param_index]
+    let param_value = captures[capture_index]
+    params.set(param_name, param_value)
+    param_index = param_index + 1
+    capture_index = capture_index + 1
+  }
+  Some(params)
 }
 
 ///|
@@ -149,6 +216,32 @@ pub fn trace(
 }
 
 ///|
+// 查找匹配的路由和参数
+fn findRoute(
+  self : Mocket,
+  reqMethod : String,
+  path : String
+) -> (async (HttpEvent) -> Json, Map[String, String])? {
+  // 首先尝试精确匹配
+  match self.mappings.get((reqMethod, path)) {
+    Some(handler) => Some((handler, {}))
+    None => {
+      // 然后尝试参数匹配
+      for route_key, handler in self.mappings {
+        let (route_method, route_path) = route_key
+        if route_method == reqMethod {
+          match matchPath(route_path, path) {
+            Some(params) => return Some((handler, params))
+            None => ignore(())
+          }
+        }
+      }
+      None
+    }
+  }
+}
+
+///|
 pub fn serve(self : Mocket, port~ : Int) -> Unit {
   createServer(
     fn(req, res, _) {
@@ -172,13 +265,20 @@ pub fn serve(self : Mocket, port~ : Int) -> Unit {
           body: "",
           headers: string_headers,
         },
-        res: { statusCode: res.statusCode(), headers: {} },
+        res: { statusCode: 200, headers: {} },
+        params: {},
       }
-      guard self.mappings.get((req.reqMethod(), req.url())) is Some(handler) else {
+
+      // 查找匹配的路由
+      guard self.findRoute(req.reqMethod(), req.url())
+        is Some((handler, params)) else {
         res.writeHead(404, @js.Object::new().to_value())
-        res.end("")
+        res.end("Not Found")
         return
       }
+
+      // 设置路径参数
+      event.params = params
       run(fn() {
         // 如果是 post，先等待 data 事件
         if event.req.reqMethod == "POST" {
