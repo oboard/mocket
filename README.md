@@ -6,13 +6,52 @@ A web framework for MoonBit.
 
 ![screenshots](screenshots/1.png)
 
+## Quick Start
+
+```bash
+moon run src/main/main.mbt --target js
+```
+
+Then visit http://localhost:4000
+
 ## Usage
 
 Minimum Example: https://github.com/oboard/mocket_example
 
-## Async Support
+## Features
 
-The library now supports async/await for I/O operations:
+### Dynamic Routes
+
+Support named parameters with `:param` syntax:
+
+```moonbit
+app.get("/hello/:name", fn(event) {
+  let name = event.params.get("name").or("World")
+  "Hello, \{name}!"
+})
+```
+
+### Wildcard Routes
+
+Support single and double wildcards:
+
+```moonbit
+// Single wildcard - matches one path segment
+app.get("/hello/*", fn(event) {
+  let name = event.params.get("_").or("World")
+  "Hello, \{name}!"
+})
+
+// Double wildcard - matches multiple path segments
+app.get("/hello/**", fn(event) {
+  let path = event.params.get("_").or("")
+  "Hello, \{path}!"
+})
+```
+
+### Async Support
+
+The library supports async/await for I/O operations:
 
 - `readFile`: Asynchronously read files
 - `readDir`: Asynchronously read directories
@@ -26,10 +65,7 @@ Async functions can be called using the `!!` operator and must be wrapped in
 
 ```moonbit
 // async json data example
-server.get("/async_data", async fn(
-  _req : @mocket.HttpRequest,
-  _res : @mocket.HttpResponse
-) {
+app.get("/async_data", async fn(event) {
   { "name": "John Doe", "age": 30, "city": "New York" }
 })
 ```
@@ -63,122 +99,77 @@ Async operations return `Result` types or use the `!` error type syntax:
 
 Use `try/catch` blocks to handle potential errors.
 
-### MocketGo Runtime (Experimental)
-
-Download the latest release from: https://github.com/oboard/mocketgo/releases
-
-#### Linux/MacOS:
-
-```bash
-chmod +x ./mocketgo
-./mocketgo main.wasm
-```
-
-#### Windows:
-
-```bat
-mocketgo.exe main.wasm
-```
-
-### Node.js Runtime
-
-#### Prerequisites
-
-- MoonBit SDK installed
-- Node.js installed
-
-#### Linux/MacOS:
-
-```bash
-sudo chmod +x ./start.sh
-./start.sh
-```
-
-OR run with make:
-
-```bash
-make serve
-```
-
-### Windows:
-
-```bat
-start.bat
-```
-
 ## Example usage
 
 ```moonbit
-// Example usage of mocket package in MoonBit
-
 fn main {
-  let port = 4000
-  let server = @mocket.listen(get_context(), port)
-  // readFile example
-  // @mocket.readFile("./logo.jpg").finally(
-  //   fn(data : Bytes) { println(data.length()) },
-  // )
-  // html response example
-  server.get(
-    "/",
-    fn(_req : @mocket.HttpRequest, _res : @mocket.HttpResponse) {
-      @mocket.html("<h1>Hello, World!</h1>")
-    },
-  )
-  // string response example
-  server.get(
-    "/text",
-    fn(_req : @mocket.HttpRequest, _res : @mocket.HttpResponse) {
-      String("<h1>Hello, World!</h1>")
-    },
-  )
-  // json data example
-  server.get(
-    "/data",
-    fn(_req : @mocket.HttpRequest, _res : @mocket.HttpResponse) {
-      { "name": "John Doe", "age": 30, "city": "New York" }
-    },
-  )
-  // echo server example
-  server.post(
-    "/echo",
-    fn(req : @mocket.HttpRequest, _res : @mocket.HttpResponse) {
-      match req.body {
-        Some(data) => data
-        _ => String("No data received")
-      }
-    },
-  )
-  // file serving example
-  server.get(
-    "/image",
-    fn(_req : @mocket.HttpRequest, _res : @mocket.HttpResponse) {
-      @mocket.file("logo.jpg")
-    },
-  )
+  let app = @mocket.new()
 
-  // buffer serving example
-  server.get(
-    "/buffer",
-    fn(_req : @mocket.HttpRequest, _res : @mocket.HttpResponse) {
-      @mocket.buffer(
-        [
-          72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33, 32, 84, 104, 105,
-          115, 32, 105, 115, 32, 97, 32, 116, 101, 115, 116, 32, 115, 116, 114, 105,
-          110, 103, 32, 102, 111, 114, 32, 116, 101, 115, 116, 105, 110, 103, 32,
-          112, 117, 114, 112, 111, 115, 101,
-        ].map(fn(x) { x.to_byte() })
-        |> Bytes::from_array,
-      )
-    },
-  )
+  // Text Response
+  app.get("/", _event => "⚡️ Tadaa!")
 
-  // static file serving example
-  // Example: http://localhost:4000/static/logo.jpg => ./logo.jpg
-  server.static("/static/", "./")
+  // JSON Response
+  app.get("/json", _event => {
+    "name": "John Doe",
+    "age": 30,
+    "city": "New York",
+  })
+
+  // Async Response
+  app.get("/async_data", async fn(_event) {
+    { "name": "John Doe", "age": 30, "city": "New York" }
+  })
+
+  // Dynamic Routes
+  app.get("/hello/:name", fn(event) {
+    let name = event.params.get("name").or("World")
+    "Hello, \{name}!"
+  })
+
+  // Wildcard Routes
+  app.get("/hello/*", fn(event) {
+    let name = event.params.get("_").or("World")
+    "Hello, \{name}!"
+  })
+
+  app.get("/hello/**", fn(event) {
+    let path = event.params.get("_").or("")
+    "Hello, \{path}!"
+  })
+
+  // Echo Server
+  app.post("/echo", e => e.req.body.to_json())
+
+  // 404 Page
+  app.get("/404", e => {
+    e.res.statusCode = 404
+    @mocket.html(
+      #|<html>
+      #|<body>
+      #|  <h1>404</h1>
+      #|</body>
+      #|</html>
+      ,
+    )
+  })
+
+  // Serve
+  app.serve(port=4000)
+
+  // Print Server URL
+  println("http://localhost:4000")
 }
 ```
 
+## Route Matching Examples
+
+| Route Pattern | URL | Parameters |
+|---------------|-----|------------|
+| `/hello/:name` | `/hello/world` | `name: "world"` |
+| `/hello/*` | `/hello/world` | `_: "world"` |
+| `/hello/**` | `/hello/foo/bar` | `_: "foo/bar"` |
+| `/users/:id/posts/:postId` | `/users/123/posts/456` | `id: "123"`, `postId: "456"` |
+| `/api/**` | `/api/v1/users/123` | `_: "v1/users/123"` |
 
 🙌快来吧！🙌
 

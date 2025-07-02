@@ -18,19 +18,19 @@ fn main {
   })
 
   // Dynamic Routes
-  // /hello2/world
+  // /hello2/World = Hello, World!
   app.get("/hello/:name", fn(event) {
     let name = event.params.get("name").or("World")
     "Hello, \{name}!"
   })
-  // /hello2/world
+  // /hello2/World = Hello, World!
   app.get("/hello2/*", fn(event) {
     let name = event.params.get("_").or("World")
     "Hello, \{name}!"
   })
 
   // Wildcard Routes
-  // /hello3/world/world
+  // /hello3/World/World = Hello, World/World!
   app.get("/hello3/**", fn(event) {
     let name = event.params.get("_").or("World")
     "Hello, \{name}!"
