@@ -8,11 +8,11 @@ pub suberror NetworkError derive(Show)
 pub suberror ExecError derive(Show)
 
 ///|
-fn run_async(f : async () -> Unit) -> Unit = "%async.run"
+pub fn run(f : async () -> Unit) -> Unit = "%async.run"
 
 ///| `suspend` 会中断当前协程的运行。
 /// `suspend` 会接受一个回调函数，并让这个回调函数来操作中断的协程
-async fn[T, E : Error] suspend(
+pub async fn[T, E : Error] suspend(
   // `f` 是负责操作中断的协程的回调函数
   f : (
     // `f` 的第一个参数用于继续运行被中断的协程
@@ -45,8 +45,8 @@ pub struct HttpRequest {
 }
 
 ///|
-pub struct HttpResponse {
-  statusCode : Int
+pub(all) struct HttpResponse {
+  mut statusCode : Int
   headers : Map[String, String]
   // body : String
 }
@@ -179,7 +179,7 @@ pub fn serve(self : Mocket, port~ : Int) -> Unit {
         res.end("")
         return
       }
-      run_async(fn() {
+      run(fn() {
         // 如果是 post，先等待 data 事件
         if event.req.reqMethod == "POST" {
           let body = suspend(fn(res, _) {
@@ -191,25 +191,37 @@ pub fn serve(self : Mocket, port~ : Int) -> Unit {
           }
           event.req.body = body
         }
-        let result = handler(event)
-        let result_str = match result {
-          String(str) => str
-          _ => result.stringify()
+        let response = handler(event)
+        let body = match response {
+          { "__": String(contentType), "body": body, .. } => {
+            event.res.headers.set("Content-Type", contentType)
+            body
+          }
+          _ => {
+            match response {
+              Json::Object(_) =>
+                event.res.headers.set(
+                  "Content-Type", "application/json;charset=UTF-8",
+                )
+              _ =>
+                event.res.headers.set(
+                  "Content-Type", "text/plain;charset=UTF-8",
+                )
+            }
+            response
+          }
         }
-        match result {
-          Json::Object(_) =>
-            event.res.headers.set(
-              "Content-Type", "application/json;charset=UTF-8",
-            )
-          _ => event.res.headers.set("Content-Type", "text/plain;charset=UTF-8")
+        let body_str = match body {
+          String(str) => str
+          _ => body.stringify()
         }
         res.writeHead(
-          200,
+          event.res.statusCode,
           (try? @js.Value::from_json(event.res.headers.to_json())).or(
             @js.Object::new().to_value(),
           ),
         )
-        res.end(result_str)
+        res.end(body_str)
       })
     },
     port,

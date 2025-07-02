@@ -7,9 +7,23 @@ fn main {
     "age": 30,
     "city": "New York",
   })
-  app.post("/echo", _event => _event.req.body.to_json())
+  app.get("/async_data", async fn(_event) {
+    { "name": "John Doe", "age": 30, "city": "New York" }
+  })
+  app.post("/echo", e => e.req.body.to_json())
+  app.get("/404", e => {
+    e.res.statusCode = 404
+    @mocket.html(
+      #|<html>
+      #|<body>
+      #|  <h1>404</h1>
+      #|</body>
+      #|</html>
+      ,
+    )
+  })
   app.serve(port=4000)
-  println("Server started on port 4000")
+  println("http://localhost:4000")
 
   // let server = @mocket.listen(get_context(), port)
   // listen_event("echo", fn(json) { println(json) })
