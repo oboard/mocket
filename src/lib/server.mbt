@@ -27,8 +27,8 @@ pub fn new() -> Mocket {
 pub struct HttpRequest {
   reqMethod : String
   url : String
-  // headers : Map[String, String]
-  // body : String
+  headers : Map[String, String]
+  body : String
 }
 
 ///|
@@ -64,16 +64,107 @@ pub fn get(
 }
 
 ///|
+pub fn post(
+  self : Mocket,
+  path : String,
+  handler : async (HttpEvent) -> Json
+) -> Unit {
+  self.on("POST", path, handler)
+}
+
+///|
+pub fn patch(
+  self : Mocket,
+  path : String,
+  handler : async (HttpEvent) -> Json
+) -> Unit {
+  self.on("PATCH", path, handler)
+}
+
+///|
+pub fn connect(
+  self : Mocket,
+  path : String,
+  handler : async (HttpEvent) -> Json
+) -> Unit {
+  self.on("CONNECT", path, handler)
+}
+
+///|
+pub fn put(
+  self : Mocket,
+  path : String,
+  handler : async (HttpEvent) -> Json
+) -> Unit {
+  self.on("PUT", path, handler)
+}
+
+///|
+pub fn delete(
+  self : Mocket,
+  path : String,
+  handler : async (HttpEvent) -> Json
+) -> Unit {
+  self.on("DELETE", path, handler)
+}
+
+///|
+pub fn head(
+  self : Mocket,
+  path : String,
+  handler : async (HttpEvent) -> Json
+) -> Unit {
+  self.on("HEAD", path, handler)
+}
+
+///|
+pub fn options(
+  self : Mocket,
+  path : String,
+  handler : async (HttpEvent) -> Json
+) -> Unit {
+  self.on("OPTIONS", path, handler)
+}
+
+///|
+pub fn trace(
+  self : Mocket,
+  path : String,
+  handler : async (HttpEvent) -> Json
+) -> Unit {
+  self.on("TRACE", path, handler)
+}
+
+///|
 pub fn serve(self : Mocket, port~ : Int) -> Unit {
   createServer(
     fn(req, res, _) {
+      guard (try? req.headers().to_value().to_json()) is Ok(Object(headers)) else {
+        res.writeHead(400, @js.Object::new().to_value())
+        res.end("Invalid headers")
+        return
+      }
+
+      // 将 JSON headers 转换为字符串 headers
+      let string_headers = {}
+      headers.each(fn(key, value) {
+        if value is String(v) {
+          string_headers.set(key, v)
+        }
+      })
       let event = {
-        req: { reqMethod: req.reqMethod(), url: req.url() },
+        req: {
+          reqMethod: req.reqMethod(),
+          url: req.url(),
+          body: req.body(),
+          headers: string_headers,
+        },
         res: { statusCode: res.statusCode(), headers: {} },
       }
       guard self.mappings.get((req.reqMethod(), req.url())) is Some(handler) else {
         res.writeHead(404, @js.Object::new().to_value())
         res.end("")
+        return
       }
       run_async(fn() {
         let result = handler(event)

@@ -22,6 +22,16 @@ pub extern "js" fn HttpRequestInternal::reqMethod(
 ) -> String = "(s) => s.method"
 
 ///|
+pub extern "js" fn HttpRequestInternal::body(
+  self : HttpRequestInternal
+) -> String = "(s) => s.body"
+
+///|
+pub extern "js" fn HttpRequestInternal::headers(
+  self : HttpRequestInternal
+) -> @js.Object = "(s) => s.headers"
+
+///|
 pub extern "js" fn HttpResponseInternal::statusCode(
   self : HttpResponseInternal
 ) -> Int = "(s) => s.statusCode"
