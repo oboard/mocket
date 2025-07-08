@@ -53,14 +53,6 @@ app.get("/hello/**", fn(event) {
 
 The library supports async/await for I/O operations:
 
-- `readFile`: Asynchronously read files
-- `readDir`: Asynchronously read directories
-- `exec`: Asynchronously execute commands
-- `fetch`: Asynchronously make HTTP requests
-
-Async functions can be called using the `!!` operator and must be wrapped in
-`run_async` when called from synchronous contexts.
-
 ### Async /GET Example
 
 ```moonbit
@@ -89,59 +81,54 @@ run_async(fn() {
 })
 ```
 
-## Error Handling
-
-Async operations return `Result` types or use the `!` error type syntax:
-
-- `readFile`: Returns `Bytes!Error`
-- `exec`: Returns `String!Error`
-- `fetch`: Returns `FetchResponse!NetworkError`
-
-Use `try/catch` blocks to handle potential errors.
-
 ## Example usage
 
 ```moonbit
 fn main {
+  
   let app = @mocket.new()
 
+  // Register global middleware
+  app
+  ..use_middleware(event => println(
+    "📝 Request: \{event.req.reqMethod} \{event.req.url}",
+  ))
+
   // Text Response
-  app.get("/", _event => "⚡️ Tadaa!")
+  ..get("/", _event => "⚡️ Tadaa!")
 
   // JSON Response
-  app.get("/json", _event => {
-    "name": "John Doe",
-    "age": 30,
-    "city": "New York",
-  })
+  ..get("/json", _event => { "name": "John Doe", "age": 30, "city": "New York" })
 
   // Async Response
-  app.get("/async_data", async fn(_event) {
+  ..get("/async_data", async fn(_event) {
     { "name": "John Doe", "age": 30, "city": "New York" }
   })
 
   // Dynamic Routes
-  app.get("/hello/:name", fn(event) {
+  // /hello2/World = Hello, World!
+  ..get("/hello/:name", fn(event) {
     let name = event.params.get("name").or("World")
     "Hello, \{name}!"
   })
-
-  // Wildcard Routes
-  app.get("/hello/*", fn(event) {
+  // /hello2/World = Hello, World!
+  ..get("/hello2/*", fn(event) {
     let name = event.params.get("_").or("World")
     "Hello, \{name}!"
   })
 
-  app.get("/hello/**", fn(event) {
-    let path = event.params.get("_").or("")
-    "Hello, \{path}!"
+  // Wildcard Routes
+  // /hello3/World/World = Hello, World/World!
+  ..get("/hello3/**", fn(event) {
+    let name = event.params.get("_").or("World")
+    "Hello, \{name}!"
   })
 
   // Echo Server
-  app.post("/echo", e => e.req.body.to_json())
+  ..post("/echo", e => e.req.body.to_json())
 
   // 404 Page
-  app.get("/404", e => {
+  ..get("/404", e => {
     e.res.statusCode = 404
     @mocket.html(
       #|<html>
@@ -154,10 +141,12 @@ fn main {
   })
 
   // Serve
-  app.serve(port=4000)
+  ..serve(port=4000)
 
   // Print Server URL
-  println("http://localhost:4000")
+  for path in app.mappings.keys() {
+    println("http://localhost:4000\{path.1}")
+  }
 }
 ```
 
