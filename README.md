@@ -4,7 +4,7 @@ A web framework for MoonBit.
 
 ![logo](logo.jpg)
 
-![screenshots](screenshots/1.png)
+![screenshots](screenshots/1.jpg)
 
 ## Quick Start
 
