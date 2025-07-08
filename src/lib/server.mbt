@@ -26,6 +26,7 @@ pub async fn[T, E : Error] suspend(
 ///|
 pub(all) struct Mocket {
   mappings : Map[(String, String), async (HttpEvent) -> Json]
+  middlewares : Array[async (HttpEvent) -> Unit]
 }
 
 ///|
@@ -33,7 +34,7 @@ pub typealias Mocket as T
 
 ///|
 pub fn new() -> Mocket {
-  { mappings: {} }
+  { mappings: {}, middlewares: [] }
 }
 
 ///|
@@ -239,6 +240,32 @@ pub fn all(
 }
 
 ///|
+// 注册全局中间件
+pub fn use_middleware(
+  self : Mocket,
+  middleware : async (HttpEvent) -> Unit
+) -> Unit {
+  self.middlewares.push(middleware)
+}
+
+///|
+// 执行中间件链
+fn executeMiddlewares(
+  middlewares : Array[async (HttpEvent) -> Unit],
+  event : HttpEvent,
+  index : Int
+) -> Unit {
+  if index >= middlewares.length() {
+    return
+  }
+  let middleware = middlewares[index]
+  run(fn() {
+    middleware(event)
+    executeMiddlewares(middlewares, event, index + 1)
+  })
+}
+
+///|
 // 查找匹配的路由和参数
 fn findRoute(
   self : Mocket,
@@ -319,6 +346,9 @@ pub fn serve(self : Mocket, port~ : Int) -> Unit {
           }
           event.req.body = body
         }
+
+        // 执行中间件链
+        executeMiddlewares(self.middlewares, event, 0)
         let response = handler(event)
         let body = match response {
           { "__": String(contentType), "body": body, .. } => {
