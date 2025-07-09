@@ -8,6 +8,10 @@ A web framework for MoonBit.
 
 ## Quick Start
 
+It's necessary to set the backend of MoonBit to `js` in `Visual Studio Code`
+
+Command: `MoonBit: Select Backend` -> `js`
+
 ```bash
 moon run src/main/main.mbt --target js
 ```
