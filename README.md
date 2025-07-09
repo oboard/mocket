@@ -62,25 +62,6 @@ app.get("/async_data", async fn(event) {
 })
 ```
 
-```moonbit
-run_async(fn() {
-  try {
-    let result = @mocket.exec!!("ls")
-    println(result)
-  } catch {
-    err => println("Error executing command: \{err}")
-  }
-})
-run_async(fn() {
-  try {
-    let response = @mocket.fetch!!("https://api64.ipify.org/")
-    println(response)
-  } catch {
-    err => println("Error fetching data: \{err}")
-  }
-})
-```
-
 ## Example usage
 
 ```moonbit
