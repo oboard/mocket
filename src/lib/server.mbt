@@ -27,6 +27,12 @@ pub async fn[T, E : Error] suspend(
 pub(all) struct Mocket {
   mappings : Map[(String, String), async (HttpEvent) -> Json]
   middlewares : Array[async (HttpEvent) -> Unit]
+  // 添加正则表达式缓存，类型暂时使用 Json 占位符
+  regex_cache : Map[String, Json]
+  // 添加静态路由缓存（精确匹配的路由）
+  static_routes : Map[String, Map[String, async (HttpEvent) -> Json]]
+  // 添加动态路由缓存（包含参数的路由）
+  dynamic_routes : Map[String, Array[(String, async (HttpEvent) -> Json)]]
 }
 
 ///|
@@ -34,7 +40,13 @@ pub typealias Mocket as T
 
 ///|
 pub fn new() -> Mocket {
-  { mappings: {}, middlewares: [] }
+  {
+    mappings: {},
+    middlewares: [],
+    regex_cache: {},
+    static_routes: {},
+    dynamic_routes: {},
+  }
 }
 
 ///|
@@ -62,21 +74,26 @@ pub struct HttpEvent {
 ///|
 // 将路径模板转换为正则表达式
 fn templateToRegex(template : String) -> String {
-  // 将 :param 替换为 ([^/]+)，将 * 替换为 (.*)，将 ** 替换为 (.*)
-  let parts = template.split("/").to_array()
-  let mut i = 0
-  while i < parts.length() {
-    let part = parts[i].to_string()
-    if part.find(":").or(-1) == 0 {
-      parts[i] = "([^/]+)"
-    } else if part == "*" {
-      parts[i] = "([^/]+)"
-    } else if part == "**" {
-      parts[i] = "(.*)"
-    }
-    i = i + 1
+  // 优化：避免重复的字符串操作
+  if template.find(":").or(-1) == -1 && template.find("*").or(-1) == -1 {
+    return "^" + template + "$"
   }
-  "^" + parts.map(fn(p) { p.to_string() }).join("/") + "$"
+  let parts = template.split("/")
+  let result_parts = []
+  for part in parts {
+    let part_str = part.to_string()
+    if part_str.length() > 0 &&
+      part_str.charcodes(start=0, end=1).to_string() == ":" {
+      result_parts.push("([^/]+)")
+    } else if part_str == "*" {
+      result_parts.push("([^/]+)")
+    } else if part_str == "**" {
+      result_parts.push("(.*)")
+    } else {
+      result_parts.push(part_str)
+    }
+  }
+  "^" + result_parts.join("/") + "$"
 }
 
 ///|
@@ -147,6 +164,28 @@ pub fn on(
   handler : async (HttpEvent) -> Json
 ) -> Unit {
   self.mappings.set((event, path), handler)
+
+  // 优化：根据路径类型分别缓存
+  if path.find(":").or(-1) == -1 && path.find("*").or(-1) == -1 {
+    // 静态路径，直接缓存
+    match self.static_routes.get(event) {
+      Some(method_routes) => method_routes.set(path, handler)
+      None => {
+        let new_routes = {}
+        new_routes.set(path, handler)
+        self.static_routes.set(event, new_routes)
+      }
+    }
+  } else {
+    // 动态路径，加入动态路由列表
+    match self.dynamic_routes.get(event) {
+      Some(routes) => routes.push((path, handler))
+      None => {
+        let new_routes = [(path, handler)]
+        self.dynamic_routes.set(event, new_routes)
+      }
+    }
+  }
 }
 
 ///|
@@ -252,17 +291,15 @@ pub fn use_middleware(
 // 执行中间件链
 fn executeMiddlewares(
   middlewares : Array[async (HttpEvent) -> Unit],
-  event : HttpEvent,
-  index : Int
+  event : HttpEvent
 ) -> Unit {
-  if index >= middlewares.length() {
-    return
+  // 优化：使用迭代而不是递归，避免栈溢出
+  let mut i = 0
+  while i < middlewares.length() {
+    let middleware = middlewares[i]
+    run(fn() { middleware(event) })
+    i = i + 1
   }
-  let middleware = middlewares[index]
-  run(fn() {
-    middleware(event)
-    executeMiddlewares(middlewares, event, index + 1)
-  })
 }
 
 ///|
@@ -272,45 +309,81 @@ fn findRoute(
   reqMethod : String,
   path : String
 ) -> (async (HttpEvent) -> Json, Map[String, String])? {
-  // 首先尝试精确匹配
-  match self.mappings.get((reqMethod, path)) {
-    Some(handler) => Some((handler, {}))
-    None =>
-      // 尝试通配符方法匹配
-      match self.mappings.get(("*", path)) {
-        Some(handler) => Some((handler, {}))
-        None => {
-          // 然后尝试参数匹配
-          for route_key, handler in self.mappings {
-            let (route_method, route_path) = route_key
-            if route_method == reqMethod || route_method == "*" {
-              match matchPath(route_path, path) {
-                Some(params) => return Some((handler, params))
-                None => ignore(())
-              }
-            }
-          }
-          None
-        }
+  // 优化：首先尝试静态路由缓存
+  match self.static_routes.get(reqMethod) {
+    Some(method_routes) =>
+      match method_routes.get(path) {
+        Some(handler) => return Some((handler, {}))
+        None => ignore(())
       }
+    None => ignore(())
   }
+
+  // 检查通配符方法的静态路由
+  match self.static_routes.get("*") {
+    Some(method_routes) =>
+      match method_routes.get(path) {
+        Some(handler) => return Some((handler, {}))
+        None => ignore(())
+      }
+    None => ignore(())
+  }
+
+  // 然后尝试动态路由
+  match self.dynamic_routes.get(reqMethod) {
+    Some(routes) => {
+      let mut i = 0
+      while i < routes.length() {
+        let route_item = routes[i]
+        let route_path = route_item.0
+        let handler = route_item.1
+        match matchPath(route_path, path) {
+          Some(params) => return Some((handler, params))
+          None => ignore(())
+        }
+        i = i + 1
+      }
+    }
+    None => ignore(())
+  }
+
+  // 最后检查通配符方法的动态路由
+  match self.dynamic_routes.get("*") {
+    Some(routes) => {
+      let mut i = 0
+      while i < routes.length() {
+        let route_item = routes[i]
+        let route_path = route_item.0
+        let handler = route_item.1
+        match matchPath(route_path, path) {
+          Some(params) => return Some((handler, params))
+          None => ignore(())
+        }
+        i = i + 1
+      }
+    }
+    None => ignore(())
+  }
+  None
 }
 
 ///|
 pub fn serve(self : Mocket, port~ : Int) -> Unit {
   createServer(
     fn(req, res, _) {
+      // 优化：简化 headers 转换逻辑
+      let string_headers = {}
       guard (try? req.headers().to_value().to_json()) is Ok(Object(headers)) else {
         res.writeHead(400, @js.Object::new().to_value())
         res.end("Invalid headers")
         return
       }
 
-      // 将 JSON headers 转换为字符串 headers
-      let string_headers = {}
+      // 批量转换 headers，减少单个处理的开销
       headers.each(fn(key, value) {
-        if value is String(v) {
-          string_headers.set(key, v)
+        match value {
+          String(v) => string_headers.set(key, v)
+          _ => ignore(()) // 忽略非字符串 header
         }
       })
       let event = {
@@ -348,7 +421,7 @@ pub fn serve(self : Mocket, port~ : Int) -> Unit {
         }
 
         // 执行中间件链
-        executeMiddlewares(self.middlewares, event, 0)
+        executeMiddlewares(self.middlewares, event)
         let response = handler(event)
         let body = match response {
           { "__": String(contentType), "body": body, .. } => {
