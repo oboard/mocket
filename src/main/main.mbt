@@ -22,19 +22,19 @@ fn main {
   // Dynamic Routes
   // /hello2/World = Hello, World!
   ..get("/hello/:name", fn(event) {
-    let name = event.params.get("name").or("World")
+    let name = event.params.get("name").unwrap_or("World")
     "Hello, \{name}!"
   })
   // /hello2/World = Hello, World!
   ..get("/hello2/*", fn(event) {
-    let name = event.params.get("_").or("World")
+    let name = event.params.get("_").unwrap_or("World")
     "Hello, \{name}!"
   })
 
   // Wildcard Routes
   // /hello3/World/World = Hello, World/World!
   ..get("/hello3/**", fn(event) {
-    let name = event.params.get("_").or("World")
+    let name = event.params.get("_").unwrap_or("World")
     "Hello, \{name}!"
   })
 
@@ -45,12 +45,13 @@ fn main {
   ..get("/404", e => {
     e.res.statusCode = 404
     @mocket.html(
-      #|<html>
-      #|<body>
-      #|  <h1>404</h1>
-      #|</body>
-      #|</html>
-      ,
+      (
+        #|<html>
+        #|<body>
+        #|  <h1>404</h1>
+        #|</body>
+        #|</html>
+      ),
     )
   })
 

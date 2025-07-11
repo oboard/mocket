@@ -11,21 +11,21 @@ pub struct URL {
 ///|
 pub fn URL::parse(rawUrl : String) -> URL {
   let url = rawUrl.trim_space()
-  let scheme_end = url.find("://").or(0)
-  let fragment_start = url.find("#").or(-1)
-  let query_start = url.find("?").or(-1)
+  let scheme_end = url.find("://").unwrap_or(0)
+  let fragment_start = url.find("#").unwrap_or(-1)
+  let query_start = url.find("?").unwrap_or(-1)
   let query_end = if fragment_start != -1 {
     fragment_start
   } else {
     url.length()
   }
   let port_start = if scheme_end + 3 < url.length() {
-    url.charcodes(start=scheme_end + 3).find(":").or(-1)
+    url.charcodes(start=scheme_end + 3).find(":").unwrap_or(-1)
   } else {
     -1
   }
   let port_end = if port_start != -1 {
-    url.charcodes(start=port_start).find("/").or(-1)
+    url.charcodes(start=port_start).find("/").unwrap_or(-1)
   } else {
     0
   }

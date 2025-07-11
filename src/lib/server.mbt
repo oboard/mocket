@@ -75,7 +75,8 @@ pub struct HttpEvent {
 // 将路径模板转换为正则表达式
 fn templateToRegex(template : String) -> String {
   // 优化：避免重复的字符串操作
-  if template.find(":").or(-1) == -1 && template.find("*").or(-1) == -1 {
+  if template.find(":").unwrap_or(-1) == -1 &&
+    template.find("*").unwrap_or(-1) == -1 {
     return "^" + template + "$"
   }
   let parts = template.split("/")
@@ -100,7 +101,8 @@ fn templateToRegex(template : String) -> String {
 // 匹配路径并提取参数
 fn matchPath(template : String, path : String) -> Map[String, String]? {
   // 如果模板中没有参数和通配符，直接比较
-  if template.find(":").or(-1) == -1 && template.find("*").or(-1) == -1 {
+  if template.find(":").unwrap_or(-1) == -1 &&
+    template.find("*").unwrap_or(-1) == -1 {
     if template == path {
       return Some({})
     } else {
@@ -122,7 +124,7 @@ fn matchPath(template : String, path : String) -> Map[String, String]? {
   let mut i = 0
   while i < template_parts.length() {
     let part = template_parts[i].to_string()
-    if part.find(":").or(-1) == 0 {
+    if part.find(":").unwrap_or(-1) == 0 {
       param_names.push(part.charcodes(start=1).to_string())
     } else if part == "*" {
       param_names.push("*")
@@ -166,7 +168,7 @@ pub fn on(
   self.mappings.set((event, path), handler)
 
   // 优化：根据路径类型分别缓存
-  if path.find(":").or(-1) == -1 && path.find("*").or(-1) == -1 {
+  if path.find(":").unwrap_or(-1) == -1 && path.find("*").unwrap_or(-1) == -1 {
     // 静态路径，直接缓存
     match self.static_routes.get(event) {
       Some(method_routes) => method_routes.set(path, handler)
