@@ -53,7 +53,7 @@ jobs:
           moon install
 
       - name: moon check
-        run: moon check --deny-warn
+        run: moon check --deny-warn --target js
 
       - name: moon info
         run: |
