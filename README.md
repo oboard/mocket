@@ -149,4 +149,4 @@ fn main {
 
 QQ 群号：**949886784**
 
-![QQ群](qrcode.jpg)
+![QQ 群](qrcode.jpg)
