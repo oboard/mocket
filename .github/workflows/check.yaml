@@ -1,0 +1,93 @@
+name: check
+
+on:
+  schedule:
+    # Runs at 02:30, only on Friday.
+    # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
+    - cron: "30 2 * * 5"
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - main
+      
+  pull_request:
+
+jobs:
+  check:
+    strategy:
+      matrix:
+        version: [stable,pre-release,bleeding]
+        os:
+          - name: ubuntu-latest
+            triple: x86_64-linux-gnu
+
+          # stable check
+
+          # pre-release check
+
+          # bleeding check
+          # 1. install latest toolchain
+          # 2. install latest core library from github.com
+          
+      fail-fast: false
+    runs-on: ${{ matrix.os.name }}
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      
+      - name: Setup Moon
+        uses: illusory0x0/setup-moonbit@v0.1.0
+        with: 
+          version: ${{ matrix.version }}
+
+      - name: moon version
+        run: |
+          moon version --all
+
+      - name: install module dependencies
+        run: |
+          moon update
+          moon install
+
+      - name: moon check
+        run: moon check --deny-warn
+
+      - name: moon info
+        run: |
+          moon info --target js
+          git diff --exit-code
+
+      - name: format diff
+        run: |
+          moon fmt
+          git diff --exit-code
+
+      - name: Setup MSVC
+        if: ${{ matrix.os.name == 'windows-latest' }}
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Set ulimit on unix
+        if: ${{ matrix.os.name != 'windows-latest' }}
+        run: |
+          ulimit -s 8176
+
+      - name: moon test
+        run: |
+          moon test --target js
+          moon test --target js
+
+  check-typos:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: AutoCorrect
+        uses: huacnlee/autocorrect-action@v2
+
+      - name: typos-action
+        uses: crate-ci/typos@v1.31.1
