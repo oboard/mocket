@@ -8,7 +8,7 @@ pub suberror NetworkError derive(Show)
 pub suberror ExecError derive(Show)
 
 ///|
-pub fn run(f : async () -> Unit) -> Unit = "%async.run"
+pub fn run(f : async () -> Unit noraise) -> Unit = "%async.run"
 
 ///| `suspend` 会中断当前协程的运行。
 /// `suspend` 会接受一个回调函数，并让这个回调函数来操作中断的协程
@@ -20,19 +20,22 @@ pub async fn[T, E : Error] suspend(
     // `f` 的第二个参数用于取消被中断的协程。
     // 取消会被表示为在中断处抛出错误
     (E) -> Unit,
-  ) -> Unit
+  ) -> Unit,
 ) -> T raise E = "%async.suspend"
 
 ///|
 pub(all) struct Mocket {
-  mappings : Map[(String, String), async (HttpEvent) -> Json]
-  middlewares : Array[async (HttpEvent) -> Unit]
+  mappings : Map[(String, String), async (HttpEvent) -> Json noraise]
+  middlewares : Array[async (HttpEvent) -> Unit noraise]
   // 添加正则表达式缓存，类型暂时使用 Json 占位符
   regex_cache : Map[String, Json]
   // 添加静态路由缓存（精确匹配的路由）
-  static_routes : Map[String, Map[String, async (HttpEvent) -> Json]]
+  static_routes : Map[String, Map[String, async (HttpEvent) -> Json noraise]]
   // 添加动态路由缓存（包含参数的路由）
-  dynamic_routes : Map[String, Array[(String, async (HttpEvent) -> Json)]]
+  dynamic_routes : Map[
+    String,
+    Array[(String, async (HttpEvent) -> Json noraise)],
+  ]
 }
 
 ///|
@@ -163,7 +166,7 @@ pub fn on(
   self : Mocket,
   event : String,
   path : String,
-  handler : async (HttpEvent) -> Json
+  handler : async (HttpEvent) -> Json noraise,
 ) -> Unit {
   self.mappings.set((event, path), handler)
 
@@ -194,7 +197,7 @@ pub fn on(
 pub fn get(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json
+  handler : async (HttpEvent) -> Json noraise,
 ) -> Unit {
   self.on("GET", path, handler)
 }
@@ -203,7 +206,7 @@ pub fn get(
 pub fn post(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json
+  handler : async (HttpEvent) -> Json noraise,
 ) -> Unit {
   self.on("POST", path, handler)
 }
@@ -212,7 +215,7 @@ pub fn post(
 pub fn patch(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json
+  handler : async (HttpEvent) -> Json noraise,
 ) -> Unit {
   self.on("PATCH", path, handler)
 }
@@ -221,7 +224,7 @@ pub fn patch(
 pub fn connect(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json
+  handler : async (HttpEvent) -> Json noraise,
 ) -> Unit {
   self.on("CONNECT", path, handler)
 }
@@ -230,7 +233,7 @@ pub fn connect(
 pub fn put(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json
+  handler : async (HttpEvent) -> Json noraise,
 ) -> Unit {
   self.on("PUT", path, handler)
 }
@@ -239,7 +242,7 @@ pub fn put(
 pub fn delete(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json
+  handler : async (HttpEvent) -> Json noraise,
 ) -> Unit {
   self.on("DELETE", path, handler)
 }
@@ -248,7 +251,7 @@ pub fn delete(
 pub fn head(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json
+  handler : async (HttpEvent) -> Json noraise,
 ) -> Unit {
   self.on("HEAD", path, handler)
 }
@@ -257,7 +260,7 @@ pub fn head(
 pub fn options(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json
+  handler : async (HttpEvent) -> Json noraise,
 ) -> Unit {
   self.on("OPTIONS", path, handler)
 }
@@ -266,7 +269,7 @@ pub fn options(
 pub fn trace(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json
+  handler : async (HttpEvent) -> Json noraise,
 ) -> Unit {
   self.on("TRACE", path, handler)
 }
@@ -275,7 +278,7 @@ pub fn trace(
 pub fn all(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json
+  handler : async (HttpEvent) -> Json noraise,
 ) -> Unit {
   self.on("*", path, handler)
 }
@@ -284,7 +287,7 @@ pub fn all(
 // 注册全局中间件
 pub fn use_middleware(
   self : Mocket,
-  middleware : async (HttpEvent) -> Unit
+  middleware : async (HttpEvent) -> Unit noraise,
 ) -> Unit {
   self.middlewares.push(middleware)
 }
@@ -292,8 +295,8 @@ pub fn use_middleware(
 ///|
 // 执行中间件链
 fn executeMiddlewares(
-  middlewares : Array[async (HttpEvent) -> Unit],
-  event : HttpEvent
+  middlewares : Array[async (HttpEvent) -> Unit noraise],
+  event : HttpEvent,
 ) -> Unit {
   // 优化：使用迭代而不是递归，避免栈溢出
   let mut i = 0
@@ -309,8 +312,8 @@ fn executeMiddlewares(
 fn findRoute(
   self : Mocket,
   reqMethod : String,
-  path : String
-) -> (async (HttpEvent) -> Json, Map[String, String])? {
+  path : String,
+) -> (async (HttpEvent) -> Json noraise, Map[String, String])? {
   // 优化：首先尝试静态路由缓存
   match self.static_routes.get(reqMethod) {
     Some(method_routes) =>
