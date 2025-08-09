@@ -87,7 +87,7 @@ fn templateToRegex(template : String) -> String {
   for part in parts {
     let part_str = part.to_string()
     if part_str.length() > 0 &&
-      part_str.charcodes(start=0, end=1).to_string() == ":" {
+      part_str.view(start_offset=0, end_offset=1) == ":" {
       result_parts.push("([^/]+)")
     } else if part_str == "*" {
       result_parts.push("([^/]+)")
@@ -128,7 +128,7 @@ fn matchPath(template : String, path : String) -> Map[String, String]? {
   while i < template_parts.length() {
     let part = template_parts[i].to_string()
     if part.find(":").unwrap_or(-1) == 0 {
-      param_names.push(part.charcodes(start=1).to_string())
+      param_names.push(part.view(start_offset=1).to_string())
     } else if part == "*" {
       param_names.push("*")
     } else if part == "**" {

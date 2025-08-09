@@ -20,17 +20,17 @@ pub fn URL::parse(rawUrl : String) -> URL {
     url.length()
   }
   let port_start = if scheme_end + 3 < url.length() {
-    url.charcodes(start=scheme_end + 3).find(":").unwrap_or(-1)
+    url.view(start_offset=scheme_end + 3).find(":").unwrap_or(-1)
   } else {
     -1
   }
   let port_end = if port_start != -1 {
-    url.charcodes(start=port_start).find("/").unwrap_or(-1)
+    url.view(start_offset=port_start).find("/").unwrap_or(-1)
   } else {
     0
   }
   let protocol = if scheme_end != -1 {
-    Some(url.charcodes(start=0, end=scheme_end).to_string())
+    Some(url.view(start_offset=0, end_offset=scheme_end).to_string())
   } else {
     None
   }
@@ -45,11 +45,11 @@ pub fn URL::parse(rawUrl : String) -> URL {
     url.length()
   }
   let host = if url.contains(".") {
-    Some(url.charcodes(start=host_start, end=host_end).to_string())
+    Some(url.view(start_offset=host_start, end_offset=host_end).to_string())
   } else {
     None
   }
-  let port_str = url.charcodes(start=port_start + 1, end=port_end)
+  let port_str = url.view(start_offset=port_start + 1, end_offset=port_end)
   let port = if port_str.length() > 0 {
     Some(@strconv.parse_int(port_str.to_string())) catch {
       _ => None
@@ -74,15 +74,19 @@ pub fn URL::parse(rawUrl : String) -> URL {
     url.length()
   }
   // println("path_Start: \(path_start), path_End: \(path_end)")
-  let path = url.charcodes(start=path_start, end=path_end).to_string()
+  let path = url.view(start_offset=path_start, end_offset=path_end).to_string()
   let query = if query_start != -1 {
-    let query_str = url.charcodes(start=query_start + 1, end=query_end)
+    let query_str = url.view(start_offset=query_start + 1, end_offset=query_end)
     Some(query_map(query_str.to_string()))
   } else {
     None
   }
   let fragment = if fragment_start != -1 {
-    Some(url.charcodes(start=fragment_start + 1, end=url.length()).to_string())
+    Some(
+      url
+      .view(start_offset=fragment_start + 1, end_offset=url.length())
+      .to_string(),
+    )
   } else {
     None
   }
@@ -92,11 +96,13 @@ pub fn URL::parse(rawUrl : String) -> URL {
 ///|
 fn query_map(query_str : String) -> Map[String, String] {
   let query_array = query_str.split("&")
-  query_array.map(fn(s) {
-    let array = s.split("=").to_array()
-    let key = array[0].to_string()
-    let value = array[1].to_string()
-    return (key, value)
+  query_array.map(item => {
+    if item.split("=").to_array() is [key, value] {
+      let key = key.to_string()
+      let value = value.to_string()
+      return (key, value)
+    }
+    return (item.to_string(), "")
   })
   |> Map::from_iter
 }
@@ -108,38 +114,26 @@ pub fn URL::output(self : URL, logger : &Logger) -> Unit {
 
 ///|
 pub fn URL::to_string(self : URL) -> String {
-  let protocol = match self.protocol {
-    Some(p) => p + "://"
-    None => ""
-  }
-  let host = match self.host {
-    Some(h) => h
-    None => ""
-  }
+  let protocol = if self.protocol is Some(p) { p + "://" } else { "" }
+  let host = if self.host is Some(h) { h } else { "" }
   let port = self.port
   let path = self.path
   let query = self.query
   let fragment = self.fragment
-  let port_str = match port {
-    Some(p) => ":" + p.to_string()
-    None => ""
+  let port_str = if port is Some(p) { ":" + p.to_string() } else { "" }
+  let query_str = if query is Some(q) {
+    "?" +
+    q
+    .to_array()
+    .map(item => {
+      let (k, v) = item
+      k + "=" + v
+    })
+    .join("&")
+  } else {
+    ""
   }
-  let query_str = match query {
-    Some(q) =>
-      "?" +
-      q
-      .to_array()
-      .map(fn(item) {
-        let (k, v) = item
-        k + "=" + v
-      })
-      .join("&")
-    None => ""
-  }
-  let fragment_str = match fragment {
-    Some(f) => "#" + f
-    None => ""
-  }
+  let fragment_str = if fragment is Some(f) { "#" + f } else { "" }
   protocol + host + port_str + path + query_str + fragment_str
 }
 

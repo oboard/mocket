@@ -1,3 +1,4 @@
+// Generated using `moon info`, DON'T EDIT IT
 package "oboard/mocket/lib"
 
 import(
@@ -19,10 +20,17 @@ async fn[T, E : Error] suspend(((T) -> Unit, (E) -> Unit) -> Unit) -> T raise E
 
 fn text(String) -> Json
 
-// Types and methods
-pub type! ExecError
+// Errors
+pub suberror ExecError
 impl Show for ExecError
 
+pub suberror IOError
+impl Show for IOError
+
+pub suberror NetworkError
+impl Show for NetworkError
+
+// Types and methods
 pub struct HttpEvent {
   req : HttpRequest
   res : HttpResponse
@@ -55,9 +63,6 @@ fn HttpResponseInternal::statusCode(Self) -> Int
 fn HttpResponseInternal::url(Self) -> String
 fn HttpResponseInternal::writeHead(Self, Int, @js.Value) -> Unit
 
-pub type! IOError
-impl Show for IOError
-
 pub(all) struct Mocket {
   mappings : Map[(String, String), async (HttpEvent) -> Json]
   middlewares : Array[async (HttpEvent) -> Unit]
@@ -78,9 +83,6 @@ fn Mocket::put(Self, String, async (HttpEvent) -> Json) -> Unit
 fn Mocket::serve(Self, port~ : Int) -> Unit
 fn Mocket::trace(Self, String, async (HttpEvent) -> Json) -> Unit
 fn Mocket::use_middleware(Self, async (HttpEvent) -> Unit) -> Unit
-
-pub type! NetworkError
-impl Show for NetworkError
 
 pub struct URL {
   protocol : String?
