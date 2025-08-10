@@ -66,6 +66,31 @@ app.get("/async_data", async fn(event) {
 })
 ```
 
+### Route Groups
+
+Group related routes under a common base path with shared middleware:
+
+```moonbit
+app.group("/api", group => {
+  // Add group-level middleware
+  group.use_middleware(event => println(
+    "🔒 API Group Middleware: \{event.req.reqMethod} \{event.req.url}",
+  ))
+  
+  // Routes under /api prefix
+  group.get("/hello", _ => "Hello from API!")
+  group.get("/users", _ => { "users": ["Alice", "Bob"] })
+  group.post("/data", e => e.req.body.to_json())
+})
+```
+
+This creates routes:
+- `GET /api/hello`
+- `GET /api/users` 
+- `POST /api/data`
+
+All routes in the group will execute the group middleware in addition to any global middleware.
+
 ## Example usage
 
 ```moonbit
@@ -81,6 +106,20 @@ fn main {
 
   // Text Response
   ..get("/", _event => "⚡️ Tadaa!")
+
+  // Route Groups with middleware
+  ..group("/api", group => {
+    // Add group-level middleware
+    group.use_middleware(event => println(
+      "🔒 API Group Middleware: \{event.req.reqMethod} \{event.req.url}",
+    ))
+    group.get("/hello", _ => "Hello from API!")
+    group.get("/json", _ => {
+      "name": "John Doe",
+      "age": 30,
+      "city": "New York",
+    })
+  })
 
   // JSON Response
   ..get("/json", _event => { "name": "John Doe", "age": 30, "city": "New York" })
@@ -144,6 +183,8 @@ fn main {
 | `/hello/**` | `/hello/foo/bar` | `_: "foo/bar"` |
 | `/users/:id/posts/:postId` | `/users/123/posts/456` | `id: "123"`, `postId: "456"` |
 | `/api/**` | `/api/v1/users/123` | `_: "v1/users/123"` |
+| `group("/api", ...).get("/hello")` | `/api/hello` | - |
+| `group("/users", ...).get("/:id")` | `/users/123` | `id: "123"` |
 
 🙌快来吧！🙌
 
