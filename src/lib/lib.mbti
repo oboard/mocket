@@ -12,7 +12,7 @@ fn html(String) -> Json
 
 fn json(Json) -> Json
 
-fn new() -> Mocket
+fn new(base_path~ : String = ..) -> Mocket
 
 fn run(async () -> Unit) -> Unit
 
@@ -64,8 +64,9 @@ fn HttpResponseInternal::url(Self) -> String
 fn HttpResponseInternal::writeHead(Self, Int, @js.Value) -> Unit
 
 pub(all) struct Mocket {
+  base_path : String
   mappings : Map[(String, String), async (HttpEvent) -> Json]
-  middlewares : Array[async (HttpEvent) -> Unit]
+  middlewares : Array[(String, async (HttpEvent) -> Unit)]
   static_routes : Map[String, Map[String, async (HttpEvent) -> Json]]
   dynamic_routes : Map[String, Array[(String, async (HttpEvent) -> Json)]]
 }
@@ -73,6 +74,7 @@ fn Mocket::all(Self, String, async (HttpEvent) -> Json) -> Unit
 fn Mocket::connect(Self, String, async (HttpEvent) -> Json) -> Unit
 fn Mocket::delete(Self, String, async (HttpEvent) -> Json) -> Unit
 fn Mocket::get(Self, String, async (HttpEvent) -> Json) -> Unit
+fn Mocket::group(Self, String, (Self) -> Unit) -> Unit
 fn Mocket::head(Self, String, async (HttpEvent) -> Json) -> Unit
 fn Mocket::on(Self, String, String, async (HttpEvent) -> Json) -> Unit
 fn Mocket::options(Self, String, async (HttpEvent) -> Json) -> Unit
@@ -81,7 +83,7 @@ fn Mocket::post(Self, String, async (HttpEvent) -> Json) -> Unit
 fn Mocket::put(Self, String, async (HttpEvent) -> Json) -> Unit
 fn Mocket::serve(Self, port~ : Int) -> Unit
 fn Mocket::trace(Self, String, async (HttpEvent) -> Json) -> Unit
-fn Mocket::use_middleware(Self, async (HttpEvent) -> Unit) -> Unit
+fn Mocket::use_middleware(Self, async (HttpEvent) -> Unit, base_path? : String) -> Unit
 
 pub struct URL {
   protocol : String?
