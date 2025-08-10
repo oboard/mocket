@@ -11,6 +11,21 @@ fn main {
   // Text Response
   ..get("/", _event => "⚡️ Tadaa!")
 
+  // Hello World
+  ..on("GET", "/hello", _ => "Hello world!")
+  ..group("/api", group => {
+    // 添加组级中间件
+    group.use_middleware(event => println(
+      "🔒 API Group Middleware: \{event.req.reqMethod} \{event.req.url}",
+    ))
+    group.get("/hello", _ => "Hello world!")
+    group.get("/json", _ => {
+      "name": "John Doe",
+      "age": 30,
+      "city": "New York",
+    })
+  })
+
   // JSON Response
   ..get("/json", _event => { "name": "John Doe", "age": 30, "city": "New York" })
 

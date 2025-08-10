@@ -66,7 +66,6 @@ fn HttpResponseInternal::writeHead(Self, Int, @js.Value) -> Unit
 pub(all) struct Mocket {
   mappings : Map[(String, String), async (HttpEvent) -> Json]
   middlewares : Array[async (HttpEvent) -> Unit]
-  regex_cache : Map[String, Json]
   static_routes : Map[String, Map[String, async (HttpEvent) -> Json]]
   dynamic_routes : Map[String, Array[(String, async (HttpEvent) -> Json)]]
 }
