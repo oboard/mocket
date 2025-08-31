@@ -1,5 +1,10 @@
 # oboard/mocket
 
+[![Version](https://img.shields.io/badge/dynamic/json?url=https%3A//mooncakes.io/assets/oboard/mocket/resource.json&query=%24.meta_info.version&label=mooncakes&color=yellow)](https://mooncakes.io/docs/oboard/mocket)
+[![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/oboard/mocket/check.yaml)](https://github.com/oboard/mocket/actions/workflows/check.yaml)
+[![License](https://img.shields.io/github/license/oboard/mocket)](https://github.com/oboard/mocket/blob/main/LICENSE)
+
+
 A web framework for MoonBit.
 
 ![logo](logo.jpg)
