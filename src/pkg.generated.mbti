@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "oboard/mocket/lib"
+package "oboard/mocket"
 
 import(
   "moonbitlang/core/builtin"

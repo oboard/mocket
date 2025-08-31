@@ -1,9 +1,0 @@
-{
-  "is-main": true,
-  "import": [
-    {
-      "path": "oboard/mocket/lib",
-      "alias": "mocket"
-    }
-  ]
-}
