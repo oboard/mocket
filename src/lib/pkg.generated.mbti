@@ -45,7 +45,7 @@ pub struct HttpEvent {
 }
 
 pub struct HttpRequest {
-  reqMethod : String
+  method_ : String
   url : String
   headers : Map[String, String]
   mut body : String
@@ -55,11 +55,11 @@ pub struct HttpRequest {
 pub type HttpRequestInternal
 fn HttpRequestInternal::headers(Self) -> @js.Object
 fn HttpRequestInternal::on(Self, String, (@js.Value) -> Unit) -> Unit
-fn HttpRequestInternal::reqMethod(Self) -> String
+fn HttpRequestInternal::req_method(Self) -> String
 fn HttpRequestInternal::url(Self) -> String
 
 pub(all) struct HttpResponse {
-  mut statusCode : Int
+  mut status_code : Int
   headers : Map[String, String]
 }
 
@@ -68,7 +68,7 @@ pub type HttpResponseInternal
 fn HttpResponseInternal::end(Self, String) -> Unit
 fn HttpResponseInternal::statusCode(Self) -> Int
 fn HttpResponseInternal::url(Self) -> String
-fn HttpResponseInternal::writeHead(Self, Int, @js.Value) -> Unit
+fn HttpResponseInternal::write_head(Self, Int, @js.Value) -> Unit
 
 pub enum LogLevel {
   Debug

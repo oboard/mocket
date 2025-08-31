@@ -34,7 +34,7 @@ pub fn new(
 
 ///|
 pub struct HttpRequest {
-  reqMethod : String
+  method_ : String
   url : String
   headers : Map[String, String]
   mut body : String
@@ -42,7 +42,7 @@ pub struct HttpRequest {
 
 ///|
 pub(all) struct HttpResponse {
-  mut statusCode : Int
+  mut status_code : Int
   headers : Map[String, String]
   // body : String
 }

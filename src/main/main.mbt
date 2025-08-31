@@ -5,7 +5,7 @@ fn main {
   // Register global middleware
   app
   ..use_middleware(event => println(
-    "📝 Request: \{event.req.reqMethod} \{event.req.url}",
+    "📝 Request: \{event.req.method_} \{event.req.url}",
   ))
 
   // Text Response
@@ -16,7 +16,7 @@ fn main {
   ..group("/api", group => {
     // 添加组级中间件
     group.use_middleware(event => println(
-      "🔒 API Group Middleware: \{event.req.reqMethod} \{event.req.url}",
+      "🔒 API Group Middleware: \{event.req.method_} \{event.req.url}",
     ))
     group.get("/hello", _ => "Hello world!")
     group.get("/json", _ => {
@@ -58,7 +58,7 @@ fn main {
 
   // 404 Page
   ..get("/404", e => {
-    e.res.statusCode = 404
+    e.res.status_code = 404
     @mocket.html(
       (
         #|<html>

@@ -17,7 +17,7 @@ pub extern "js" fn HttpRequestInternal::url(
 ) -> String = "(s) => s.url"
 
 ///|
-pub extern "js" fn HttpRequestInternal::reqMethod(
+pub extern "js" fn HttpRequestInternal::req_method(
   self : HttpRequestInternal,
 ) -> String = "(s) => s.method"
 
@@ -45,7 +45,7 @@ pub extern "js" fn HttpResponseInternal::end(
 ) -> Unit = "(s, data) => s.end(data)"
 
 ///|
-pub extern "js" fn HttpResponseInternal::writeHead(
+pub extern "js" fn HttpResponseInternal::write_head(
   self : HttpResponseInternal,
   statusCode : Int,
   headers : @js.Value,

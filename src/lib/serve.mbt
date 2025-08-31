@@ -5,7 +5,7 @@ pub fn serve(self : Mocket, port~ : Int) -> Unit {
       // 优化：简化 headers 转换逻辑
       let string_headers = {}
       guard (try? req.headers().to_value().to_json()) is Ok(Object(headers)) else {
-        res.writeHead(400, @js.Object::new().to_value())
+        res.write_head(400, @js.Object::new().to_value())
         res.end("Invalid headers")
         return
       }
@@ -18,19 +18,19 @@ pub fn serve(self : Mocket, port~ : Int) -> Unit {
       })
       let event = {
         req: {
-          reqMethod: req.reqMethod(),
+          method_: req.req_method(),
           url: req.url(),
           body: "",
           headers: string_headers,
         },
-        res: { statusCode: 200, headers: {} },
+        res: { status_code: 200, headers: {} },
         params: {},
       }
 
       // 查找匹配的路由
-      guard self.find_route(req.reqMethod(), req.url())
+      guard self.find_route(req.req_method(), req.url())
         is Some((handler, params)) else {
-        res.writeHead(404, @js.Object::new().to_value())
+        res.write_head(404, @js.Object::new().to_value())
         res.end("Not Found")
         return
       }
@@ -39,7 +39,7 @@ pub fn serve(self : Mocket, port~ : Int) -> Unit {
       event.params = params
       run(fn() {
         // 如果是 post，先等待 data 事件
-        if event.req.reqMethod == "POST" {
+        if event.req.method_ == "POST" {
           let body = suspend(fn(res, _) {
             let buffer = @buffer.new()
             req.on("data", fn(data) { buffer.write_string(data.to_string()) })
@@ -73,8 +73,8 @@ pub fn serve(self : Mocket, port~ : Int) -> Unit {
           }
         }
         let body_str = if body is String(str) { str } else { body.stringify() }
-        res.writeHead(
-          event.res.statusCode,
+        res.write_head(
+          event.res.status_code,
           (try? @js.Value::from_json(event.res.headers.to_json())).or(
             @js.Object::new().to_value(),
           ),
