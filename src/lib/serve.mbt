@@ -45,7 +45,7 @@ pub fn serve(self : Mocket, port~ : Int) -> Unit {
             req.on("data", fn(data) { buffer.write_string(data.to_string()) })
             req.on("end", fn(_) { res(buffer.to_string()) })
           }) catch {
-            err => abort(err)
+            _ => panic()
           }
           event.req.body = body
         }

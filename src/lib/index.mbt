@@ -10,19 +10,25 @@ pub(all) struct Mocket {
     String,
     Array[(String, async (HttpEvent) -> Json noraise)],
   ]
+  // 日志记录器
+  logger : Logger
 }
 
 ///|
 pub typealias Mocket as T
 
 ///|
-pub fn new(base_path~ : String = "") -> Mocket {
+pub fn new(
+  base_path? : String = "",
+  logger? : Logger = new_production_logger(),
+) -> Mocket {
   {
     base_path,
     mappings: {},
     middlewares: [],
     static_routes: {},
     dynamic_routes: {},
+    logger,
   }
 }
 
@@ -75,21 +81,30 @@ pub fn on(
   handler : async (HttpEvent) -> Json noraise,
 ) -> Unit {
   let path = self.base_path + path
+  self.logger.route_register(event, path)
   self.mappings.set((event, path), handler)
 
   // 优化：根据路径类型分别缓存
   if path.find(":").unwrap_or(-1) == -1 && path.find("*").unwrap_or(-1) == -1 {
     // 静态路径，直接缓存
+    self.logger.route_static(event, path)
     match self.static_routes.get(event) {
-      Some(method_routes) => method_routes.set(path, handler)
+      Some(method_routes) => {
+        self.logger.route_merge_existing(event)
+        method_routes.set(path, handler)
+        self.logger.route_added(path)
+      }
       None => {
-        let new_routes = {}
+        self.logger.route_merge_new(event)
+        let new_routes : Map[String, async (HttpEvent) -> Json noraise] = {}
         new_routes.set(path, handler)
         self.static_routes.set(event, new_routes)
+        self.logger.route_created(path)
       }
     }
   } else {
     // 动态路径，加入动态路由列表
+    self.logger.route_dynamic(event, path)
     match self.dynamic_routes.get(event) {
       Some(routes) => routes.push((path, handler))
       None => {
@@ -197,11 +212,21 @@ pub fn group(
   base_path : String,
   configure : (Mocket) -> Unit,
 ) -> Unit {
-  let group = new(base_path=self.base_path + base_path)
+  let group = new(base_path=self.base_path + base_path, logger=self.logger)
   configure(group)
   // 合并路由
   group.mappings.iter().each(i => self.mappings.set(i.0, i.1))
-  group.static_routes.iter().each(i => self.static_routes.set(i.0, i.1))
+  group.static_routes
+  .iter()
+  .each(i => {
+    let method_ = i.0
+    let group_routes = i.1
+    match self.static_routes.get(method_) {
+      Some(existing_routes) =>
+        group_routes.iter().each(route => existing_routes.set(route.0, route.1))
+      None => self.static_routes.set(method_, group_routes)
+    }
+  })
   group.dynamic_routes
   .iter()
   .each(i => {

@@ -66,14 +66,28 @@ fn find_route(
   reqMethod : String,
   path : String,
 ) -> (async (HttpEvent) -> Json noraise, Map[String, String])? {
+  self.logger.route_lookup(reqMethod, path)
   // 优化：首先尝试静态路由缓存
   match self.static_routes.get(reqMethod) {
-    Some(method_routes) =>
+    Some(method_routes) => {
+      let routes = []
+      method_routes.iter().each(fn(item) { routes.push(item.0) })
+      self.logger.routes_available(routes)
       match method_routes.get(path) {
-        Some(handler) => return Some((handler, {}))
-        None => ignore(())
+        Some(handler) => {
+          self.logger.route_found(reqMethod, path)
+          return Some((handler, {}))
+        }
+        None => {
+          self.logger.route_not_found(path)
+          ignore(())
+        }
       }
-    None => ignore(())
+    }
+    None => {
+      self.logger.debug(fn() { "No method routes for \{reqMethod}" })
+      ignore(())
+    }
   }
 
   // 检查通配符方法的静态路由

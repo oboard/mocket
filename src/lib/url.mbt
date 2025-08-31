@@ -108,8 +108,8 @@ fn query_map(query_str : String) -> Map[String, String] {
 }
 
 ///|
-pub fn URL::output(self : URL, logger : &Logger) -> Unit {
-  logger.write_string(self.to_string())
+pub fn URL::output(self : URL, logger : Logger) -> Unit {
+  logger.debug(fn() { self.to_string() })
 }
 
 ///|
