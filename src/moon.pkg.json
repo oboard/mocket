@@ -1,9 +1,27 @@
 {
   "import": [
-    "rami3l/js-ffi/js",
-    "yj-qin/regexp"
+    "oboard/mocket/js",
+    "yj-qin/regexp",
+    "illusory0x0/native",
+    "moonbitlang/x/encoding",
+    "tonyfettes/uri"
   ],
+  "supported-targets": [
+    "js",
+    "native",
+    "llvm"
+  ],
+  "warn-list": "-29",
+  "native-stub": [
+    "mocket.stub.c",
+    "mongoose.c"
+  ],  
   "targets": {
-    "mocket_js.mbt": ["js"]
+    "mocket.js.mbt": [
+      "js"
+    ],
+    "mocket.native.mbt": [
+      "native"
+    ]
   }
 }

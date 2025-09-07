@@ -1,11 +1,11 @@
 ///|
 fn main {
-  let app = @mocket.new()
+  let app = @mocket.new(logger=@mocket.new_debug_logger())
 
   // Register global middleware
   app
   ..use_middleware(event => println(
-    "📝 Request: \{event.req.method_} \{event.req.url}",
+    "📝 Request: \{event.req.http_method} \{event.req.url}",
   ))
 
   // Text Response
@@ -16,7 +16,7 @@ fn main {
   ..group("/api", group => {
     // 添加组级中间件
     group.use_middleware(event => println(
-      "🔒 API Group Middleware: \{event.req.method_} \{event.req.url}",
+      "🔒 API Group Middleware: \{event.req.http_method} \{event.req.url}",
     ))
     group.get("/hello", _ => Text("Hello world!"))
     group.get("/json", _ => Json({

@@ -81,29 +81,37 @@ fn level_allows(self : Logger, target_level : LogLevel) -> Bool {
 
 ///|
 // 路由相关的专用日志方法 - 零成本抽象版本
-pub fn route_register(self : Logger, method_ : String, path : String) -> Unit {
-  self.debug(fn() { "🔧 Registering route: \{method_} \{path}" })
+pub fn route_register(
+  self : Logger,
+  http_method : String,
+  path : String,
+) -> Unit {
+  self.debug(fn() { "🔧 Registering route: \{http_method} \{path}" })
 }
 
 ///|
-pub fn route_static(self : Logger, method_ : String, path : String) -> Unit {
-  self.debug(fn() { "📌 Static route: \{method_} \{path}" })
+pub fn route_static(self : Logger, http_method : String, path : String) -> Unit {
+  self.debug(fn() { "📌 Static route: \{http_method} \{path}" })
 }
 
 ///|
-pub fn route_dynamic(self : Logger, method_ : String, path : String) -> Unit {
-  self.debug(fn() { "🎯 Dynamic route: \{method_} \{path}" })
+pub fn route_dynamic(
+  self : Logger,
+  http_method : String,
+  path : String,
+) -> Unit {
+  self.debug(fn() { "🎯 Dynamic route: \{http_method} \{path}" })
 }
 
 ///|
-pub fn route_lookup(self : Logger, method_ : String, path : String) -> Unit {
-  self.debug(fn() { "🔍 Looking for route: \{method_} \{path}" })
+pub fn route_lookup(self : Logger, http_method : String, path : String) -> Unit {
+  self.debug(fn() { "🔍 Looking for route: \{http_method} \{path}" })
 }
 
 ///|
-pub fn route_found(self : Logger, method_ : String, path : String) -> Unit {
+pub fn route_found(self : Logger, http_method : String, path : String) -> Unit {
   self.debug(fn() { "✅ Found static route match!" })
-  self.debug(fn() { "📝 Request: \{method_} \{path}" })
+  self.debug(fn() { "📝 Request: \{http_method} \{path}" })
 }
 
 ///|
@@ -119,13 +127,13 @@ pub fn routes_available(self : Logger, routes : Array[String]) -> Unit {
 }
 
 ///|
-pub fn route_merge_existing(self : Logger, method_ : String) -> Unit {
-  self.debug(fn() { "📝 Adding to existing method routes for \{method_}" })
+pub fn route_merge_existing(self : Logger, http_method : String) -> Unit {
+  self.debug(fn() { "📝 Adding to existing method routes for \{http_method}" })
 }
 
 ///|
-pub fn route_merge_new(self : Logger, method_ : String) -> Unit {
-  self.debug(fn() { "🆕 Creating new method routes for \{method_}" })
+pub fn route_merge_new(self : Logger, http_method : String) -> Unit {
+  self.debug(fn() { "🆕 Creating new method routes for \{http_method}" })
 }
 
 ///|

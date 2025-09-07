@@ -86,7 +86,7 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
       }
       let event = {
         req: {
-          method_: req.req_method(),
+          http_method: req.req_method(),
           url: req.url(),
           body: Empty,
           headers: string_headers,
@@ -97,7 +97,7 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
       let content_type = event.req.headers.get("Content-Type")
       run(fn() {
         // 如果是 post，先等待 data 事件
-        if event.req.method_ == "POST" {
+        if event.req.http_method == "POST" {
           let buffer = @buffer.new()
           (try? suspend(fn(res, _) {
             req.on("data", data => buffer.write_string(data.to_string()))

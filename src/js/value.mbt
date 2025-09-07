@@ -237,7 +237,8 @@ extern "js" fn Value::null() -> Value =
 extern "js" fn Value::undefined() -> Value =
   #| () => undefined
 
-///| @param self The constructor function that accepts this as the first argument
+///|
+/// @param self The constructor function that accepts this as the first argument
 pub extern "js" fn extends(self : Value, parent_constructor : Value) -> Value =
   #|(f, parent) => {
   #|  return class extends parent {

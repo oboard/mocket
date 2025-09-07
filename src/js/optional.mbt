@@ -7,11 +7,12 @@ pub fn[T] Optional::is_undefined(self : Optional[T]) -> Bool {
   self |> Value::cast_from |> Value::is_undefined
 }
 
-///| 
+///|
 #deprecated("get_exn does not check for undefined values. Use unwrap instead")
 pub fn[T] Optional::get_exn(self : Optional[T]) -> T = "%identity"
 
-///| Unwraps the optional value, panicking if it is undefined.
+///|
+/// Unwraps the optional value, panicking if it is undefined.
 pub fn[T] Optional::unwrap(self : Self[T]) -> T {
   if self.is_undefined() {
     abort("Cannot unwrap an undefined value")

@@ -1,4 +1,5 @@
-///| Performs a checked cast from a `Value` to a `Self?` type.
+///|
+/// Performs a checked cast from a `Value` to a `Self?` type.
 /// 
 /// This trait abstracts a function that ensures the cast is valid and returns `null` if the cast fails.
 /// It is useful for safely handling dynamic types in MoonBit.

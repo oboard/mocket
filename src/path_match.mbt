@@ -63,19 +63,19 @@ fn match_path(template : String, path : String) -> Map[String, String]? {
 // 查找匹配的路由和参数
 fn find_route(
   self : Mocket,
-  reqMethod : String,
+  http_method : String,
   path : String,
 ) -> (async (HttpEvent) -> HttpBody noraise, Map[String, String])? {
-  self.logger.route_lookup(reqMethod, path)
+  self.logger.route_lookup(http_method, path)
   // 优化：首先尝试静态路由缓存
-  match self.static_routes.get(reqMethod) {
-    Some(method_routes) => {
+  match self.static_routes.get(http_method) {
+    Some(http_methodroutes) => {
       let routes = []
-      method_routes.iter().each(fn(item) { routes.push(item.0) })
+      http_methodroutes.iter().each(fn(item) { routes.push(item.0) })
       self.logger.routes_available(routes)
-      match method_routes.get(path) {
+      match http_methodroutes.get(path) {
         Some(handler) => {
-          self.logger.route_found(reqMethod, path)
+          self.logger.route_found(http_method, path)
           return Some((handler, {}))
         }
         None => {
@@ -85,15 +85,15 @@ fn find_route(
       }
     }
     None => {
-      self.logger.debug(fn() { "No method routes for \{reqMethod}" })
+      self.logger.debug(fn() { "No method routes for \{http_method}" })
       ignore(())
     }
   }
 
   // 检查通配符方法的静态路由
   match self.static_routes.get("*") {
-    Some(method_routes) =>
-      match method_routes.get(path) {
+    Some(http_methodroutes) =>
+      match http_methodroutes.get(path) {
         Some(handler) => return Some((handler, {}))
         None => ignore(())
       }
@@ -101,7 +101,7 @@ fn find_route(
   }
 
   // 然后尝试动态路由
-  if self.dynamic_routes.get(reqMethod) is Some(routes) {
+  if self.dynamic_routes.get(http_method) is Some(routes) {
     let mut i = 0
     while i < routes.length() {
       let route_item = routes[i]

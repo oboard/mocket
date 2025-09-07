@@ -13,7 +13,10 @@ pub(all) struct Mocket {
   mappings : Map[(String, String), async (HttpEvent) -> HttpBody noraise]
   middlewares : Array[(String, async (HttpEvent) -> Unit noraise)]
   // 添加静态路由缓存（精确匹配的路由）
-  static_routes : Map[String, Map[String, async (HttpEvent) -> HttpBody noraise]]
+  static_routes : Map[
+    String,
+    Map[String, async (HttpEvent) -> HttpBody noraise],
+  ]
   // 添加动态路由缓存（包含参数的路由）
   dynamic_routes : Map[
     String,
@@ -43,7 +46,7 @@ pub fn new(
 
 ///|
 pub struct HttpRequest {
-  method_ : String
+  http_method : String
   url : String
   headers : Map[String, String]
   mut body : HttpBody
@@ -98,9 +101,9 @@ pub fn on(
     // 静态路径，直接缓存
     self.logger.route_static(event, path)
     match self.static_routes.get(event) {
-      Some(method_routes) => {
+      Some(http_methodroutes) => {
         self.logger.route_merge_existing(event)
-        method_routes.set(path, handler)
+        http_methodroutes.set(path, handler)
         self.logger.route_added(path)
       }
       None => {
@@ -228,12 +231,12 @@ pub fn group(
   group.static_routes
   .iter()
   .each(i => {
-    let method_ = i.0
+    let http_method = i.0
     let group_routes = i.1
-    match self.static_routes.get(method_) {
+    match self.static_routes.get(http_method) {
       Some(existing_routes) =>
         group_routes.iter().each(route => existing_routes.set(route.0, route.1))
-      None => self.static_routes.set(method_, group_routes)
+      None => self.static_routes.set(http_method, group_routes)
     }
   })
   group.dynamic_routes

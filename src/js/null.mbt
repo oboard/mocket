@@ -11,7 +11,8 @@ pub fn[T] Nullable::is_null(self : Nullable[T]) -> Bool {
 #deprecated("get_exn does not check for null values. Use unwrap instead")
 pub fn[T] Nullable::get_exn(self : Nullable[T]) -> T = "%identity"
 
-///| Unwraps the nullable value, panicking if it is null.
+///|
+/// Unwraps the nullable value, panicking if it is null.
 pub fn[T] Nullable::unwrap(self : Nullable[T]) -> T {
   if self.is_null() {
     abort("Cannot unwrap a null value")
