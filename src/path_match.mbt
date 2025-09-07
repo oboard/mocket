@@ -65,7 +65,7 @@ fn find_route(
   self : Mocket,
   reqMethod : String,
   path : String,
-) -> (async (HttpEvent) -> Json noraise, Map[String, String])? {
+) -> (async (HttpEvent) -> HttpBody noraise, Map[String, String])? {
   self.logger.route_lookup(reqMethod, path)
   // 优化：首先尝试静态路由缓存
   match self.static_routes.get(reqMethod) {
