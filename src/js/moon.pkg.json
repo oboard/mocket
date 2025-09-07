@@ -1,0 +1,43 @@
+{
+    "targets": {
+        "async.mbt": [
+            "js"
+        ],
+        "error.mbt": [
+            "js"
+        ],
+        "cast.mbt": [
+            "js"
+        ],
+        "require.mbt": [
+            "js"
+        ],
+        "symbol.mbt": [
+            "js"
+        ],
+        "value.mbt": [
+            "js"
+        ],
+        "union.mbt": [
+            "js"
+        ],
+        "async_test.mbt": [
+            "js"
+        ],
+        "null.mbt": [
+            "js"
+        ],
+        "object_test.mbt": [
+            "js"
+        ],
+        "object.mbt": [
+            "js"
+        ],
+        "optional.mbt": [
+            "js"
+        ],
+        "value_test.mbt": [
+            "js"
+        ]
+    }
+}
