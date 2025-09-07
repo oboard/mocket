@@ -135,9 +135,9 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
         )
         res.end(
           match body {
-            Bytes(b) => @js.Value::cast_from(b)
-            HTML(s) => @js.Value::cast_from(s)
-            Text(s) => @js.Value::cast_from(s)
+            Bytes(b) => @js.Value::cast_from(b.to_bytes())
+            HTML(s) => @js.Value::cast_from(s.to_string())
+            Text(s) => @js.Value::cast_from(s.to_string())
             Json(j) => @js.Value::cast_from(j.stringify())
             Empty => @js.Value::cast_from("")
           },
