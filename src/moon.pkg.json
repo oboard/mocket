@@ -11,17 +11,21 @@
     "native",
     "llvm"
   ],
-  "warn-list": "-29",
+  "warn-list": "-15-29",
   "native-stub": [
     "mocket.stub.c",
     "mongoose.c"
-  ],  
+  ],
   "targets": {
     "mocket.js.mbt": [
       "js"
     ],
     "mocket.native.mbt": [
       "native"
+    ],
+    "mocket.wasm.mbt": [
+      "wasm",
+      "wasm-gc"
     ]
   }
 }
