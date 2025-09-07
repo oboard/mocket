@@ -3,15 +3,11 @@ package "oboard/mocket"
 
 import(
   "moonbitlang/core/builtin"
-  "rami3l/js-ffi/js"
+  "oboard/mocket/js"
 )
 
 // Values
-fn createServer((HttpRequestInternal, HttpResponseInternal, () -> Unit) -> Unit, Int) -> Unit
-
-fn html(String) -> Json
-
-fn json(Json) -> Json
+fn create_server((HttpRequestInternal, HttpResponseInternal, () -> Unit) -> Unit, Int) -> Unit
 
 fn new(base_path? : String, logger? : Logger) -> Mocket
 
@@ -21,11 +17,11 @@ fn new_logger(enabled? : Bool, level? : LogLevel) -> Logger
 
 fn new_production_logger() -> Logger
 
-fn run(async () -> Unit) -> Unit
+fn run(async () -> Unit noraise) -> Unit
+
+fn serve_ffi(Mocket, port~ : Int) -> Unit
 
 async fn[T, E : Error] suspend(((T) -> Unit, (E) -> Unit) -> Unit) -> T raise E
-
-fn text(String) -> Json
 
 // Errors
 pub suberror ExecError
@@ -38,23 +34,29 @@ pub suberror NetworkError
 impl Show for NetworkError
 
 // Types and methods
+pub(all) enum HttpBody {
+  Json(Json)
+  Text(String)
+  HTML(String)
+  Bytes(Bytes)
+  Empty
+}
+
 pub struct HttpEvent {
   req : HttpRequest
   res : HttpResponse
-  mut params : Map[String, String]
+  params : Map[String, String]
 }
 
 pub struct HttpRequest {
-  method_ : String
+  http_method : String
   url : String
   headers : Map[String, String]
-  mut body : String
+  mut body : HttpBody
 }
 
 #external
 pub type HttpRequestInternal
-fn HttpRequestInternal::headers(Self) -> @js.Object
-fn HttpRequestInternal::on(Self, String, (@js.Value) -> Unit) -> Unit
 fn HttpRequestInternal::req_method(Self) -> String
 fn HttpRequestInternal::url(Self) -> String
 
@@ -65,10 +67,8 @@ pub(all) struct HttpResponse {
 
 #external
 pub type HttpResponseInternal
-fn HttpResponseInternal::end(Self, String) -> Unit
-fn HttpResponseInternal::statusCode(Self) -> Int
+fn HttpResponseInternal::end(Self, @js.Value) -> Unit
 fn HttpResponseInternal::url(Self) -> String
-fn HttpResponseInternal::write_head(Self, Int, @js.Value) -> Unit
 
 pub enum LogLevel {
   Debug
@@ -100,39 +100,26 @@ fn Logger::warn(Self, () -> String) -> Unit
 
 pub(all) struct Mocket {
   base_path : String
-  mappings : Map[(String, String), async (HttpEvent) -> Json]
-  middlewares : Array[(String, async (HttpEvent) -> Unit)]
-  static_routes : Map[String, Map[String, async (HttpEvent) -> Json]]
-  dynamic_routes : Map[String, Array[(String, async (HttpEvent) -> Json)]]
+  mappings : Map[(String, String), async (HttpEvent) -> HttpBody noraise]
+  middlewares : Array[(String, async (HttpEvent) -> Unit noraise)]
+  static_routes : Map[String, Map[String, async (HttpEvent) -> HttpBody noraise]]
+  dynamic_routes : Map[String, Array[(String, async (HttpEvent) -> HttpBody noraise)]]
   logger : Logger
 }
-fn Mocket::all(Self, String, async (HttpEvent) -> Json) -> Unit
-fn Mocket::connect(Self, String, async (HttpEvent) -> Json) -> Unit
-fn Mocket::delete(Self, String, async (HttpEvent) -> Json) -> Unit
-fn Mocket::get(Self, String, async (HttpEvent) -> Json) -> Unit
+fn Mocket::all(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
+fn Mocket::connect(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
+fn Mocket::delete(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
+fn Mocket::get(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
 fn Mocket::group(Self, String, (Self) -> Unit) -> Unit
-fn Mocket::head(Self, String, async (HttpEvent) -> Json) -> Unit
-fn Mocket::on(Self, String, String, async (HttpEvent) -> Json) -> Unit
-fn Mocket::options(Self, String, async (HttpEvent) -> Json) -> Unit
-fn Mocket::patch(Self, String, async (HttpEvent) -> Json) -> Unit
-fn Mocket::post(Self, String, async (HttpEvent) -> Json) -> Unit
-fn Mocket::put(Self, String, async (HttpEvent) -> Json) -> Unit
+fn Mocket::head(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
+fn Mocket::on(Self, String, String, async (HttpEvent) -> HttpBody noraise) -> Unit
+fn Mocket::options(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
+fn Mocket::patch(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
+fn Mocket::post(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
+fn Mocket::put(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
 fn Mocket::serve(Self, port~ : Int) -> Unit
-fn Mocket::trace(Self, String, async (HttpEvent) -> Json) -> Unit
-fn Mocket::use_middleware(Self, async (HttpEvent) -> Unit, base_path? : String) -> Unit
-
-pub struct URL {
-  protocol : String?
-  host : String?
-  port : Int?
-  path : String
-  query : Map[String, String]?
-  fragment : String?
-}
-fn URL::output(Self, Logger) -> Unit
-fn URL::parse(String) -> Self
-fn URL::to_string(Self) -> String
-impl Show for URL
+fn Mocket::trace(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
+fn Mocket::use_middleware(Self, async (HttpEvent) -> Unit noraise, base_path? : String) -> Unit
 
 // Type aliases
 pub typealias Mocket as T

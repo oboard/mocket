@@ -5,61 +5,65 @@ fn main {
   // Register global middleware
   app
   ..use_middleware(event => println(
-    "📝 Request: \{event.req.method_} \{event.req.url}",
+    "📝 Request: \{event.req.http_method} \{event.req.url}",
   ))
 
   // Text Response
-  ..get("/", _event => "⚡️ Tadaa!")
+  ..get("/", _event => Text("⚡️ Tadaa!"))
 
   // Hello World
-  ..on("GET", "/hello", _ => "Hello world!")
+  ..on("GET", "/hello", _ => Text("Hello world!"))
   ..group("/api", group => {
     // 添加组级中间件
     group.use_middleware(event => println(
-      "🔒 API Group Middleware: \{event.req.method_} \{event.req.url}",
+      "🔒 API Group Middleware: \{event.req.http_method} \{event.req.url}",
     ))
-    group.get("/hello", _ => "Hello world!")
-    group.get("/json", _ => {
+    group.get("/hello", _ => Text("Hello world!"))
+    group.get("/json", _ => Json({
       "name": "John Doe",
       "age": 30,
       "city": "New York",
-    })
+    }))
   })
 
   // JSON Response
-  ..get("/json", _event => { "name": "John Doe", "age": 30, "city": "New York" })
+  ..get("/json", _event => Json({
+    "name": "John Doe",
+    "age": 30,
+    "city": "New York",
+  }))
 
   // Async Response
   ..get("/async_data", async fn(_event) noraise {
-    { "name": "John Doe", "age": 30, "city": "New York" }
+    Json({ "name": "John Doe", "age": 30, "city": "New York" })
   })
 
   // Dynamic Routes
   // /hello2/World = Hello, World!
   ..get("/hello/:name", fn(event) {
     let name = event.params.get("name").unwrap_or("World")
-    "Hello, \{name}!"
+    Text("Hello, \{name}!")
   })
   // /hello2/World = Hello, World!
   ..get("/hello2/*", fn(event) {
     let name = event.params.get("_").unwrap_or("World")
-    "Hello, \{name}!"
+    Text("Hello, \{name}!")
   })
 
   // Wildcard Routes
   // /hello3/World/World = Hello, World/World!
   ..get("/hello3/**", fn(event) {
     let name = event.params.get("_").unwrap_or("World")
-    "Hello, \{name}!"
+    Text("Hello, \{name}!")
   })
 
   // Echo Server
-  ..post("/echo", e => e.req.body.to_json())
+  ..post("/echo", e => e.req.body)
 
   // 404 Page
   ..get("/404", e => {
     e.res.status_code = 404
-    @mocket.html(
+    HTML(
       (
         #|<html>
         #|<body>

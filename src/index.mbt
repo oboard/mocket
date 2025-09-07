@@ -1,14 +1,26 @@
 ///|
+pub(all) enum HttpBody {
+  Json(Json)
+  Text(String)
+  HTML(String)
+  Bytes(Bytes)
+  Empty
+}
+
+///|
 pub(all) struct Mocket {
   base_path : String
-  mappings : Map[(String, String), async (HttpEvent) -> Json noraise]
+  mappings : Map[(String, String), async (HttpEvent) -> HttpBody noraise]
   middlewares : Array[(String, async (HttpEvent) -> Unit noraise)]
   // 添加静态路由缓存（精确匹配的路由）
-  static_routes : Map[String, Map[String, async (HttpEvent) -> Json noraise]]
+  static_routes : Map[
+    String,
+    Map[String, async (HttpEvent) -> HttpBody noraise],
+  ]
   // 添加动态路由缓存（包含参数的路由）
   dynamic_routes : Map[
     String,
-    Array[(String, async (HttpEvent) -> Json noraise)],
+    Array[(String, async (HttpEvent) -> HttpBody noraise)],
   ]
   // 日志记录器
   logger : Logger
@@ -34,17 +46,17 @@ pub fn new(
 
 ///|
 pub struct HttpRequest {
-  method_ : String
+  http_method : String
   url : String
   headers : Map[String, String]
-  mut body : String
+  mut body : HttpBody
 }
 
 ///|
 pub(all) struct HttpResponse {
   mut status_code : Int
   headers : Map[String, String]
-  // body : String
+  // body : Body
 }
 
 ///|
@@ -78,7 +90,7 @@ pub fn on(
   self : Mocket,
   event : String,
   path : String,
-  handler : async (HttpEvent) -> Json noraise,
+  handler : async (HttpEvent) -> HttpBody noraise,
 ) -> Unit {
   let path = self.base_path + path
   self.logger.route_register(event, path)
@@ -89,14 +101,14 @@ pub fn on(
     // 静态路径，直接缓存
     self.logger.route_static(event, path)
     match self.static_routes.get(event) {
-      Some(method_routes) => {
+      Some(http_methodroutes) => {
         self.logger.route_merge_existing(event)
-        method_routes.set(path, handler)
+        http_methodroutes.set(path, handler)
         self.logger.route_added(path)
       }
       None => {
         self.logger.route_merge_new(event)
-        let new_routes : Map[String, async (HttpEvent) -> Json noraise] = {}
+        let new_routes : Map[String, async (HttpEvent) -> HttpBody noraise] = {}
         new_routes.set(path, handler)
         self.static_routes.set(event, new_routes)
         self.logger.route_created(path)
@@ -119,7 +131,7 @@ pub fn on(
 pub fn get(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json noraise,
+  handler : async (HttpEvent) -> HttpBody noraise,
 ) -> Unit {
   self.on("GET", path, handler)
 }
@@ -128,7 +140,7 @@ pub fn get(
 pub fn post(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json noraise,
+  handler : async (HttpEvent) -> HttpBody noraise,
 ) -> Unit {
   self.on("POST", path, handler)
 }
@@ -137,7 +149,7 @@ pub fn post(
 pub fn patch(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json noraise,
+  handler : async (HttpEvent) -> HttpBody noraise,
 ) -> Unit {
   self.on("PATCH", path, handler)
 }
@@ -146,7 +158,7 @@ pub fn patch(
 pub fn connect(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json noraise,
+  handler : async (HttpEvent) -> HttpBody noraise,
 ) -> Unit {
   self.on("CONNECT", path, handler)
 }
@@ -155,7 +167,7 @@ pub fn connect(
 pub fn put(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json noraise,
+  handler : async (HttpEvent) -> HttpBody noraise,
 ) -> Unit {
   self.on("PUT", path, handler)
 }
@@ -164,7 +176,7 @@ pub fn put(
 pub fn delete(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json noraise,
+  handler : async (HttpEvent) -> HttpBody noraise,
 ) -> Unit {
   self.on("DELETE", path, handler)
 }
@@ -173,7 +185,7 @@ pub fn delete(
 pub fn head(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json noraise,
+  handler : async (HttpEvent) -> HttpBody noraise,
 ) -> Unit {
   self.on("HEAD", path, handler)
 }
@@ -182,7 +194,7 @@ pub fn head(
 pub fn options(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json noraise,
+  handler : async (HttpEvent) -> HttpBody noraise,
 ) -> Unit {
   self.on("OPTIONS", path, handler)
 }
@@ -191,7 +203,7 @@ pub fn options(
 pub fn trace(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json noraise,
+  handler : async (HttpEvent) -> HttpBody noraise,
 ) -> Unit {
   self.on("TRACE", path, handler)
 }
@@ -200,7 +212,7 @@ pub fn trace(
 pub fn all(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> Json noraise,
+  handler : async (HttpEvent) -> HttpBody noraise,
 ) -> Unit {
   self.on("*", path, handler)
 }
@@ -219,12 +231,12 @@ pub fn group(
   group.static_routes
   .iter()
   .each(i => {
-    let method_ = i.0
+    let http_method = i.0
     let group_routes = i.1
-    match self.static_routes.get(method_) {
+    match self.static_routes.get(http_method) {
       Some(existing_routes) =>
         group_routes.iter().each(route => existing_routes.set(route.0, route.1))
-      None => self.static_routes.set(method_, group_routes)
+      None => self.static_routes.set(http_method, group_routes)
     }
   })
   group.dynamic_routes
