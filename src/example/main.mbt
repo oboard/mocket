@@ -1,6 +1,6 @@
 ///|
 fn main {
-  let app = @mocket.new(logger=@mocket.new_debug_logger())
+  let app = @mocket.new(logger=@mocket.new_production_logger())
 
   // Register global middleware
   app
@@ -74,11 +74,11 @@ fn main {
     )
   })
 
-  // Serve
-  ..serve(port=4000)
-
   // Print Server URL
   for path in app.mappings.keys() {
     println("\{path.0} http://localhost:4000\{path.1}")
   }
+
+  // Serve
+  app.serve(port=4000)
 }

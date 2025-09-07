@@ -251,6 +251,7 @@ static void ev_handler(struct mg_connection *c, int ev, void *ev_data)
 server_t *create_server(request_handler_t handler)
 {
   server_t *srv = (server_t *)malloc(sizeof(server_t));
+  mg_log_set(MG_LL_NONE);
   mg_mgr_init(&srv->mgr);
   srv->handler = handler;
   return srv;
@@ -267,7 +268,6 @@ void server_listen(server_t *srv, int port)
     fprintf(stderr, "Cannot listen on %s\n", url);
     exit(1);
   }
-  printf("Listening on %s\n", url);
 
   for (;;)
   {
