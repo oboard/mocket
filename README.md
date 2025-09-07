@@ -9,16 +9,28 @@ A web framework for MoonBit.
 
 ![logo](logo.jpg)
 
-![screenshots](screenshots/1.jpg)
-
 ## Quick Start
 
-It's necessary to set the backend of MoonBit to `js` in `Visual Studio Code`
+Mocket supports both `js` and `native` backends.
+
+### JavaScript Backend
+
+Set the backend of MoonBit to `js` in `Visual Studio Code`
 
 Command: `MoonBit: Select Backend` -> `js`
 
 ```bash
-moon run src/main/main.mbt --target js
+moon run src/example --target js
+```
+
+### Native Backend
+
+Set the backend of MoonBit to `native` in `Visual Studio Code`
+
+Command: `MoonBit: Select Backend` -> `native`
+
+```bash
+moon run src/example --target native
 ```
 
 Then visit http://localhost:4000
@@ -36,7 +48,7 @@ Support named parameters with `:param` syntax:
 ```moonbit
 app.get("/hello/:name", fn(event) {
   let name = event.params.get("name").or("World")
-  "Hello, \{name}!"
+  Text("Hello, \{name}!")
 })
 ```
 
@@ -48,13 +60,13 @@ Support single and double wildcards:
 // Single wildcard - matches one path segment
 app.get("/hello/*", fn(event) {
   let name = event.params.get("_").or("World")
-  "Hello, \{name}!"
+  Text("Hello, \{name}!")
 })
 
 // Double wildcard - matches multiple path segments
 app.get("/hello/**", fn(event) {
   let path = event.params.get("_").or("")
-  "Hello, \{path}!"
+  Text("Hello, \{path}!")
 })
 ```
 
@@ -67,7 +79,7 @@ The library supports async/await for I/O operations:
 ```moonbit
 // async json data example
 app.get("/async_data", async fn(event) {
-  { "name": "John Doe", "age": 30, "city": "New York" }
+  Json({ "name": "John Doe", "age": 30, "city": "New York" })
 })
 ```
 
@@ -83,9 +95,9 @@ app.group("/api", group => {
   ))
   
   // Routes under /api prefix
-  group.get("/hello", _ => "Hello from API!")
-  group.get("/users", _ => { "users": ["Alice", "Bob"] })
-  group.post("/data", e => e.req.body.to_json())
+  group.get("/hello", _ => Text("Hello from API!"))
+  group.get("/users", _ => Json({ "users": ["Alice", "Bob"] }))
+  group.post("/data", e => e.req.body)
 })
 ```
 
@@ -99,73 +111,77 @@ All routes in the group will execute the group middleware in addition to any glo
 ## Example usage
 
 ```moonbit
-fn main {
-  
-  let app = @mocket.new()
+let app = @mocket.new(logger=@mocket.new_debug_logger())
 
   // Register global middleware
   app
   ..use_middleware(event => println(
-    "📝 Request: \{event.req.reqMethod} \{event.req.url}",
+    "📝 Request: \{event.req.http_method} \{event.req.url}",
   ))
 
   // Text Response
-  ..get("/", _event => "⚡️ Tadaa!")
+  ..get("/", _event => Text("⚡️ Tadaa!"))
 
-  // Route Groups with middleware
+  // Hello World
+  ..on("GET", "/hello", _ => Text("Hello world!"))
   ..group("/api", group => {
-    // Add group-level middleware
+    // 添加组级中间件
     group.use_middleware(event => println(
-      "🔒 API Group Middleware: \{event.req.reqMethod} \{event.req.url}",
+      "🔒 API Group Middleware: \{event.req.http_method} \{event.req.url}",
     ))
-    group.get("/hello", _ => "Hello from API!")
-    group.get("/json", _ => {
+    group.get("/hello", _ => Text("Hello world!"))
+    group.get("/json", _ => Json({
       "name": "John Doe",
       "age": 30,
       "city": "New York",
-    })
+    }))
   })
 
   // JSON Response
-  ..get("/json", _event => { "name": "John Doe", "age": 30, "city": "New York" })
+  ..get("/json", _event => Json({
+    "name": "John Doe",
+    "age": 30,
+    "city": "New York",
+  }))
 
   // Async Response
-  ..get("/async_data", async fn(_event) {
-    { "name": "John Doe", "age": 30, "city": "New York" }
+  ..get("/async_data", async fn(_event) noraise {
+    Json({ "name": "John Doe", "age": 30, "city": "New York" })
   })
 
   // Dynamic Routes
   // /hello2/World = Hello, World!
   ..get("/hello/:name", fn(event) {
-    let name = event.params.get("name").or("World")
-    "Hello, \{name}!"
+    let name = event.params.get("name").unwrap_or("World")
+    Text("Hello, \{name}!")
   })
   // /hello2/World = Hello, World!
   ..get("/hello2/*", fn(event) {
-    let name = event.params.get("_").or("World")
-    "Hello, \{name}!"
+    let name = event.params.get("_").unwrap_or("World")
+    Text("Hello, \{name}!")
   })
 
   // Wildcard Routes
   // /hello3/World/World = Hello, World/World!
   ..get("/hello3/**", fn(event) {
-    let name = event.params.get("_").or("World")
-    "Hello, \{name}!"
+    let name = event.params.get("_").unwrap_or("World")
+    Text("Hello, \{name}!")
   })
 
   // Echo Server
-  ..post("/echo", e => e.req.body.to_json())
+  ..post("/echo", e => e.req.body)
 
   // 404 Page
   ..get("/404", e => {
-    e.res.statusCode = 404
-    @mocket.html(
-      #|<html>
-      #|<body>
-      #|  <h1>404</h1>
-      #|</body>
-      #|</html>
-      ,
+    e.res.status_code = 404
+    HTML(
+      (
+        #|<html>
+        #|<body>
+        #|  <h1>404</h1>
+        #|</body>
+        #|</html>
+      ),
     )
   })
 
@@ -174,9 +190,8 @@ fn main {
 
   // Print Server URL
   for path in app.mappings.keys() {
-    println("http://localhost:4000\{path.1}")
+    println("\{path.0} http://localhost:4000\{path.1}")
   }
-}
 ```
 
 ## Route Matching Examples
