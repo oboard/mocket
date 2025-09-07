@@ -156,6 +156,15 @@ uint8_t *req_body(request_t *req)
   return NULL;
 }
 
+size_t req_body_len(request_t *req)
+{
+  if (req && req->hm)
+  {
+    return req->hm->body.len;
+  }
+  return 0;
+}
+
 // Set response header (wrapper for res_set_header)
 void res_set_header_line(response_t *res, const char *header_line)
 {

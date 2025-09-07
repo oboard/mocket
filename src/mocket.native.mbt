@@ -52,6 +52,12 @@ pub extern "c" fn HttpRequestInternal::on_complete(
 extern "c" fn HttpRequestInternal::body(self : HttpRequestInternal) -> Bytes = "req_body"
 
 ///|
+#owned(self)
+extern "c" fn HttpRequestInternal::req_body_len(
+  self : HttpRequestInternal,
+) -> Int = "req_body_len"
+
+///|
 #owned(self, body)
 extern "c" fn HttpResponseInternal::end(
   self : HttpResponseInternal,
@@ -127,21 +133,19 @@ fn handle_request_native(
   // res.status(200)
   // res.end(to_cstr("{\"status\":\"ok\"}"))
 
-  let headers = from_cstr(req.headers())
-  println(headers)
-  let string_headers = {}
-  // guard (req.headers()) is Ok(Object(headers)) else {
-  //   res.status(400)
-  //   res.end(to_cstr("Invalid headers"))
-  //   return
-  // }
-
-  // 批量转换 headers，减少单个处理的开销
-  // headers.each(fn(key, value) {
-  //   if value is String(v) {
-  //     string_headers.set(key, v)
-  //   }
-  // })
+  let headers_str = from_cstr(req.headers())
+  let req_headers = headers_str
+    .split("\n")
+    .map(fn(pair) {
+      if pair.length() > 0 && pair.split(": ").to_array() is [key, value] {
+        (key.to_string(), value.to_string())
+      } else {
+        ("", "")
+      }
+    })
+    .filter(fn(pair) { pair.0.length() > 0 })
+    .to_array()
+    |> Map::from_array
   let (params, handler) = match mocket.find_route(http_method, path) {
     Some((h, p)) => (p, h)
     _ => {
@@ -151,43 +155,19 @@ fn handle_request_native(
     }
   }
   let event = {
-    req: { http_method, url, body: Empty, headers: string_headers },
+    req: { http_method, url, body: Empty, headers: req_headers },
     res: { status_code: 200, headers: {} },
     params,
   }
   if http_method == "POST" {
-    let body_bytes = req.body()
-    let content_type = Some("text/plain") // req.headers().get("Content-Type")
-    let body = match content_type {
-      Some("application/json") => {
-        let json = @encoding.decoder(UTF8).decode(body_bytes) catch {
-          _ => {
-            res.status(400)
-            res.end(to_cstr("Invalid JSON charset"))
-            return
-          }
-        }
-        Json(
-          @json.parse(json) catch {
-            _ => {
-              res.status(400)
-              res.end(to_cstr("Invalid JSON"))
-              return
-            }
-          },
-        )
+    let req_body_len = req.req_body_len()
+    let body_bytes = req.body()[0:req_body_len]
+    let body = read_body(req_headers, body_bytes) catch {
+      _ => {
+        res.status(400)
+        res.end(to_cstr("Invalid body"))
+        return
       }
-      Some("text/plain" | "text/html") =>
-        Text(
-          @encoding.decoder(UTF8).decode(body_bytes) catch {
-            _ => {
-              res.status(400)
-              res.end(to_cstr("Invalid text charset"))
-              return
-            }
-          },
-        )
-      _ => Bytes(body_bytes)
     }
     event.req.body = body
   }
@@ -212,12 +192,12 @@ fn handle_request_native(
       res.set_header(to_cstr(key), to_cstr(value))
     })
     if body is Bytes(bytes) {
-      res.end_bytes(bytes)
+      res.end_bytes(bytes.to_bytes())
     } else {
       res.end(
         match body {
-          HTML(s) => to_cstr(s)
-          Text(s) => to_cstr(s)
+          HTML(s) => to_cstr(s.to_string())
+          Text(s) => to_cstr(s.to_string())
           Json(j) => to_cstr(j.stringify())
           _ => to_cstr("")
         },
@@ -227,8 +207,8 @@ fn handle_request_native(
 }
 
 ///|
-fn to_cstr(s : String) -> @native.CStr {
-  let bytes = @encoding.encode(UTF8, s)
+fn[T : Show] to_cstr(s : T) -> @native.CStr {
+  let bytes = @encoding.encode(UTF8, s.to_string())
   let utf8_ptr = @native.unsafe_coerce(bytes)
   utf8_ptr
 }

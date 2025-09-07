@@ -3,6 +3,8 @@ package "oboard/mocket"
 
 import(
   "moonbitlang/core/builtin"
+  "moonbitlang/core/bytes"
+  "moonbitlang/core/string"
   "oboard/mocket/js"
 )
 
@@ -24,6 +26,12 @@ fn serve_ffi(Mocket, port~ : Int) -> Unit
 async fn[T, E : Error] suspend(((T) -> Unit, (E) -> Unit) -> Unit) -> T raise E
 
 // Errors
+pub suberror BodyError {
+  InvalidJsonCharset
+  InvalidJson
+  InvalidText
+}
+
 pub suberror ExecError
 impl Show for ExecError
 
@@ -36,9 +44,9 @@ impl Show for NetworkError
 // Types and methods
 pub(all) enum HttpBody {
   Json(Json)
-  Text(String)
-  HTML(String)
-  Bytes(Bytes)
+  Text(@string.View)
+  HTML(@string.View)
+  Bytes(@bytes.View)
   Empty
 }
 
@@ -62,7 +70,7 @@ fn HttpRequestInternal::url(Self) -> String
 
 pub(all) struct HttpResponse {
   mut status_code : Int
-  headers : Map[String, String]
+  headers : Map[@string.View, @string.View]
 }
 
 #external

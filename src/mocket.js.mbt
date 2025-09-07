@@ -94,7 +94,6 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
         res: { status_code: 200, headers: {} },
         params,
       }
-      let content_type = event.req.headers.get("Content-Type")
       run(fn() {
         // 如果是 post，先等待 data 事件
         if event.req.http_method == "POST" {
@@ -104,16 +103,12 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
             req.on("end", _ => res(buffer.to_string()))
           }))
           |> ignore
-          match content_type {
-            Some("application/json") =>
-              event.req.body = Json(
-                @json.parse(buffer.to_string()) catch {
-                  _ => {}
-                },
-              )
-            Some("text/html") => event.req.body = HTML(buffer.to_string())
-            Some("text/plain") => event.req.body = Text(buffer.to_string())
-            _ => event.req.body = Bytes(buffer.to_bytes())
+          event.req.body = read_body(string_headers, buffer.to_bytes()) catch {
+            _ => {
+              res.write_head(400, @js.Object::new().to_value())
+              res.end(@js.Value::cast_from("Invalid body"))
+              return
+            }
           }
         }
 

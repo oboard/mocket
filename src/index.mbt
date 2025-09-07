@@ -1,9 +1,9 @@
 ///|
 pub(all) enum HttpBody {
   Json(Json)
-  Text(String)
-  HTML(String)
-  Bytes(Bytes)
+  Text(@moonbitlang/core/string.View)
+  HTML(@moonbitlang/core/string.View)
+  Bytes(@moonbitlang/core/bytes.View)
   Empty
 }
 
@@ -55,7 +55,7 @@ pub struct HttpRequest {
 ///|
 pub(all) struct HttpResponse {
   mut status_code : Int
-  headers : Map[String, String]
+  headers : Map[@moonbitlang/core/string.View, @moonbitlang/core/string.View]
   // body : Body
 }
 
