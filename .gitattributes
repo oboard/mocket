@@ -1,0 +1,3 @@
+# Generated files should not be included in language statistics
+src/mongoose.c linguist-generated=true
+src/mongoose.h linguist-generated=true
