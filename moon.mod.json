@@ -1,10 +1,10 @@
 {
   "name": "oboard/mocket",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "deps": {
     "yj-qin/regexp": "0.3.6",
     "illusory0x0/native": "0.2.1",
-    "moonbitlang/x": "0.4.33",
+    "moonbitlang/x": "0.4.34",
     "tonyfettes/uri": "0.1.0"
   },
   "readme": "README.md",
