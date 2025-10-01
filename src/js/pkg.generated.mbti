@@ -48,6 +48,7 @@ fn[K, V] Object::from_iter(Iter[(K, V)]) -> Self
 fn[K, V] Object::from_iter2(Iter2[K, V]) -> Self
 fn Object::from_value(Value) -> Optional[Self]
 fn Object::from_value_unchecked(Value) -> Self
+#deprecated
 fn Object::inner(Self) -> Value
 fn Object::new() -> Self
 fn[K, V] Object::op_get(Self, K) -> V

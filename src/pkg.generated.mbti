@@ -3,8 +3,6 @@ package "oboard/mocket"
 
 import(
   "moonbitlang/core/builtin"
-  "moonbitlang/core/bytes"
-  "moonbitlang/core/string"
   "oboard/mocket/js"
 )
 
@@ -44,9 +42,9 @@ impl Show for NetworkError
 // Types and methods
 pub(all) enum HttpBody {
   Json(Json)
-  Text(@string.View)
-  HTML(@string.View)
-  Bytes(@bytes.View)
+  Text(StringView)
+  HTML(StringView)
+  Bytes(BytesView)
   Empty
 }
 
@@ -70,7 +68,7 @@ fn HttpRequestInternal::url(Self) -> String
 
 pub(all) struct HttpResponse {
   mut status_code : Int
-  headers : Map[@string.View, @string.View]
+  headers : Map[StringView, StringView]
 }
 
 #external

@@ -26,7 +26,7 @@ extern "js" fn Promise::wait_ffi(
   #| (self, on_ok, on_err) => self.then((t) => on_ok(t), (e) => on_err(e))
 
 ///|
-pub async fn Promise::wait(self : Promise) -> Value raise {
+pub async fn Promise::wait(self : Promise) -> Value {
   suspend(fn(k, ke) { Promise::wait_ffi(self, k, fn(e) { ke(Error_(e)) }) })
 }
 
@@ -39,12 +39,12 @@ pub async fn Promise::wait(self : Promise) -> Value raise {
 /// This makes sure that when `op` errs out, the error is caught by the MoonBit runtime.
 ///
 /// If you don't care about the result of the operation, you can use `spawn_detach` instead.
-pub fn[T] Promise::unsafe_new(op : async () -> T raise) -> Promise {
+pub fn[T] Promise::unsafe_new(op : async () -> T) -> Promise {
   Promise::new_ffi(fn() { Value::cast_from(op()) })
 }
 
 ///|
-extern "js" fn Promise::new_ffi(op : async () -> Value raise) -> Promise =
+extern "js" fn Promise::new_ffi(op : async () -> Value) -> Promise =
   #| (op) => new Promise((k, ke) => op(k, ke))
 
 ///|
@@ -63,21 +63,19 @@ pub extern "js" fn Promise::all(promises : Array[Promise]) -> Promise = "(ps) =>
 
 ///|
 /// Wraps each given `async fn` in a `Promise` and waits for all of them to resolve.
-pub async fn[T] async_all(ops : Array[async () -> T raise]) -> Array[T] raise {
-  async_all_raw(ops.map(fn(op) { async fn() raise { Value::cast_from(op()) } })).map(
+pub async fn[T] async_all(ops : Array[async () -> T]) -> Array[T] {
+  async_all_raw(ops.map(fn(op) { async fn() { Value::cast_from(op()) } })).map(
     Value::cast,
   )
 }
 
 ///|
-async fn async_all_raw(
-  ops : Array[async () -> Value raise],
-) -> Array[Value] raise {
+async fn async_all_raw(ops : Array[async () -> Value]) -> Array[Value] {
   Promise::all(ops.map(Promise::unsafe_new)).wait().cast()
 }
 
 ///|
-pub fn async_test(op : async () -> Unit raise) -> Unit {
+pub fn async_test(op : async () -> Unit) -> Unit {
   async_run(async fn() noraise {
     op() catch {
       e => {
