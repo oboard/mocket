@@ -1,5 +1,5 @@
 ///|
-pub struct HttpEvent {
+pub(all) struct HttpEvent {
   req : HttpRequest
   res : HttpResponse
   params : Map[String, String]

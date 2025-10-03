@@ -45,7 +45,7 @@ pub fn new(
 }
 
 ///|
-pub struct HttpRequest {
+pub(all) struct HttpRequest {
   http_method : String
   url : String
   headers : Map[String, String]

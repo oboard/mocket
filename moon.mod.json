@@ -15,5 +15,6 @@
     "server"
   ],
   "description": "A web framework for MoonBit.",
-  "source": "src"
+  "source": "src",
+  "preferred-target": "native"
 }
