@@ -206,6 +206,11 @@ let app = @mocket.new(logger=@mocket.new_debug_logger())
 | `group("/api", ...).get("/hello")` | `/api/hello` | - |
 | `group("/users", ...).get("/:id")` | `/users/123` | `id: "123"` |
 
+## Q & A
+### Why not moonbitlang/async ?
+
+moonbitlang/async is a great library, but it is not supported by the js backend.
+
 🙌快来吧！🙌
 
 QQ 群号：**949886784**
