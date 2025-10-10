@@ -17,7 +17,7 @@ jobs:
   check:
     strategy:
       matrix:
-        version: [stable,pre-release,bleeding]
+        version: [stable,pre-release]
         os:
           - name: ubuntu-latest
             triple: x86_64-linux-gnu
@@ -25,10 +25,6 @@ jobs:
           # stable check
 
           # pre-release check
-
-          # bleeding check
-          # 1. install latest toolchain
-          # 2. install latest core library from github.com
           
       fail-fast: false
     runs-on: ${{ matrix.os.name }}
