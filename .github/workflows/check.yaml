@@ -49,11 +49,11 @@ jobs:
           moon install
 
       - name: moon check
-        run: moon check --deny-warn --target js
+        run: moon check --deny-warn --target native
 
       - name: moon info
         run: |
-          moon info --target js
+          moon info --target native
           git diff --exit-code
 
       - name: format diff
@@ -72,6 +72,6 @@ jobs:
 
       - name: moon test
         run: |
-          moon test --target js
-          moon test --target js
+          moon test --target native
+          moon test --target native
           
