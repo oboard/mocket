@@ -3,7 +3,6 @@
     "oboard/mocket/js",
     "yj-qin/regexp",
     "illusory0x0/native",
-    "moonbitlang/x/encoding",
     "tonyfettes/uri"
   ],
   "supported-targets": [

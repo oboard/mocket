@@ -1,13 +1,212 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "oboard/mocket/js"
 
+import(
+  "moonbitlang/core/json"
+)
+
 // Values
+async fn[T] async_all(Array[async () -> T]) -> Array[T]
+
+let async_iterator : Symbol
+
+fn async_run(async () -> Unit noraise) -> Unit
+
+fn async_test(async () -> Unit) -> Unit
+
+let globalThis : Value
+
+let iterator : Symbol
+
+fn require(String, keys? : Array[String]) -> Value
+
+fn[T, E : Error] spawn_detach(async () -> T raise E) -> Unit
+
+async fn[T, E : Error] suspend(((T) -> Unit, (E) -> Unit) -> Unit) -> T raise E
 
 // Errors
+pub suberror Error_ Value
+fn Error_::cause(Self) -> Value?
+fn Error_::output(Self, &Logger) -> Unit // from trait `Show`
+fn Error_::to_string(Self) -> String // from trait `Show`
+fn[T] Error_::wrap(() -> Value, map_ok? : (Value) -> T) -> T raise Self
+impl Show for Error_
 
 // Types and methods
+type Nullable[_]
+fn[T] Nullable::from_option(T?) -> Self[T]
+#deprecated
+fn[T] Nullable::get_exn(Self[T]) -> T
+fn[T] Nullable::is_null(Self[T]) -> Bool
+fn[T] Nullable::null() -> Self[T]
+fn[T] Nullable::to_option(Self[T]) -> T?
+fn[T] Nullable::unwrap(Self[T]) -> T
+
+pub struct Object(Value)
+fn[K, V] Object::extend_iter(Self, Iter[(K, V)]) -> Unit
+fn[K, V] Object::extend_iter2(Self, Iter2[K, V]) -> Unit
+fn Object::extend_object(Self, Self) -> Self
+fn[K, V] Object::from_iter(Iter[(K, V)]) -> Self
+fn[K, V] Object::from_iter2(Iter2[K, V]) -> Self
+fn Object::from_value(Value) -> Optional[Self]
+fn Object::from_value_unchecked(Value) -> Self
+#deprecated
+fn Object::inner(Self) -> Value
+fn Object::new() -> Self
+fn[K, V] Object::op_get(Self, K) -> V
+fn[K, V] Object::op_set(Self, K, V) -> Unit
+fn Object::to_value(Self) -> Value
+
+type Optional[_]
+fn[T] Optional::from_option(T?) -> Self[T]
+#deprecated
+fn[T] Optional::get_exn(Self[T]) -> T
+fn[T] Optional::is_undefined(Self[T]) -> Bool
+fn[T] Optional::to_option(Self[T]) -> T?
+fn[T] Optional::undefined() -> Self[T]
+fn[T] Optional::unwrap(Self[T]) -> T
+
+#external
+pub type Promise
+fn Promise::all(Array[Self]) -> Self
+fn[T] Promise::unsafe_new(async () -> T) -> Self
+async fn Promise::wait(Self) -> Value
+
+type Symbol
+fn Symbol::make() -> Self
+fn Symbol::make_with_number(Double) -> Self
+fn Symbol::make_with_string(String) -> Self
+fn Symbol::make_with_string_js(String) -> Self
+
+type Union2[_, _]
+fn[A : Cast, B] Union2::from0(A) -> Self[A, B]
+fn[A, B : Cast] Union2::from1(B) -> Self[A, B]
+fn[A : Cast, B] Union2::to0(Self[A, B]) -> A?
+fn[A, B : Cast] Union2::to1(Self[A, B]) -> B?
+
+type Union3[_, _, _]
+fn[A : Cast, B, C] Union3::from0(A) -> Self[A, B, C]
+fn[A, B : Cast, C] Union3::from1(B) -> Self[A, B, C]
+fn[A, B, C : Cast] Union3::from2(C) -> Self[A, B, C]
+fn[A : Cast, B, C] Union3::to0(Self[A, B, C]) -> A?
+fn[A, B : Cast, C] Union3::to1(Self[A, B, C]) -> B?
+fn[A, B, C : Cast] Union3::to2(Self[A, B, C]) -> C?
+
+type Union4[_, _, _, _]
+fn[A : Cast, B, C, D] Union4::from0(A) -> Self[A, B, C, D]
+fn[A, B : Cast, C, D] Union4::from1(B) -> Self[A, B, C, D]
+fn[A, B, C : Cast, D] Union4::from2(C) -> Self[A, B, C, D]
+fn[A, B, C, D : Cast] Union4::from3(D) -> Self[A, B, C, D]
+fn[A : Cast, B, C, D] Union4::to0(Self[A, B, C, D]) -> A?
+fn[A, B : Cast, C, D] Union4::to1(Self[A, B, C, D]) -> B?
+fn[A, B, C : Cast, D] Union4::to2(Self[A, B, C, D]) -> C?
+fn[A, B, C, D : Cast] Union4::to3(Self[A, B, C, D]) -> D?
+
+type Union5[_, _, _, _, _]
+fn[A : Cast, B, C, D, E] Union5::from0(A) -> Self[A, B, C, D, E]
+fn[A, B : Cast, C, D, E] Union5::from1(B) -> Self[A, B, C, D, E]
+fn[A, B, C : Cast, D, E] Union5::from2(C) -> Self[A, B, C, D, E]
+fn[A, B, C, D : Cast, E] Union5::from3(D) -> Self[A, B, C, D, E]
+fn[A, B, C, D, E : Cast] Union5::from4(E) -> Self[A, B, C, D, E]
+fn[A : Cast, B, C, D, E] Union5::to0(Self[A, B, C, D, E]) -> A?
+fn[A, B : Cast, C, D, E] Union5::to1(Self[A, B, C, D, E]) -> B?
+fn[A, B, C : Cast, D, E] Union5::to2(Self[A, B, C, D, E]) -> C?
+fn[A, B, C, D : Cast, E] Union5::to3(Self[A, B, C, D, E]) -> D?
+fn[A, B, C, D, E : Cast] Union5::to4(Self[A, B, C, D, E]) -> E?
+
+type Union6[_, _, _, _, _, _]
+fn[A : Cast, B, C, D, E, F] Union6::from0(A) -> Self[A, B, C, D, E, F]
+fn[A, B : Cast, C, D, E, F] Union6::from1(B) -> Self[A, B, C, D, E, F]
+fn[A, B, C : Cast, D, E, F] Union6::from2(C) -> Self[A, B, C, D, E, F]
+fn[A, B, C, D : Cast, E, F] Union6::from3(D) -> Self[A, B, C, D, E, F]
+fn[A, B, C, D, E : Cast, F] Union6::from4(E) -> Self[A, B, C, D, E, F]
+fn[A, B, C, D, E, F : Cast] Union6::from5(F) -> Self[A, B, C, D, E, F]
+fn[A : Cast, B, C, D, E, F] Union6::to0(Self[A, B, C, D, E, F]) -> A?
+fn[A, B : Cast, C, D, E, F] Union6::to1(Self[A, B, C, D, E, F]) -> B?
+fn[A, B, C : Cast, D, E, F] Union6::to2(Self[A, B, C, D, E, F]) -> C?
+fn[A, B, C, D : Cast, E, F] Union6::to3(Self[A, B, C, D, E, F]) -> D?
+fn[A, B, C, D, E : Cast, F] Union6::to4(Self[A, B, C, D, E, F]) -> E?
+fn[A, B, C, D, E, F : Cast] Union6::to5(Self[A, B, C, D, E, F]) -> F?
+
+type Union7[_, _, _, _, _, _, _]
+fn[A : Cast, B, C, D, E, F, G] Union7::from0(A) -> Self[A, B, C, D, E, F, G]
+fn[A, B : Cast, C, D, E, F, G] Union7::from1(B) -> Self[A, B, C, D, E, F, G]
+fn[A, B, C : Cast, D, E, F, G] Union7::from2(C) -> Self[A, B, C, D, E, F, G]
+fn[A, B, C, D : Cast, E, F, G] Union7::from3(D) -> Self[A, B, C, D, E, F, G]
+fn[A, B, C, D, E : Cast, F, G] Union7::from4(E) -> Self[A, B, C, D, E, F, G]
+fn[A, B, C, D, E, F : Cast, G] Union7::from5(F) -> Self[A, B, C, D, E, F, G]
+fn[A, B, C, D, E, F, G : Cast] Union7::from6(G) -> Self[A, B, C, D, E, F, G]
+fn[A : Cast, B, C, D, E, F, G] Union7::to0(Self[A, B, C, D, E, F, G]) -> A?
+fn[A, B : Cast, C, D, E, F, G] Union7::to1(Self[A, B, C, D, E, F, G]) -> B?
+fn[A, B, C : Cast, D, E, F, G] Union7::to2(Self[A, B, C, D, E, F, G]) -> C?
+fn[A, B, C, D : Cast, E, F, G] Union7::to3(Self[A, B, C, D, E, F, G]) -> D?
+fn[A, B, C, D, E : Cast, F, G] Union7::to4(Self[A, B, C, D, E, F, G]) -> E?
+fn[A, B, C, D, E, F : Cast, G] Union7::to5(Self[A, B, C, D, E, F, G]) -> F?
+fn[A, B, C, D, E, F, G : Cast] Union7::to6(Self[A, B, C, D, E, F, G]) -> G?
+
+type Union8[_, _, _, _, _, _, _, _]
+fn[A : Cast, B, C, D, E, F, G, H] Union8::from0(A) -> Self[A, B, C, D, E, F, G, H]
+fn[A, B : Cast, C, D, E, F, G, H] Union8::from1(B) -> Self[A, B, C, D, E, F, G, H]
+fn[A, B, C : Cast, D, E, F, G, H] Union8::from2(C) -> Self[A, B, C, D, E, F, G, H]
+fn[A, B, C, D : Cast, E, F, G, H] Union8::from3(D) -> Self[A, B, C, D, E, F, G, H]
+fn[A, B, C, D, E : Cast, F, G, H] Union8::from4(E) -> Self[A, B, C, D, E, F, G, H]
+fn[A, B, C, D, E, F : Cast, G, H] Union8::from5(F) -> Self[A, B, C, D, E, F, G, H]
+fn[A, B, C, D, E, F, G : Cast, H] Union8::from6(G) -> Self[A, B, C, D, E, F, G, H]
+fn[A, B, C, D, E, F, G, H : Cast] Union8::from7(H) -> Self[A, B, C, D, E, F, G, H]
+fn[A : Cast, B, C, D, E, F, G, H] Union8::to0(Self[A, B, C, D, E, F, G, H]) -> A?
+fn[A, B : Cast, C, D, E, F, G, H] Union8::to1(Self[A, B, C, D, E, F, G, H]) -> B?
+fn[A, B, C : Cast, D, E, F, G, H] Union8::to2(Self[A, B, C, D, E, F, G, H]) -> C?
+fn[A, B, C, D : Cast, E, F, G, H] Union8::to3(Self[A, B, C, D, E, F, G, H]) -> D?
+fn[A, B, C, D, E : Cast, F, G, H] Union8::to4(Self[A, B, C, D, E, F, G, H]) -> E?
+fn[A, B, C, D, E, F : Cast, G, H] Union8::to5(Self[A, B, C, D, E, F, G, H]) -> F?
+fn[A, B, C, D, E, F, G : Cast, H] Union8::to6(Self[A, B, C, D, E, F, G, H]) -> G?
+fn[A, B, C, D, E, F, G, H : Cast] Union8::to7(Self[A, B, C, D, E, F, G, H]) -> H?
+
+#external
+pub type Value
+fn[Arg, Result] Value::apply(Self, Array[Arg]) -> Result
+fn[Arg, Result] Value::apply_with_index(Self, Int, Array[Arg]) -> Result
+fn[Arg, Result] Value::apply_with_string(Self, String, Array[Arg]) -> Result
+fn[Arg, Result] Value::apply_with_symbol(Self, Symbol, Array[Arg]) -> Result
+fn[T] Value::cast(Self) -> T
+fn[T] Value::cast_from(T) -> Self
+fn Value::extends(Self, Self) -> Self
+fn Value::from_json(Json) -> Self raise
+fn Value::from_json_string(String) -> Self raise
+fn[T] Value::get_with_index(Self, Int) -> T
+fn[T] Value::get_with_string(Self, String) -> T
+fn[T] Value::get_with_symbol(Self, Symbol) -> T
+fn Value::is_bool(Self) -> Bool
+fn Value::is_null(Self) -> Bool
+fn Value::is_number(Self) -> Bool
+fn Value::is_object(Self) -> Bool
+fn Value::is_string(Self) -> Bool
+fn Value::is_symbol(Self) -> Bool
+fn Value::is_undefined(Self) -> Bool
+fn[Arg, Result] Value::new(Self, Array[Arg]) -> Result
+fn[Arg, Result] Value::new_with_index(Self, Int, Array[Arg]) -> Result
+fn[Arg, Result] Value::new_with_string(Self, String, Array[Arg]) -> Result
+fn[Arg, Result] Value::new_with_symbol(Self, Symbol, Array[Arg]) -> Result
+fn Value::output(Self, &Logger) -> Unit // from trait `Show`
+fn[T] Value::set_with_index(Self, Int, T) -> Unit
+fn[T] Value::set_with_string(Self, String, T) -> Unit
+fn[T] Value::set_with_symbol(Self, Symbol, T) -> Unit
+fn Value::to_json(Self) -> Json raise
+fn Value::to_json_string(Self) -> String raise
+fn Value::to_string(Self) -> String
+impl Show for Value
+impl @json.FromJson for Value
 
 // Type aliases
 
 // Traits
+pub(open) trait Cast {
+  into(Value) -> Self?
+  from(Self) -> Value
+}
+impl Cast for Bool
+impl Cast for Int
+impl Cast for Double
+impl Cast for String
+impl[A : Cast] Cast for Array[A]
 

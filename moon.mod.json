@@ -1,12 +1,11 @@
 {
   "name": "oboard/mocket",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "deps": {
     "yj-qin/regexp": "0.3.6",
     "illusory0x0/native": "0.2.1",
     "moonbitlang/x": "0.4.34",
-    "tonyfettes/uri": "0.1.0",
-    "moonbitlang/async": "0.8.1"
+    "tonyfettes/uri": "0.1.0"
   },
   "readme": "README.md",
   "repository": "https://github.com/oboard/mocket",

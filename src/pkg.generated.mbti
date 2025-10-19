@@ -2,11 +2,13 @@
 package "oboard/mocket"
 
 import(
-  "illusory0x0/native"
   "moonbitlang/core/builtin"
+  "oboard/mocket/js"
 )
 
 // Values
+fn create_server((HttpRequestInternal, HttpResponseInternal, () -> Unit) -> Unit, Int) -> Unit
+
 fn new(base_path? : String, logger? : Logger) -> Mocket
 
 fn new_debug_logger() -> Logger
@@ -29,12 +31,18 @@ pub suberror BodyError {
 }
 
 pub suberror ExecError
+fn ExecError::output(Self, &@builtin.Logger) -> Unit // from trait `Show`
+fn ExecError::to_string(Self) -> String // from trait `Show`
 impl Show for ExecError
 
 pub suberror IOError
+fn IOError::output(Self, &@builtin.Logger) -> Unit // from trait `Show`
+fn IOError::to_string(Self) -> String // from trait `Show`
 impl Show for IOError
 
 pub suberror NetworkError
+fn NetworkError::output(Self, &@builtin.Logger) -> Unit // from trait `Show`
+fn NetworkError::to_string(Self) -> String // from trait `Show`
 impl Show for NetworkError
 
 // Types and methods
@@ -61,8 +69,8 @@ pub(all) struct HttpRequest {
 
 #external
 pub type HttpRequestInternal
-fn HttpRequestInternal::on_complete(Self, FuncRef[() -> Unit]) -> Unit
-fn HttpRequestInternal::on_headers(Self, FuncRef[(@native.CStr) -> Unit]) -> Unit
+fn HttpRequestInternal::req_method(Self) -> String
+fn HttpRequestInternal::url(Self) -> String
 
 pub(all) struct HttpResponse {
   mut status_code : Int
@@ -71,9 +79,8 @@ pub(all) struct HttpResponse {
 
 #external
 pub type HttpResponseInternal
-
-#external
-pub type HttpServerInternal
+fn HttpResponseInternal::end(Self, @js.Value) -> Unit
+fn HttpResponseInternal::url(Self) -> String
 
 pub enum LogLevel {
   Debug
