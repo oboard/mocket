@@ -93,7 +93,7 @@ fn Mocket::find_route(
   self : Mocket,
   http_method : String,
   path : String,
-) -> (async (HttpEvent) -> HttpBody noraise, Map[String, StringView])? {
+) -> (HttpHandler, Map[String, StringView])? {
   self.logger.route_lookup(http_method, path)
   // 优化：首先尝试静态路由缓存
   match self.static_routes.get(http_method) {

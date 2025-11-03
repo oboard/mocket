@@ -10,18 +10,12 @@ pub(all) enum HttpBody {
 ///|
 pub(all) struct Mocket {
   base_path : String
-  mappings : Map[(String, String), async (HttpEvent) -> HttpBody noraise]
+  mappings : Map[(String, String), HttpHandler]
   middlewares : Array[(String, Middleware)]
   // 添加静态路由缓存（精确匹配的路由）
-  static_routes : Map[
-    String,
-    Map[String, async (HttpEvent) -> HttpBody noraise],
-  ]
+  static_routes : Map[String, Map[String, HttpHandler]]
   // 添加动态路由缓存（包含参数的路由）
-  dynamic_routes : Map[
-    String,
-    Array[(String, async (HttpEvent) -> HttpBody noraise)],
-  ]
+  dynamic_routes : Map[String, Array[(String, HttpHandler)]]
   // 日志记录器
   logger : Logger
 }
@@ -64,7 +58,7 @@ pub fn Mocket::on(
   self : Mocket,
   event : String,
   path : String,
-  handler : async (HttpEvent) -> HttpBody noraise,
+  handler : HttpHandler,
 ) -> Unit {
   let path = self.base_path + path
   self.logger.route_register(event, path)
@@ -82,7 +76,7 @@ pub fn Mocket::on(
       }
       None => {
         self.logger.route_merge_new(event)
-        let new_routes : Map[String, async (HttpEvent) -> HttpBody noraise] = {}
+        let new_routes : Map[String, HttpHandler] = {}
         new_routes.set(path, handler)
         self.static_routes.set(event, new_routes)
         self.logger.route_created(path)
@@ -102,11 +96,7 @@ pub fn Mocket::on(
 }
 
 ///|
-pub fn Mocket::get(
-  self : Mocket,
-  path : String,
-  handler : async (HttpEvent) -> HttpBody noraise,
-) -> Unit {
+pub fn Mocket::get(self : Mocket, path : String, handler : HttpHandler) -> Unit {
   self.on("GET", path, handler)
 }
 
@@ -114,7 +104,7 @@ pub fn Mocket::get(
 pub fn Mocket::post(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> HttpBody noraise,
+  handler : HttpHandler,
 ) -> Unit {
   self.on("POST", path, handler)
 }
@@ -123,7 +113,7 @@ pub fn Mocket::post(
 pub fn Mocket::patch(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> HttpBody noraise,
+  handler : HttpHandler,
 ) -> Unit {
   self.on("PATCH", path, handler)
 }
@@ -132,17 +122,13 @@ pub fn Mocket::patch(
 pub fn Mocket::connect(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> HttpBody noraise,
+  handler : HttpHandler,
 ) -> Unit {
   self.on("CONNECT", path, handler)
 }
 
 ///|
-pub fn Mocket::put(
-  self : Mocket,
-  path : String,
-  handler : async (HttpEvent) -> HttpBody noraise,
-) -> Unit {
+pub fn Mocket::put(self : Mocket, path : String, handler : HttpHandler) -> Unit {
   self.on("PUT", path, handler)
 }
 
@@ -150,7 +136,7 @@ pub fn Mocket::put(
 pub fn Mocket::delete(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> HttpBody noraise,
+  handler : HttpHandler,
 ) -> Unit {
   self.on("DELETE", path, handler)
 }
@@ -159,7 +145,7 @@ pub fn Mocket::delete(
 pub fn Mocket::head(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> HttpBody noraise,
+  handler : HttpHandler,
 ) -> Unit {
   self.on("HEAD", path, handler)
 }
@@ -168,7 +154,7 @@ pub fn Mocket::head(
 pub fn Mocket::options(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> HttpBody noraise,
+  handler : HttpHandler,
 ) -> Unit {
   self.on("OPTIONS", path, handler)
 }
@@ -177,17 +163,13 @@ pub fn Mocket::options(
 pub fn Mocket::trace(
   self : Mocket,
   path : String,
-  handler : async (HttpEvent) -> HttpBody noraise,
+  handler : HttpHandler,
 ) -> Unit {
   self.on("TRACE", path, handler)
 }
 
 ///|
-pub fn Mocket::all(
-  self : Mocket,
-  path : String,
-  handler : async (HttpEvent) -> HttpBody noraise,
-) -> Unit {
+pub fn Mocket::all(self : Mocket, path : String, handler : HttpHandler) -> Unit {
   self.on("*", path, handler)
 }
 

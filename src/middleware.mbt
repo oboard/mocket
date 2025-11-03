@@ -19,7 +19,7 @@ pub fn Mocket::use_middleware(
 pub async fn execute_middlewares(
   middlewares : Array[(String, Middleware)],
   event : HttpEvent,
-  final_handler : async (HttpEvent) -> HttpBody noraise,
+  final_handler : HttpHandler,
 ) -> HttpBody noraise {
   // 过滤出匹配路径的中间件
   let matched_middlewares = []
@@ -42,7 +42,7 @@ async fn execute_middleware_chain(
   middlewares : Array[Middleware],
   index : Int,
   event : HttpEvent,
-  final_handler : async (HttpEvent) -> HttpBody noraise,
+  final_handler : HttpHandler,
 ) -> HttpBody noraise {
   if index >= middlewares.length() {
     // 所有中间件都执行完毕，调用最终处理器

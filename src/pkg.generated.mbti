@@ -7,6 +7,8 @@ import(
 )
 
 // Values
+async fn execute_middlewares(Array[(String, async (HttpEvent, async () -> HttpBody noraise) -> HttpBody noraise)], HttpEvent, async (HttpEvent) -> HttpBody noraise) -> HttpBody noraise
+
 fn new(base_path? : String, logger? : Logger) -> Mocket
 
 fn new_debug_logger() -> Logger
@@ -107,7 +109,7 @@ fn Logger::warn(Self, () -> String) -> Unit
 pub(all) struct Mocket {
   base_path : String
   mappings : Map[(String, String), async (HttpEvent) -> HttpBody noraise]
-  middlewares : Array[(String, async (HttpEvent) -> Unit noraise)]
+  middlewares : Array[(String, async (HttpEvent, async () -> HttpBody noraise) -> HttpBody noraise)]
   static_routes : Map[String, Map[String, async (HttpEvent) -> HttpBody noraise]]
   dynamic_routes : Map[String, Array[(String, async (HttpEvent) -> HttpBody noraise)]]
   logger : Logger
@@ -125,9 +127,12 @@ fn Mocket::post(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
 fn Mocket::put(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
 fn Mocket::serve(Self, port~ : Int) -> Unit
 fn Mocket::trace(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
-fn Mocket::use_middleware(Self, async (HttpEvent) -> Unit noraise, base_path? : String) -> Unit
+fn Mocket::use_middleware(Self, async (HttpEvent, async () -> HttpBody noraise) -> HttpBody noraise, base_path? : String) -> Unit
 
 // Type aliases
+pub type HttpHandler = async (HttpEvent) -> HttpBody noraise
+
+pub type Middleware = async (HttpEvent, async () -> HttpBody noraise) -> HttpBody noraise
 
 // Traits
 
