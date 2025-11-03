@@ -1,7 +1,6 @@
 {
   "import": [
     "oboard/mocket/js",
-    "yj-qin/regexp",
     "illusory0x0/native",
     "tonyfettes/uri"
   ],

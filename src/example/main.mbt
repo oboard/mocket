@@ -40,19 +40,19 @@ fn main {
 
   // Dynamic Routes
   // /hello2/World = Hello, World!
-  ..get("/hello/:name", fn(event) {
+  ..get("/hello/:name", event => {
     let name = event.params.get("name").unwrap_or("World")
     Text("Hello, \{name}!")
   })
   // /hello2/World = Hello, World!
-  ..get("/hello2/*", fn(event) {
+  ..get("/hello2/*", event => {
     let name = event.params.get("_").unwrap_or("World")
     Text("Hello, \{name}!")
   })
 
   // Wildcard Routes
   // /hello3/World/World = Hello, World/World!
-  ..get("/hello3/**", fn(event) {
+  ..get("/hello3/**", event => {
     let name = event.params.get("_").unwrap_or("World")
     Text("Hello, \{name}!")
   })

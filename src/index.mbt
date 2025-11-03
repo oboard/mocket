@@ -60,32 +60,6 @@ pub(all) struct HttpResponse {
 }
 
 ///|
-// 将路径模板转换为正则表达式
-fn template_to_regex(template : String) -> String {
-  // 优化：避免重复的字符串操作
-  if template.find(":").unwrap_or(-1) == -1 &&
-    template.find("*").unwrap_or(-1) == -1 {
-    return "^" + template + "$"
-  }
-  let parts = template.split("/")
-  let result_parts = []
-  for part in parts {
-    let part_str = part.to_string()
-    if part_str.length() > 0 &&
-      part_str.view(start_offset=0, end_offset=1) == ":" {
-      result_parts.push("([^/]+)")
-    } else if part_str == "*" {
-      result_parts.push("([^/]+)")
-    } else if part_str == "**" {
-      result_parts.push("(.*)")
-    } else {
-      result_parts.push(part_str)
-    }
-  }
-  "^" + result_parts.join("/") + "$"
-}
-
-///|
 pub fn Mocket::on(
   self : Mocket,
   event : String,
