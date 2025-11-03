@@ -11,7 +11,7 @@ pub(all) enum HttpBody {
 pub(all) struct Mocket {
   base_path : String
   mappings : Map[(String, String), async (HttpEvent) -> HttpBody noraise]
-  middlewares : Array[(String, async (HttpEvent) -> Unit noraise)]
+  middlewares : Array[(String, Middleware)]
   // 添加静态路由缓存（精确匹配的路由）
   static_routes : Map[
     String,

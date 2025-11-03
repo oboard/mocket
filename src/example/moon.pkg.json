@@ -1,6 +1,7 @@
 {
   "is-main": true,
   "import": [
-    "oboard/mocket"
+    "oboard/mocket",
+    "oboard/mocket/cors"
   ]
 }

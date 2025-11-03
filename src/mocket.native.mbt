@@ -171,10 +171,9 @@ fn handle_request_native(
     }
     event.req.body = body
   }
-  run(() => {
-    // 执行中间件链
-    execute_middlewares(mocket.middlewares, event)
-    let body = handler(event)
+  run(async fn() noraise {
+    // 执行中间件链和处理器
+    let body = execute_middlewares(mocket.middlewares, event, handler)
     if not(body is Empty) {
       event.res.headers.set(
         "Content-Type",

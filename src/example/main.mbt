@@ -4,9 +4,11 @@ fn main {
 
   // Register global middleware
   app
-  ..use_middleware(event => println(
-    "📝 Request: \{event.req.http_method} \{event.req.url}",
-  ))
+  ..use_middleware((event, next) => {
+    println("📝 Request: \{event.req.http_method} \{event.req.url}")
+    next()
+  })
+  ..use_middleware(@cors.handle_cors())
 
   // Text Response
   ..get("/", _event => Text("⚡️ Tadaa!"))
@@ -15,9 +17,12 @@ fn main {
   ..on("GET", "/hello", _ => Text("Hello world!"))
   ..group("/api", group => {
     // 添加组级中间件
-    group.use_middleware(event => println(
-      "🔒 API Group Middleware: \{event.req.http_method} \{event.req.url}",
-    ))
+    group.use_middleware((event, next) => {
+      println(
+        "🔒 API Group Middleware: \{event.req.http_method} \{event.req.url}",
+      )
+      next()
+    })
     group.get("/hello", _ => Text("Hello world!"))
     group.get("/json", _ => Json({
       "name": "John Doe",
