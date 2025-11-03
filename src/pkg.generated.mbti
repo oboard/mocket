@@ -2,13 +2,11 @@
 package "oboard/mocket"
 
 import(
+  "illusory0x0/native"
   "moonbitlang/core/builtin"
-  "oboard/mocket/js"
 )
 
 // Values
-fn create_server((HttpRequestInternal, HttpResponseInternal, () -> Unit) -> Unit, Int) -> Unit
-
 fn new(base_path? : String, logger? : Logger) -> Mocket
 
 fn new_debug_logger() -> Logger
@@ -63,8 +61,8 @@ pub(all) struct HttpRequest {
 
 #external
 pub type HttpRequestInternal
-fn HttpRequestInternal::req_method(Self) -> String
-fn HttpRequestInternal::url(Self) -> String
+fn HttpRequestInternal::on_complete(Self, FuncRef[() -> Unit]) -> Unit
+fn HttpRequestInternal::on_headers(Self, FuncRef[(@native.CStr) -> Unit]) -> Unit
 
 pub(all) struct HttpResponse {
   mut status_code : Int
@@ -73,8 +71,9 @@ pub(all) struct HttpResponse {
 
 #external
 pub type HttpResponseInternal
-fn HttpResponseInternal::end(Self, @js.Value) -> Unit
-fn HttpResponseInternal::url(Self) -> String
+
+#external
+pub type HttpServerInternal
 
 pub enum LogLevel {
   Debug

@@ -1,13 +1,10 @@
 # oboard/mocket
 
-[![Version](https://img.shields.io/badge/dynamic/json?url=https%3A//mooncakes.io/assets/oboard/mocket/resource.json&query=%24.meta_info.version&label=mooncakes&color=yellow)](https://mooncakes.io/docs/oboard/mocket)
-[![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/oboard/mocket/check.yaml)](https://github.com/oboard/mocket/actions/workflows/check.yaml)
-[![License](https://img.shields.io/github/license/oboard/mocket)](https://github.com/oboard/mocket/blob/main/LICENSE)
-
+[![Version](https://img.shields.io/badge/dynamic/json?url=https%3A//mooncakes.io/assets/oboard/mocket/resource.json&query=%24.meta_info.version&label=mooncakes&color=yellow)](https://mooncakes.io/docs/oboard/mocket) [![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/oboard/mocket/check.yaml)](https://github.com/oboard/mocket/actions/workflows/check.yaml) [![License](https://img.shields.io/github/license/oboard/mocket)](https://github.com/oboard/mocket/blob/main/LICENSE)
 
 A web framework for MoonBit.
 
-![logo](logo.jpg)
+[👉 Documentation](https://mocket.oboard.fun/)
 
 ## Quick Start
 
@@ -46,7 +43,7 @@ Minimum Example: https://github.com/oboard/mocket_example
 Support named parameters with `:param` syntax:
 
 ```moonbit
-app.get("/hello/:name", fn(event) {
+app.get("/hello/:name", event => {
   let name = event.params.get("name").or("World")
   Text("Hello, \{name}!")
 })
@@ -58,13 +55,13 @@ Support single and double wildcards:
 
 ```moonbit
 // Single wildcard - matches one path segment
-app.get("/hello/*", fn(event) {
+app.get("/hello/*", event => {
   let name = event.params.get("_").or("World")
   Text("Hello, \{name}!")
 })
 
 // Double wildcard - matches multiple path segments
-app.get("/hello/**", fn(event) {
+app.get("/hello/**", event => {
   let path = event.params.get("_").or("")
   Text("Hello, \{path}!")
 })
@@ -151,19 +148,19 @@ let app = @mocket.new(logger=@mocket.new_debug_logger())
 
   // Dynamic Routes
   // /hello2/World = Hello, World!
-  ..get("/hello/:name", fn(event) {
+  ..get("/hello/:name", event => {
     let name = event.params.get("name").unwrap_or("World")
     Text("Hello, \{name}!")
   })
   // /hello2/World = Hello, World!
-  ..get("/hello2/*", fn(event) {
+  ..get("/hello2/*", event => {
     let name = event.params.get("_").unwrap_or("World")
     Text("Hello, \{name}!")
   })
 
   // Wildcard Routes
   // /hello3/World/World = Hello, World/World!
-  ..get("/hello3/**", fn(event) {
+  ..get("/hello3/**", event => {
     let name = event.params.get("_").unwrap_or("World")
     Text("Hello, \{name}!")
   })
