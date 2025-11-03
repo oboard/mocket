@@ -27,8 +27,6 @@ async fn[T, E : Error] suspend(((T) -> Unit, (E) -> Unit) -> Unit) -> T raise E
 // Errors
 pub suberror Error_ Value
 fn Error_::cause(Self) -> Value?
-fn Error_::output(Self, &Logger) -> Unit // from trait `Show`
-fn Error_::to_string(Self) -> String // from trait `Show`
 fn[T] Error_::wrap(() -> Value, map_ok? : (Value) -> T) -> T raise Self
 impl Show for Error_
 
@@ -187,7 +185,6 @@ fn[Arg, Result] Value::new(Self, Array[Arg]) -> Result
 fn[Arg, Result] Value::new_with_index(Self, Int, Array[Arg]) -> Result
 fn[Arg, Result] Value::new_with_string(Self, String, Array[Arg]) -> Result
 fn[Arg, Result] Value::new_with_symbol(Self, Symbol, Array[Arg]) -> Result
-fn Value::output(Self, &Logger) -> Unit // from trait `Show`
 fn[T] Value::set_with_index(Self, Int, T) -> Unit
 fn[T] Value::set_with_string(Self, String, T) -> Unit
 fn[T] Value::set_with_symbol(Self, Symbol, T) -> Unit

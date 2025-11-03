@@ -31,18 +31,12 @@ pub suberror BodyError {
 }
 
 pub suberror ExecError
-fn ExecError::output(Self, &@builtin.Logger) -> Unit // from trait `Show`
-fn ExecError::to_string(Self) -> String // from trait `Show`
 impl Show for ExecError
 
 pub suberror IOError
-fn IOError::output(Self, &@builtin.Logger) -> Unit // from trait `Show`
-fn IOError::to_string(Self) -> String // from trait `Show`
 impl Show for IOError
 
 pub suberror NetworkError
-fn NetworkError::output(Self, &@builtin.Logger) -> Unit // from trait `Show`
-fn NetworkError::to_string(Self) -> String // from trait `Show`
 impl Show for NetworkError
 
 // Types and methods
@@ -110,6 +104,7 @@ fn Logger::route_static(Self, String, String) -> Unit
 fn Logger::routes_available(Self, Array[String]) -> Unit
 fn Logger::warn(Self, () -> String) -> Unit
 
+#alias(T)
 pub(all) struct Mocket {
   base_path : String
   mappings : Map[(String, String), async (HttpEvent) -> HttpBody noraise]
@@ -134,7 +129,6 @@ fn Mocket::trace(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
 fn Mocket::use_middleware(Self, async (HttpEvent) -> Unit noraise, base_path? : String) -> Unit
 
 // Type aliases
-pub typealias Mocket as T
 
 // Traits
 

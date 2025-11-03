@@ -1,6 +1,6 @@
 ///|
 // 注册中间件，支持路径匹配
-pub fn use_middleware(
+pub fn Mocket::use_middleware(
   self : Mocket,
   middleware : async (HttpEvent) -> Unit noraise,
   base_path? : String,

@@ -61,7 +61,7 @@ fn match_path(template : String, path : String) -> Map[String, String]? {
 
 ///|
 // 查找匹配的路由和参数
-fn find_route(
+fn Mocket::find_route(
   self : Mocket,
   http_method : String,
   path : String,

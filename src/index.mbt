@@ -86,7 +86,7 @@ fn template_to_regex(template : String) -> String {
 }
 
 ///|
-pub fn on(
+pub fn Mocket::on(
   self : Mocket,
   event : String,
   path : String,
@@ -128,7 +128,7 @@ pub fn on(
 }
 
 ///|
-pub fn get(
+pub fn Mocket::get(
   self : Mocket,
   path : String,
   handler : async (HttpEvent) -> HttpBody noraise,
@@ -137,7 +137,7 @@ pub fn get(
 }
 
 ///|
-pub fn post(
+pub fn Mocket::post(
   self : Mocket,
   path : String,
   handler : async (HttpEvent) -> HttpBody noraise,
@@ -146,7 +146,7 @@ pub fn post(
 }
 
 ///|
-pub fn patch(
+pub fn Mocket::patch(
   self : Mocket,
   path : String,
   handler : async (HttpEvent) -> HttpBody noraise,
@@ -155,7 +155,7 @@ pub fn patch(
 }
 
 ///|
-pub fn connect(
+pub fn Mocket::connect(
   self : Mocket,
   path : String,
   handler : async (HttpEvent) -> HttpBody noraise,
@@ -164,7 +164,7 @@ pub fn connect(
 }
 
 ///|
-pub fn put(
+pub fn Mocket::put(
   self : Mocket,
   path : String,
   handler : async (HttpEvent) -> HttpBody noraise,
@@ -173,7 +173,7 @@ pub fn put(
 }
 
 ///|
-pub fn delete(
+pub fn Mocket::delete(
   self : Mocket,
   path : String,
   handler : async (HttpEvent) -> HttpBody noraise,
@@ -182,7 +182,7 @@ pub fn delete(
 }
 
 ///|
-pub fn head(
+pub fn Mocket::head(
   self : Mocket,
   path : String,
   handler : async (HttpEvent) -> HttpBody noraise,
@@ -191,7 +191,7 @@ pub fn head(
 }
 
 ///|
-pub fn options(
+pub fn Mocket::options(
   self : Mocket,
   path : String,
   handler : async (HttpEvent) -> HttpBody noraise,
@@ -200,7 +200,7 @@ pub fn options(
 }
 
 ///|
-pub fn trace(
+pub fn Mocket::trace(
   self : Mocket,
   path : String,
   handler : async (HttpEvent) -> HttpBody noraise,
@@ -209,7 +209,7 @@ pub fn trace(
 }
 
 ///|
-pub fn all(
+pub fn Mocket::all(
   self : Mocket,
   path : String,
   handler : async (HttpEvent) -> HttpBody noraise,
@@ -219,7 +219,7 @@ pub fn all(
 
 ///|
 // 创建路由组
-pub fn group(
+pub fn Mocket::group(
   self : Mocket,
   base_path : String,
   configure : (Mocket) -> Unit,

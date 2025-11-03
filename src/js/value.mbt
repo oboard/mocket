@@ -20,32 +20,32 @@ pub impl Show for Value with output(self, logger) {
 pub let globalThis : Value = get_globalThis()
 
 ///|
-pub fn[T] get_with_string(self : Value, key : String) -> T {
+pub fn[T] Value::get_with_string(self : Value, key : String) -> T {
   self.get_ffi(Value::cast_from(key)).cast()
 }
 
 ///|
-pub fn[T] get_with_symbol(self : Value, key : Symbol) -> T {
+pub fn[T] Value::get_with_symbol(self : Value, key : Symbol) -> T {
   self.get_ffi(Value::cast_from(key)).cast()
 }
 
 ///|
-pub fn[T] get_with_index(self : Value, index : Int) -> T {
+pub fn[T] Value::get_with_index(self : Value, index : Int) -> T {
   self.get_ffi(Value::cast_from(index)).cast()
 }
 
 ///|
-pub fn[T] set_with_string(self : Value, key : String, value : T) -> Unit {
+pub fn[T] Value::set_with_string(self : Value, key : String, value : T) -> Unit {
   self.set_ffi(Value::cast_from(key), Value::cast_from(value))
 }
 
 ///|
-pub fn[T] set_with_symbol(self : Value, key : Symbol, value : T) -> Unit {
+pub fn[T] Value::set_with_symbol(self : Value, key : Symbol, value : T) -> Unit {
   self.set_ffi(Value::cast_from(key), Value::cast_from(value))
 }
 
 ///|
-pub fn[T] set_with_index(self : Value, index : Int, value : T) -> Unit {
+pub fn[T] Value::set_with_index(self : Value, index : Int, value : T) -> Unit {
   self.set_ffi(Value::cast_from(index), Value::cast_from(value))
 }
 
@@ -144,9 +144,9 @@ pub impl @json.FromJson for Value with from_json(json : Json, path) {
     Object(kvs) => {
       let acc = Object::new()
       for k, v in kvs {
-        acc.inner().set_with_string(k, (@json.from_json(v, path~) : Value))
+        acc.0.set_with_string(k, (@json.from_json(v, path~) : Value))
       }
-      acc.inner()
+      acc.0
     }
   }
 }
@@ -174,31 +174,31 @@ extern "js" fn Value::to_json_string_ffi(self : Value) -> Value =
   #| (self) => JSON.stringify(self)
 
 ///|
-pub extern "js" fn is_bool(self : Value) -> Bool =
+pub extern "js" fn Value::is_bool(self : Value) -> Bool =
   #| (value) => Object.is(typeof value, 'boolean')
 
 ///|
-pub extern "js" fn is_null(self : Value) -> Bool =
+pub extern "js" fn Value::is_null(self : Value) -> Bool =
   #| (n) => Object.is(n, null)
 
 ///|
-pub extern "js" fn is_undefined(self : Value) -> Bool =
+pub extern "js" fn Value::is_undefined(self : Value) -> Bool =
   #| (n) => Object.is(n, undefined)
 
 ///|
-pub extern "js" fn is_number(self : Value) -> Bool =
+pub extern "js" fn Value::is_number(self : Value) -> Bool =
   #| (n) => Object.is(typeof n, "number")
 
 ///|
-pub extern "js" fn is_string(self : Value) -> Bool =
+pub extern "js" fn Value::is_string(self : Value) -> Bool =
   #| (n) => Object.is(typeof n, "string")
 
 ///|
-pub extern "js" fn is_object(self : Value) -> Bool =
+pub extern "js" fn Value::is_object(self : Value) -> Bool =
   #| (n) => Object.is(typeof n, "object")
 
 ///|
-pub extern "js" fn is_symbol(self : Value) -> Bool =
+pub extern "js" fn Value::is_symbol(self : Value) -> Bool =
   #| (n) => Object.is(typeof n, "symbol")
 
 ///|
@@ -206,27 +206,31 @@ extern "js" fn get_globalThis() -> Value =
   #| () => globalThis
 
 ///|
-extern "js" fn get_ffi(self : Value, key : Value) -> Value =
+extern "js" fn Value::get_ffi(self : Value, key : Value) -> Value =
   #| (obj, key) => obj[key]
 
 ///|
-extern "js" fn set_ffi(self : Value, key : Value, value : Value) =
+extern "js" fn Value::set_ffi(self : Value, key : Value, value : Value) =
   #| (obj, key, value) => { obj[key] = value }
 
 ///|
-extern "js" fn apply_ffi(self : Value, key : Value, args : Value) -> Value =
+extern "js" fn Value::apply_ffi(
+  self : Value,
+  key : Value,
+  args : Value,
+) -> Value =
   #| (self, key, args) => self[key](...args)
 
 ///|
-extern "js" fn apply_self_ffi(self : Value, args : Value) -> Value =
+extern "js" fn Value::apply_self_ffi(self : Value, args : Value) -> Value =
   #| (self, args) => self(...args)
 
 ///|
-extern "js" fn new_ffi(self : Value, key : Value, args : Value) -> Value =
+extern "js" fn Value::new_ffi(self : Value, key : Value, args : Value) -> Value =
   #| (self, key, args) => new self[key](...args)
 
 ///|
-extern "js" fn new_self_ffi(self : Value, args : Value) -> Value =
+extern "js" fn Value::new_self_ffi(self : Value, args : Value) -> Value =
   #| (self, args) => new self(...args)
 
 ///|
@@ -239,7 +243,10 @@ extern "js" fn Value::undefined() -> Value =
 
 ///|
 /// @param self The constructor function that accepts this as the first argument
-pub extern "js" fn extends(self : Value, parent_constructor : Value) -> Value =
+pub extern "js" fn Value::extends(
+  self : Value,
+  parent_constructor : Value,
+) -> Value =
   #|(f, parent) => {
   #|  return class extends parent {
   #|    constructor(...args) {
