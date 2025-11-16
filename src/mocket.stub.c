@@ -3,6 +3,136 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+#define MAX_WS_CLIENTS 1024
+#define MAX_CHANNELS 256
+
+typedef struct {
+  struct mg_connection *c;
+  char id[64];
+} ws_client_t;
+
+typedef struct {
+  char name[128];
+  char client_ids[MAX_WS_CLIENTS][64];
+  int cid_count;
+} channel_t;
+
+static ws_client_t WS_CLIENTS[MAX_WS_CLIENTS];
+static int WS_CLIENT_COUNT = 0;
+static channel_t CHANNELS[MAX_CHANNELS];
+static int CHANNEL_COUNT = 0;
+
+typedef void (*ws_emit_cb_t)(const char *type, const char *id, const char *payload);
+static ws_emit_cb_t WS_EMIT_CB = NULL;
+void set_ws_emit(ws_emit_cb_t cb) { WS_EMIT_CB = cb; }
+
+static ws_client_t *find_client_by_conn(struct mg_connection *c) {
+  for (int i = 0; i < WS_CLIENT_COUNT; i++) {
+    if (WS_CLIENTS[i].c == c) return &WS_CLIENTS[i];
+  }
+  return NULL;
+}
+
+static ws_client_t *find_client_by_id(const char *id) {
+  for (int i = 0; i < WS_CLIENT_COUNT; i++) {
+    if (strncmp(WS_CLIENTS[i].id, id, sizeof(WS_CLIENTS[i].id)) == 0) return &WS_CLIENTS[i];
+  }
+  return NULL;
+}
+
+static const char *gen_id(struct mg_connection *c) {
+  static char buf[64];
+  snprintf(buf, sizeof(buf), "%p-%llu", (void *) c, (unsigned long long) mg_millis());
+  return buf;
+}
+
+static void register_client(struct mg_connection *c) {
+  if (WS_CLIENT_COUNT >= MAX_WS_CLIENTS) return;
+  const char *id = gen_id(c);
+  ws_client_t *slot = &WS_CLIENTS[WS_CLIENT_COUNT++];
+  slot->c = c;
+  snprintf(slot->id, sizeof(slot->id), "%s", id);
+  if (WS_EMIT_CB) WS_EMIT_CB("open", slot->id, "");
+}
+
+static void unregister_client(ws_client_t *cl) {
+  if (!cl) return;
+  if (WS_EMIT_CB) WS_EMIT_CB("close", cl->id, "");
+  for (int i = 0; i < CHANNEL_COUNT; i++) {
+    int w = 0;
+    for (int j = 0; j < CHANNELS[i].cid_count; j++) {
+      if (strcmp(CHANNELS[i].client_ids[j], cl->id) != 0) {
+        if (w != j) strncpy(CHANNELS[i].client_ids[w], CHANNELS[i].client_ids[j], sizeof(CHANNELS[i].client_ids[w]));
+        w++;
+      }
+    }
+    CHANNELS[i].cid_count = w;
+  }
+  int idx = -1;
+  for (int i = 0; i < WS_CLIENT_COUNT; i++) {
+    if (&WS_CLIENTS[i] == cl) { idx = i; break; }
+  }
+  if (idx >= 0) {
+    if (idx != WS_CLIENT_COUNT - 1) WS_CLIENTS[idx] = WS_CLIENTS[WS_CLIENT_COUNT - 1];
+    WS_CLIENT_COUNT--;
+  }
+}
+
+static channel_t *get_channel(const char *name, int create) {
+  for (int i = 0; i < CHANNEL_COUNT; i++) {
+    if (strncmp(CHANNELS[i].name, name, sizeof(CHANNELS[i].name)) == 0) return &CHANNELS[i];
+  }
+  if (!create || CHANNEL_COUNT >= MAX_CHANNELS) return NULL;
+  channel_t *ch = &CHANNELS[CHANNEL_COUNT++];
+  snprintf(ch->name, sizeof(ch->name), "%s", name);
+  ch->cid_count = 0;
+  return ch;
+}
+
+void ws_send(const char *id, const char *msg) {
+  ws_client_t *cl = find_client_by_id(id);
+  if (!cl || !cl->c) return;
+  if (!msg) msg = "";
+  mg_ws_send(cl->c, msg, strlen(msg), WEBSOCKET_OP_TEXT);
+}
+
+void ws_subscribe(const char *id, const char *channel) {
+  if (!id || !channel) return;
+  channel_t *ch = get_channel(channel, 1);
+  if (!ch) return;
+  for (int i = 0; i < ch->cid_count; i++) {
+    if (strcmp(ch->client_ids[i], id) == 0) return;
+  }
+  if (ch->cid_count < MAX_WS_CLIENTS) {
+    snprintf(ch->client_ids[ch->cid_count], sizeof(ch->client_ids[ch->cid_count]), "%s", id);
+    ch->cid_count++;
+  }
+}
+
+void ws_unsubscribe(const char *id, const char *channel) {
+  if (!id || !channel) return;
+  channel_t *ch = get_channel(channel, 0);
+  if (!ch) return;
+  int w = 0;
+  for (int i = 0; i < ch->cid_count; i++) {
+    if (strcmp(ch->client_ids[i], id) != 0) {
+      if (w != i) strncpy(ch->client_ids[w], ch->client_ids[i], sizeof(ch->client_ids[w]));
+      w++;
+    }
+  }
+  ch->cid_count = w;
+}
+
+void ws_publish(const char *channel, const char *msg) {
+  if (!channel) return;
+  channel_t *ch = get_channel(channel, 0);
+  if (!ch) return;
+  for (int i = 0; i < ch->cid_count; i++) {
+    ws_send(ch->client_ids[i], msg);
+  }
+}
+
 typedef struct
 {
   char key[128];
@@ -216,21 +346,23 @@ static void ev_handler(struct mg_connection *c, int ev, void *ev_data)
 
   if (ev == MG_EV_HTTP_MSG)
   {
-    // HTTP 请求完整到达
     struct mg_http_message *hm = (struct mg_http_message *)ev_data;
+    struct mg_str *upgrade = mg_http_get_header(hm, "Upgrade");
+    if (upgrade && mg_strcasecmp(*upgrade, mg_str("websocket")) == 0) {
+      mg_ws_upgrade(c, hm, NULL);
+      return;
+    }
 
     request_t req = {hm, hm->body, NULL, NULL, NULL, NULL};
     response_t res = {c, 200, "", 0};
 
     if (srv->handler)
     {
-      // 1. 头部解析完成回调
       if (req.on_headers)
       {
         req.on_headers(&req);
       }
 
-      // 2. body 数据块回调（如果有 body）
       if (req.on_body_chunk && hm->body.len > 0)
       {
         req.on_body_chunk(&req, hm->body);
@@ -238,7 +370,6 @@ static void ev_handler(struct mg_connection *c, int ev, void *ev_data)
 
       srv->handler(srv->port, &req, &res);
 
-      // 3. 请求完成回调
       if (req.on_complete)
       {
         req.on_complete(&req);
@@ -246,13 +377,36 @@ static void ev_handler(struct mg_connection *c, int ev, void *ev_data)
     }
     else
     {
-      // 触发错误回调
       if (req.on_error)
       {
         req.on_error(&req, "Handler not found");
       }
       mg_http_reply(c, 404, "", "Not Found\n");
     }
+  }
+  else if (ev == MG_EV_WS_OPEN)
+  {
+    register_client(c);
+  }
+  else if (ev == MG_EV_WS_MSG)
+  {
+    struct mg_ws_message *wm = (struct mg_ws_message *) ev_data;
+    ws_client_t *cl = find_client_by_conn(c);
+    if (!cl) return;
+    if ((wm->flags & WEBSOCKET_OP_TEXT) == WEBSOCKET_OP_TEXT) {
+      size_t len = wm->data.len;
+      char *tmp = (char *) malloc(len + 1);
+      if (!tmp) return;
+      memcpy(tmp, wm->data.buf, len);
+      tmp[len] = '\0';
+      if (WS_EMIT_CB) WS_EMIT_CB("message", cl->id, tmp);
+      free(tmp);
+    }
+  }
+  else if (ev == MG_EV_CLOSE)
+  {
+    ws_client_t *cl = find_client_by_conn(c);
+    if (cl) unregister_client(cl);
   }
 }
 

@@ -2,11 +2,17 @@
 package "oboard/mocket"
 
 import(
-  "illusory0x0/native"
   "moonbitlang/core/builtin"
+  "oboard/mocket/js"
 )
 
 // Values
+fn __ws_emit_js(String, String, String) -> Unit
+
+fn __ws_emit_js_export() -> Unit
+
+fn create_server((HttpRequestInternal, HttpResponseInternal, () -> Unit) -> Unit, Int) -> Unit
+
 async fn execute_middlewares(Array[(String, async (HttpEvent, async () -> HttpBody noraise) -> HttpBody noraise)], HttpEvent, async (HttpEvent) -> HttpBody noraise) -> HttpBody noraise
 
 fn new(base_path? : String, logger? : Logger) -> Mocket
@@ -17,11 +23,23 @@ fn new_logger(enabled? : Bool, level? : LogLevel) -> Logger
 
 fn new_production_logger() -> Logger
 
+fn register_ws_handler(Mocket, Int) -> Unit
+
 fn run(async () -> Unit noraise) -> Unit
 
 fn serve_ffi(Mocket, port~ : Int) -> Unit
 
+fn start_ws_server() -> Unit
+
 async fn[T, E : Error] suspend(((T) -> Unit, (E) -> Unit) -> Unit) -> T raise E
+
+fn ws_publish(String, String) -> Unit
+
+fn ws_send(String, String) -> Unit
+
+fn ws_subscribe(String, String) -> Unit
+
+fn ws_unsubscribe(String, String) -> Unit
 
 // Errors
 pub suberror BodyError {
@@ -63,8 +81,8 @@ pub(all) struct HttpRequest {
 
 #external
 pub type HttpRequestInternal
-fn HttpRequestInternal::on_complete(Self, FuncRef[() -> Unit]) -> Unit
-fn HttpRequestInternal::on_headers(Self, FuncRef[(@native.CStr) -> Unit]) -> Unit
+fn HttpRequestInternal::req_method(Self) -> String
+fn HttpRequestInternal::url(Self) -> String
 
 pub(all) struct HttpResponse {
   mut status_code : Int
@@ -73,9 +91,8 @@ pub(all) struct HttpResponse {
 
 #external
 pub type HttpResponseInternal
-
-#external
-pub type HttpServerInternal
+fn HttpResponseInternal::end(Self, @js.Value) -> Unit
+fn HttpResponseInternal::url(Self) -> String
 
 pub enum LogLevel {
   Debug
@@ -113,6 +130,8 @@ pub(all) struct Mocket {
   static_routes : Map[String, Map[String, async (HttpEvent) -> HttpBody noraise]]
   dynamic_routes : Map[String, Array[(String, async (HttpEvent) -> HttpBody noraise)]]
   logger : Logger
+  ws_static_routes : Map[String, (WebSocketEvent) -> Unit]
+  ws_dynamic_routes : Array[(String, (WebSocketEvent) -> Unit)]
 }
 fn Mocket::all(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
 fn Mocket::connect(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
@@ -128,11 +147,30 @@ fn Mocket::put(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
 fn Mocket::serve(Self, port~ : Int) -> Unit
 fn Mocket::trace(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
 fn Mocket::use_middleware(Self, async (HttpEvent, async () -> HttpBody noraise) -> HttpBody noraise, base_path? : String) -> Unit
+fn Mocket::ws(Self, String, (WebSocketEvent) -> Unit) -> Unit
+
+pub enum WebSocketEvent {
+  Open(WebSocketPeer)
+  Message(WebSocketPeer, HttpBody)
+  Close(WebSocketPeer)
+}
+
+pub(all) struct WebSocketPeer {
+  connection_id : String
+  mut subscribed_channels : Array[String]
+}
+fn WebSocketPeer::publish(String, String) -> Unit
+fn WebSocketPeer::send(Self, String) -> Unit
+fn WebSocketPeer::subscribe(Self, String) -> Unit
+fn WebSocketPeer::to_string(Self) -> String
+fn WebSocketPeer::unsubscribe(Self, String) -> Unit
 
 // Type aliases
 pub type HttpHandler = async (HttpEvent) -> HttpBody noraise
 
 pub type Middleware = async (HttpEvent, async () -> HttpBody noraise) -> HttpBody noraise
+
+pub type WebSocketHandler = (WebSocketEvent) -> Unit
 
 // Traits
 

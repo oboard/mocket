@@ -89,11 +89,39 @@ extern "c" fn create_server(
 ) -> HttpServerInternal = "create_server"
 
 ///|
+#owned(cb)
+extern "c" fn set_ws_emit(
+  cb : FuncRef[(@native.CStr, @native.CStr, @native.CStr) -> Unit],
+) -> Unit = "set_ws_emit"
+
+///|
 let server_map : Map[Int, Mocket] = Map::new()
+
+///|
+let ws_handler_map : Map[Int, WebSocketHandler] = Map::new()
+
+///|
+pub fn register_ws_handler(mocket : Mocket, port : Int) -> Unit {
+  let mut done = false
+  mocket.ws_static_routes.each(fn(_, handler) {
+    if not(done) {
+      ws_handler_map.set(port, handler)
+      done = true
+    }
+  })
+}
 
 ///|
 pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
   server_map[port] = mocket
+  register_ws_handler(mocket, port)
+  set_ws_emit(fn(
+    event_type : @native.CStr,
+    id : @native.CStr,
+    payload : @native.CStr,
+  ) {
+    __ws_emit(event_type, id, payload)
+  })
   let server = create_server(fn(
     port : Int,
     req : HttpRequestInternal,
@@ -203,6 +231,74 @@ fn handle_request_native(
       )
     }
   })
+}
+
+///|
+pub fn __ws_emit(
+  event_type : @native.CStr,
+  connection_id : @native.CStr,
+  payload : @native.CStr,
+) -> Unit {
+  let et = from_cstr(event_type)
+  let cid = from_cstr(connection_id)
+  let pl = from_cstr(payload)
+  let handler = if ws_handler_map.is_empty() {
+    fn(_) {  }
+  } else {
+    ws_handler_map.get(ws_handler_map.keys().collect()[0]).unwrap()
+  }
+  let peer = WebSocketPeer::{ connection_id: cid, subscribed_channels: [] }
+  match et {
+    "open" => handler(WebSocketEvent::Open(peer))
+    "message" => handler(WebSocketEvent::Message(peer, Text(pl)))
+    "close" => handler(WebSocketEvent::Close(peer))
+    _ => ()
+  }
+}
+
+///|
+#owned(id, msg)
+extern "c" fn ws_send_native(id : @native.CStr, msg : @native.CStr) -> Unit = "ws_send"
+
+///|
+#owned(id, channel)
+extern "c" fn ws_subscribe_native(
+  id : @native.CStr,
+  channel : @native.CStr,
+) -> Unit = "ws_subscribe"
+
+///|
+#owned(id, channel)
+extern "c" fn ws_unsubscribe_native(
+  id : @native.CStr,
+  channel : @native.CStr,
+) -> Unit = "ws_unsubscribe"
+
+///|
+#owned(channel, msg)
+extern "c" fn ws_publish_native(
+  channel : @native.CStr,
+  msg : @native.CStr,
+) -> Unit = "ws_publish"
+
+///|
+pub fn ws_send(id : String, msg : String) -> Unit {
+  ws_send_native(to_cstr(id), to_cstr(msg))
+}
+
+///|
+pub fn ws_subscribe(id : String, channel : String) -> Unit {
+  ws_subscribe_native(to_cstr(id), to_cstr(channel))
+}
+
+///|
+pub fn ws_unsubscribe(id : String, channel : String) -> Unit {
+  ws_unsubscribe_native(to_cstr(id), to_cstr(channel))
+}
+
+///|
+pub fn ws_publish(channel : String, msg : String) -> Unit {
+  ws_publish_native(to_cstr(channel), to_cstr(msg))
 }
 
 ///|

@@ -4,6 +4,14 @@
     "illusory0x0/native",
     "tonyfettes/uri"
   ],
+  "expose": [
+    "__ws_emit_js",
+    "__ws_emit",
+    "ws_send",
+    "ws_subscribe",
+    "ws_unsubscribe",
+    "ws_publish"
+  ],
   "supported-targets": [
     "js",
     "native",

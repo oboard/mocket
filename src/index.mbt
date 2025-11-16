@@ -18,6 +18,9 @@ pub(all) struct Mocket {
   dynamic_routes : Map[String, Array[(String, HttpHandler)]]
   // 日志记录器
   logger : Logger
+  // WebSocket 路由（按路径匹配，不区分方法）
+  ws_static_routes : Map[String, WebSocketHandler]
+  ws_dynamic_routes : Array[(String, WebSocketHandler)]
 }
 
 ///|
@@ -35,6 +38,8 @@ pub fn new(
     static_routes: {},
     dynamic_routes: {},
     logger,
+    ws_static_routes: {},
+    ws_dynamic_routes: [],
   }
 }
 
@@ -208,4 +213,21 @@ pub fn Mocket::group(
   })
   // 合并中间件
   group.middlewares.iter().each(self.middlewares.push(_))
+}
+
+///|
+// 注册 WebSocket 路由（不区分方法，按路径匹配）
+pub fn Mocket::ws(
+  self : Mocket,
+  path : String,
+  handler : WebSocketHandler,
+) -> Unit {
+  let path = self.base_path + path
+  // 静态路径直接缓存
+  if path.find(":").unwrap_or(-1) == -1 && path.find("*").unwrap_or(-1) == -1 {
+    self.ws_static_routes.set(path, handler)
+  } else {
+    // 动态路径加入列表
+    self.ws_dynamic_routes.push((path, handler))
+  }
 }
