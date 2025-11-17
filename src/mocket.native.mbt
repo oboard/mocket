@@ -199,7 +199,7 @@ fn handle_request_native(
     }
     event.req.body = body
   }
-  run(async fn() noraise {
+  async_run(async fn() noraise {
     // 执行中间件链和处理器
     let body = execute_middlewares(mocket.middlewares, event, handler)
     if not(body is Empty) {

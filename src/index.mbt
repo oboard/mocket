@@ -21,6 +21,9 @@ pub(all) struct Mocket {
   // WebSocket 路由（按路径匹配，不区分方法）
   ws_static_routes : Map[String, WebSocketHandler]
   ws_dynamic_routes : Array[(String, WebSocketHandler)]
+  ws_clients : Map[String, Unit]
+  ws_channels : Map[String, Map[String, Unit]]
+  ws_client_port : Map[String, Int]
 }
 
 ///|
@@ -40,6 +43,9 @@ pub fn new(
     logger,
     ws_static_routes: {},
     ws_dynamic_routes: [],
+    ws_clients: {},
+    ws_channels: {},
+    ws_client_port: {},
   }
 }
 

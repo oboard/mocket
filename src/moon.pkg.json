@@ -7,6 +7,10 @@
   "expose": [
     "__ws_emit_js",
     "__ws_emit",
+    "__ws_subscribe_js",
+    "__ws_unsubscribe_js",
+    "__ws_get_members_js",
+    "__get_port_by_connection_js",
     "ws_send",
     "ws_subscribe",
     "ws_unsubscribe",

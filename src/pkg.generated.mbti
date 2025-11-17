@@ -7,9 +7,23 @@ import(
 )
 
 // Values
-fn __ws_emit_js(String, String, String) -> Unit
+fn __get_port_by_connection_js(String) -> Int
+
+fn __get_port_by_connection_js_export() -> Unit
 
 fn __ws_emit_js_export() -> Unit
+
+fn __ws_emit_js_port(String, Int, String, String) -> Unit
+
+fn __ws_get_members_js(String) -> Array[String]
+
+fn __ws_state_js_export() -> Unit
+
+fn __ws_subscribe_js(String, String) -> Unit
+
+fn __ws_unsubscribe_js(String, String) -> Unit
+
+fn async_run(async () -> Unit noraise) -> Unit
 
 fn create_server((HttpRequestInternal, HttpResponseInternal, () -> Unit) -> Unit, Int) -> Unit
 
@@ -25,11 +39,7 @@ fn new_production_logger() -> Logger
 
 fn register_ws_handler(Mocket, Int) -> Unit
 
-fn run(async () -> Unit noraise) -> Unit
-
 fn serve_ffi(Mocket, port~ : Int) -> Unit
-
-fn start_ws_server() -> Unit
 
 async fn[T, E : Error] suspend(((T) -> Unit, (E) -> Unit) -> Unit) -> T raise E
 
@@ -132,6 +142,9 @@ pub(all) struct Mocket {
   logger : Logger
   ws_static_routes : Map[String, (WebSocketEvent) -> Unit]
   ws_dynamic_routes : Array[(String, (WebSocketEvent) -> Unit)]
+  ws_clients : Map[String, Unit]
+  ws_channels : Map[String, Map[String, Unit]]
+  ws_client_port : Map[String, Int]
 }
 fn Mocket::all(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit
 fn Mocket::connect(Self, String, async (HttpEvent) -> HttpBody noraise) -> Unit

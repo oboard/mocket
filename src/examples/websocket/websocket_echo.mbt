@@ -16,5 +16,5 @@ fn main {
     }
   })
   println("WebSocket echo server listening on ws://localhost:8080/ws")
-  @mocket.serve_ffi(app, port=8080)
+  app.serve(port=8080)
 }
