@@ -171,37 +171,39 @@ pub extern "js" fn create_server(
   #|          // Close frame
   #|          if (frame.opcode === 0x8) {
   #|            try { socket.end(); } catch (_) {}
-  #|            clientsById.delete(connectionId);
-  #|            if (typeof globalThis.__ws_emit_port === 'function') {
-  #|              globalThis.__ws_emit_port('close', port, connectionId, '');
-  #|            }
-  #|            return;
+  #|            if (clientsById.delete(connectionId)) {
+  #|              if (typeof globalThis.__ws_emit_port === 'function') {
+  #|                globalThis.__ws_emit_port('close', port, connectionId, '');
+  #|              }
   #|          }
-  #|          // Ping -> Pong
-  #|          if (frame.opcode === 0x9) {
-  #|            const payload = frame.data || Buffer.alloc(0);
-  #|            const header = Buffer.from([0x8A, payload.length]);
-  #|            try { socket.write(Buffer.concat([header, payload])); } catch (_) {}
-  #|            return;
-  #|          }
-  #|          // Text
-  #|          if (frame.opcode === 0x1) {
-  #|            const msg = (frame.data || Buffer.alloc(0)).toString('utf8');
-  #|            // console.log('[ws-bridge] emit message', port, connectionId, msg);
-  #|            if (typeof globalThis.__ws_emit_port === 'function') {
-  #|              globalThis.__ws_emit_port('message', port, connectionId, msg);
-  #|            } else {
-  #|              // console.log('[ws-bridge] __ws_emit not found');
-  #|            }
-  #|          }
-  #|        });
-  #|    
-  #|        socket.on('close', () => {
-  #|          clientsById.delete(connectionId);
-  #|          if (typeof globalThis.__ws_emit_port === 'function') {
-  #|            globalThis.__ws_emit_port('close', port, connectionId, '');
-  #|          }
-  #|        });
+  #|         return;
+  #|       }
+  #|       // Ping -> Pong
+  #|       if (frame.opcode === 0x9) {
+  #|         const payload = frame.data || Buffer.alloc(0);
+  #|         const header = Buffer.from([0x8A, payload.length]);
+  #|         try { socket.write(Buffer.concat([header, payload])); } catch (_) {}
+  #|         return;
+  #|       }
+  #|       // Text
+  #|       if (frame.opcode === 0x1) {
+  #|         const msg = (frame.data || Buffer.alloc(0)).toString('utf8');
+  #|         // console.log('[ws-bridge] emit message', port, connectionId, msg);
+  #|         if (typeof globalThis.__ws_emit_port === 'function') {
+  #|           globalThis.__ws_emit_port('message', port, connectionId, msg);
+  #|         } else {
+  #|           // console.log('[ws-bridge] __ws_emit not found');
+  #|         }
+  #|       }
+  #|     });
+  #| 
+  #|     socket.on('close', () => {
+  #|       if (clientsById.delete(connectionId)) {
+  #|         if (typeof globalThis.__ws_emit_port === 'function') {
+  #|           globalThis.__ws_emit_port('close', port, connectionId, '');
+  #|         }
+  #|       }
+  #|     });
   #|        socket.on('error', () => {
   #|          clientsById.delete(connectionId);
   #|          try { socket.destroy(); } catch (_) {}
@@ -302,9 +304,11 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
     port,
   )
   register_ws_handler(mocket, port)
-  __ws_emit_js_export()
-  __ws_state_js_export()
-  __get_port_by_connection_js_export()
+  __ws_emit_js_export(__ws_emit_js_port)
+  __ws_state_js_export(
+    __ws_subscribe_js, __ws_unsubscribe_js, __ws_get_members_js,
+  )
+  __get_port_by_connection_js_export(__get_port_by_connection_js)
 }
 
 ///|
@@ -372,7 +376,9 @@ pub fn __ws_emit_js_port(
 
 ///|
 /// 导出 MoonBit 函数到 JS 全局
-pub extern "js" fn __ws_emit_js_export() -> Unit = "globalThis.__ws_emit_port = (type, port, id, payload) => { try { __ws_emit_js_port(type, port, id, payload); } catch (_) {} };"
+pub extern "js" fn __ws_emit_js_export(
+  cb : (String, Int, String, String) -> Unit,
+) -> Unit = "(cb) => { globalThis.__ws_emit_port = (type, port, id, payload) => { try { cb(type, port, id, payload); } catch (_) {} }; }"
 
 ///|
 pub fn __ws_subscribe_js(connection_id : String, channel : String) -> Unit {
@@ -422,7 +428,11 @@ pub fn __ws_get_members_js(channel : String) -> Array[String] {
 }
 
 ///|
-pub extern "js" fn __ws_state_js_export() -> Unit = "globalThis.__ws_subscribe_js = (id, ch) => { try { __ws_subscribe_js(id, ch); } catch (_) {} }; globalThis.__ws_unsubscribe_js = (id, ch) => { try { __ws_unsubscribe_js(id, ch); } catch (_) {} }; globalThis.__ws_get_members_js = (ch) => { try { return __ws_get_members_js(ch); } catch (_) { return []; } };"
+pub extern "js" fn __ws_state_js_export(
+  sub : (String, String) -> Unit,
+  unsub : (String, String) -> Unit,
+  get_members : (String) -> Array[String],
+) -> Unit = "(sub, unsub, get_members) => { globalThis.__ws_subscribe_js = (id, ch) => { try { sub(id, ch); } catch (_) {} }; globalThis.__ws_unsubscribe_js = (id, ch) => { try { unsub(id, ch); } catch (_) {} }; globalThis.__ws_get_members_js = (ch) => { try { return get_members(ch); } catch (_) { return []; } }; }"
 
 ///|
 pub fn __get_port_by_connection_js(id : String) -> Int {
@@ -436,7 +446,9 @@ pub fn __get_port_by_connection_js(id : String) -> Int {
 }
 
 ///|
-pub extern "js" fn __get_port_by_connection_js_export() -> Unit = "globalThis.__get_port_by_connection = (id) => { try { return __get_port_by_connection_js(id); } catch (_) { return 0 } }"
+pub extern "js" fn __get_port_by_connection_js_export(
+  cb : (String) -> Int,
+) -> Unit = "(cb) => { globalThis.__get_port_by_connection = (id) => { try { return cb(id); } catch (_) { return 0 } } }"
 
 ///|
 /// 四个 FFI 包装，供 WebSocketPeer 调用

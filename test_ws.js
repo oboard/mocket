@@ -1,11 +1,12 @@
-const ws = new WebSocket('ws://localhost:8080/ws');
-ws.addEventListener('open', () => {
-  console.log('connected');
-  ws.send('hello mocket');
+const ws = new WebSocket("ws://localhost:8080/ws");
+ws.addEventListener("open", () => {
+  console.log("connected");
+  ws.send("hello mocket");
+  console.log("sent");
 });
-ws.addEventListener('message', (ev) => {
-  console.log('echo:', ev.data);
+ws.addEventListener("message", (ev) => {
+  console.log("msg:", ev.data);
   ws.close();
 });
-ws.addEventListener('close', () => console.log('closed'));
-ws.addEventListener('error', (err) => console.log('error', err));
+ws.addEventListener("close", () => console.log("closed"));
+ws.addEventListener("error", (err) => console.log("error", err));

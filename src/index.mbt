@@ -8,6 +8,7 @@ pub(all) enum HttpBody {
 }
 
 ///|
+#alias(T)
 pub(all) struct Mocket {
   base_path : String
   mappings : Map[(String, String), HttpHandler]
@@ -25,9 +26,6 @@ pub(all) struct Mocket {
   ws_channels : Map[String, Map[String, Unit]]
   ws_client_port : Map[String, Int]
 }
-
-///|
-pub typealias Mocket as T
 
 ///|
 pub fn new(

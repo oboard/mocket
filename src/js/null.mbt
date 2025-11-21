@@ -8,7 +8,6 @@ pub fn[T] Nullable::is_null(self : Nullable[T]) -> Bool {
 }
 
 ///|
-#deprecated("get_exn does not check for null values. Use unwrap instead")
 pub fn[T] Nullable::get_exn(self : Nullable[T]) -> T = "%identity"
 
 ///|
