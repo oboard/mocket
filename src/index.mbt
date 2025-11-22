@@ -81,7 +81,7 @@ pub fn new(
 pub(all) struct HttpRequest {
   http_method : String
   url : String
-  headers : Map[String, String]
+  headers : Map[StringView, StringView]
   mut body : HttpBody
 }
 

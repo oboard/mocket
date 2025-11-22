@@ -52,9 +52,9 @@ pub fn cookie_to_string(cookie : Array[CookieItem]) -> String {
 ///|
 
 ///|
-pub fn parse_cookie(cookie : String) -> Map[String, CookieItem] {
+pub fn parse_cookie(cookie : StringView) -> Map[String, CookieItem] {
   let res = Map::new()
-  let mut view = cookie[:]
+  let mut view = cookie
   let mut last_cookie_name = ""
   while view.length() > 0 {
     // Skip whitespace using lexmatch

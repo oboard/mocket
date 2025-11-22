@@ -7,7 +7,7 @@ pub suberror BodyError {
 
 ///|
 fn read_body(
-  req_headers : Map[String, String],
+  req_headers : Map[StringView, StringView],
   body_bytes : BytesView,
 ) -> HttpBody raise BodyError {
   let content_type = req_headers.get("Content-Type")
@@ -54,7 +54,7 @@ priv struct ContentType {
 } derive(Show)
 
 ///|
-fn parse_content_type(s : String) -> ContentType? {
+fn parse_content_type(s : StringView) -> ContentType? {
   let parts = s.split(";").to_array()
   if parts.is_empty() {
     None

@@ -162,18 +162,26 @@ fn handle_request_native(
   // res.end(to_cstr("{\"status\":\"ok\"}"))
 
   let headers_str = from_cstr(req.headers())
-  let req_headers = headers_str
-    .split("\n")
-    .map(fn(pair) {
-      if pair.length() > 0 && pair.split(": ").to_array() is [key, value] {
-        (key.to_string(), value.to_string())
-      } else {
-        ("", "")
+  let req_headers = Map::new()
+  headers_str
+  .split("\n")
+  .each(fn(line) {
+    let line = line.trim_space()
+    if line == "" {
+      return
+    }
+    try {
+      if line.find(":") is Some(idx) {
+        let key = line[0:idx].trim_space()
+        let value = line[idx + 1:].trim_space()
+        if key != "" {
+          req_headers.set(key, value)
+        }
       }
-    })
-    .filter(fn(pair) { pair.0.length() > 0 })
-    .to_array()
-    |> Map::from_array
+    } catch {
+      _ => ()
+    }
+  })
   let (params, handler) = match mocket.find_route(http_method, path) {
     Some((h, p)) => (p, h)
     _ => {

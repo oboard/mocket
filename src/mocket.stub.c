@@ -258,17 +258,25 @@ const char *req_headers(request_t *req)
 {
   if (req && req->hm)
   {
-    static char headers_buf[1024];
+    static char headers_buf[4096];
     headers_buf[0] = '\0';
+    size_t buf_len = 0;
+    size_t buf_cap = sizeof(headers_buf);
 
-    // Extract some common headers
-    struct mg_str *content_type = mg_http_get_header(req->hm, "Content-Type");
-    if (content_type)
-    {
-      strncat(headers_buf, "Content-Type: ", sizeof(headers_buf) - strlen(headers_buf) - 1);
-      strncat(headers_buf, content_type->buf,
-              content_type->len < (sizeof(headers_buf) - strlen(headers_buf) - 1) ? content_type->len : (sizeof(headers_buf) - strlen(headers_buf) - 1));
-      strncat(headers_buf, "\r\n", sizeof(headers_buf) - strlen(headers_buf) - 1);
+    for (int i = 0; i < MG_MAX_HTTP_HEADERS; i++) {
+      struct mg_http_header *h = &req->hm->headers[i];
+      if (h->name.len == 0) break;
+
+      // Check if we have enough space: name.len + 2 (": ") + value.len + 2 ("\r\n") + 1 (null terminator)
+      size_t needed = h->name.len + 2 + h->value.len + 2 + 1;
+      if (buf_len + needed > buf_cap) break;
+
+      strncat(headers_buf, h->name.buf, h->name.len);
+      strcat(headers_buf, ": ");
+      strncat(headers_buf, h->value.buf, h->value.len);
+      strcat(headers_buf, "\r\n");
+      
+      buf_len += needed - 1; // -1 because null terminator is overwritten/handled by strcat
     }
 
     return headers_buf;
