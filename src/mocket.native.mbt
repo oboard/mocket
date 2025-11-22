@@ -184,7 +184,7 @@ fn handle_request_native(
   }
   let event = {
     req: { http_method, url, body: Empty, headers: req_headers },
-    res: { status_code: 200, headers: {} },
+    res: { status_code: 200, headers: {}, cookies: {} },
     params,
   }
   if http_method == "POST" {
@@ -203,22 +203,14 @@ fn handle_request_native(
     // 执行中间件链和处理器
     let body = execute_middlewares(mocket.middlewares, event, handler)
     if not(body is Empty) {
-      event.res.headers.set(
-        "Content-Type",
-        match body {
-          Bytes(_) => "application/octet-stream"
-          HTML(_) => "text/html; charset=utf-8"
-          Text(_) => "text/plain; charset=utf-8"
-          Json(_) => "application/json; charset=utf-8"
-          Form(_) => "application/x-www-form-urlencoded"
-          Multipart(_) => "multipart/form-data"
-          Empty => ""
-        },
-      )
+      event.res.headers.set("Content-Type", body.content_type())
     }
     res.status(event.res.status_code)
     event.res.headers.each(fn(key, value) {
       res.set_header(to_cstr(key), to_cstr(value))
+    })
+    event.res.cookies.each(fn(_, cookie) {
+      res.set_header(to_cstr("Set-Cookie"), to_cstr(cookie.to_string()))
     })
     if body is Bytes(bytes) {
       res.end_bytes(bytes.to_bytes())

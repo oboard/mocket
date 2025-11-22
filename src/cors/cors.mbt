@@ -1,5 +1,5 @@
 ///|
-pub fn is_preflight_request(event : @mocket.HttpEvent) -> Bool {
+pub fn is_preflight_request(event : @mocket.MocketEvent) -> Bool {
   let origin = event.req.headers.get("origin")
   let access_control_request_method = event.req.headers.get(
     "access-control-request-method",
@@ -11,7 +11,7 @@ pub fn is_preflight_request(event : @mocket.HttpEvent) -> Bool {
 
 ///|
 pub fn append_cors_preflight_headers(
-  event : @mocket.HttpEvent,
+  event : @mocket.MocketEvent,
   origin? : String = "*",
   methods? : String = "*",
   allow_headers? : String = "*",
@@ -30,7 +30,7 @@ pub fn append_cors_preflight_headers(
 
 ///|
 pub fn append_cors_headers(
-  event : @mocket.HttpEvent,
+  event : @mocket.MocketEvent,
   origin? : String = "*",
   methods? : String = "*",
   allow_headers? : String = "*",

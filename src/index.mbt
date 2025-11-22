@@ -17,6 +17,27 @@ pub(all) enum HttpBody {
 }
 
 ///|
+pub fn HttpBody::content_type(
+  self : HttpBody,
+  boundary? : String = "",
+) -> String {
+  match self {
+    Bytes(_) => "application/octet-stream"
+    HTML(_) => "text/html; charset=utf-8"
+    Text(_) => "text/plain; charset=utf-8"
+    Json(_) => "application/json; charset=utf-8"
+    Form(_) => "application/x-www-form-urlencoded; charset=utf-8"
+    Multipart(_) =>
+      if boundary == "" {
+        "multipart/form-data"
+      } else {
+        "multipart/form-data; boundary=" + boundary
+      }
+    Empty => ""
+  }
+}
+
+///|
 #alias(T)
 pub(all) struct Mocket {
   base_path : String
@@ -65,9 +86,76 @@ pub(all) struct HttpRequest {
 }
 
 ///|
+
+///|
+pub(all) enum SameSiteOption {
+  Lax
+  Strict
+  SameSiteNone
+} derive(Show, Eq)
+
+///|
+pub impl ToJson for SameSiteOption with to_json(self : SameSiteOption) -> Json {
+  match self {
+    Lax => "lax"
+    Strict => "strict"
+    SameSiteNone => "none"
+  }
+}
+
+///|
+pub(all) struct CookieItem {
+  name : String
+  value : String
+  max_age : Int?
+  path : String?
+  domain : String?
+  secure : Bool?
+  http_only : Bool?
+  same_site : SameSiteOption?
+} derive(Eq)
+
+///|
+pub impl Show for CookieItem with output(self, logger) -> Unit {
+  logger.write_string(self.name)
+  logger.write_char('=')
+  logger.write_string(self.value)
+  if self.max_age is Some(max_age) {
+    logger.write_string("; Max-Age=")
+    logger.write_string(max_age.to_string())
+  }
+  if self.path is Some(path) {
+    logger.write_string("; Path=")
+    logger.write_string(path)
+  }
+  if self.domain is Some(domain) {
+    logger.write_string("; Domain=")
+    logger.write_string(domain)
+  }
+  if self.secure == Some(true) {
+    logger.write_string("; Secure")
+  }
+  if self.http_only == Some(true) {
+    logger.write_string("; HttpOnly")
+  }
+  if self.same_site is Some(same_site) {
+    logger.write_string("; SameSite=")
+    logger.write_string(same_site.to_json().as_string().unwrap())
+  }
+}
+
+///|
+pub impl Show for CookieItem with to_string(self : CookieItem) -> String {
+  let buf = @buffer.new()
+  self.output(buf)
+  buf.to_string()
+}
+
+///|
 pub(all) struct HttpResponse {
   mut status_code : Int
   headers : Map[StringView, StringView]
+  cookies : Map[String, CookieItem]
   // body : Body
 }
 

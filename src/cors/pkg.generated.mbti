@@ -6,13 +6,13 @@ import(
 )
 
 // Values
-fn append_cors_headers(@mocket.HttpEvent, origin? : String, methods? : String, allow_headers? : String, expose_headers? : String, credentials? : Bool) -> Unit
+fn append_cors_headers(@mocket.MocketEvent, origin? : String, methods? : String, allow_headers? : String, expose_headers? : String, credentials? : Bool) -> Unit
 
-fn append_cors_preflight_headers(@mocket.HttpEvent, origin? : String, methods? : String, allow_headers? : String, credentials? : Bool, max_age? : Int) -> Unit
+fn append_cors_preflight_headers(@mocket.MocketEvent, origin? : String, methods? : String, allow_headers? : String, credentials? : Bool, max_age? : Int) -> Unit
 
-fn handle_cors(origin? : String, methods? : String, allow_headers? : String, expose_headers? : String, credentials? : Bool, max_age? : Int) -> async (@mocket.HttpEvent, async () -> @mocket.HttpBody noraise) -> @mocket.HttpBody noraise
+fn handle_cors(origin? : String, methods? : String, allow_headers? : String, expose_headers? : String, credentials? : Bool, max_age? : Int) -> async (@mocket.MocketEvent, async () -> @mocket.HttpBody noraise) -> @mocket.HttpBody noraise
 
-fn is_preflight_request(@mocket.HttpEvent) -> Bool
+fn is_preflight_request(@mocket.MocketEvent) -> Bool
 
 // Errors
 

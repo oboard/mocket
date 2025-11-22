@@ -1,6 +1,6 @@
 ///|
 // 中间件类型：接受 HttpEvent 和 next 函数，返回 HttpBody
-pub type Middleware = async (HttpEvent, async () -> HttpBody noraise) -> HttpBody noraise
+pub type Middleware = async (MocketEvent, async () -> HttpBody noraise) -> HttpBody noraise
 
 ///|
 // 注册中间件，支持路径匹配
@@ -18,7 +18,7 @@ pub fn Mocket::use_middleware(
 // 执行中间件链，支持路径匹配和洋葱模型
 pub async fn execute_middlewares(
   middlewares : Array[(String, Middleware)],
-  event : HttpEvent,
+  event : MocketEvent,
   final_handler : HttpHandler,
 ) -> HttpBody noraise {
   // 过滤出匹配路径的中间件
@@ -41,7 +41,7 @@ pub async fn execute_middlewares(
 async fn execute_middleware_chain(
   middlewares : Array[Middleware],
   index : Int,
-  event : HttpEvent,
+  event : MocketEvent,
   final_handler : HttpHandler,
 ) -> HttpBody noraise {
   if index >= middlewares.length() {

@@ -39,6 +39,16 @@ extern "js" fn HttpRequestInternal::headers(
 // ) -> Int = "(s) => s.statusCode"
 
 ///|
+extern "js" fn set_js_property(
+  obj : @js.Value,
+  key : String,
+  value : @js.Value,
+) -> Unit = "(obj, key, value) => obj[key] = value"
+
+///|
+extern "js" fn array_to_js(arr : Array[String]) -> @js.Value = "(arr) => arr"
+
+///|
 pub extern "js" fn HttpResponseInternal::end(
   self : HttpResponseInternal,
   data : @js.Value,
@@ -249,7 +259,7 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
           body: Empty,
           headers: string_headers,
         },
-        res: { status_code: 200, headers: {} },
+        res: { status_code: 200, headers: {}, cookies: {} },
         params,
       }
       async_run(() => {
@@ -272,25 +282,25 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
 
         // 执行中间件链和处理器
         let body = execute_middlewares(mocket.middlewares, event, handler)
+        let boundary = "----------------moonbit-" + port.to_string()
         if not(body is Empty) {
-          event.res.headers.set(
-            "Content-Type",
-            match body {
-              Bytes(_) => "application/octet-stream"
-              HTML(_) => "text/html; charset=utf-8"
-              Text(_) => "text/plain; charset=utf-8"
-              Json(_) => "application/json; charset=utf-8"
-              Form(_) => "application/x-www-form-urlencoded; charset=utf-8"
-              Multipart(_) => "multipart/form-data; charset=utf-8"
-              Empty => ""
-            },
-          )
+          event.res.headers.set("Content-Type", body.content_type(boundary~))
         }
         res.write_head(
           event.res.status_code,
-          (try? @js.Value::from_json(event.res.headers.to_json())).or(
-            @js.Object::new().to_value(),
-          ),
+          {
+            let headers_obj = (try? @js.Value::from_json(
+              event.res.headers.to_json(),
+            )).or(@js.Object::new().to_value())
+            if not(event.res.cookies.is_empty()) {
+              let cookies = event.res.cookies
+                .values()
+                .map(fn(c) { c.to_string() })
+                .to_array()
+              set_js_property(headers_obj, "Set-Cookie", array_to_js(cookies))
+            }
+            headers_obj
+          },
         )
         res.end(
           match body {
@@ -298,8 +308,8 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
             HTML(s) => @js.Value::cast_from(s.to_string())
             Text(s) => @js.Value::cast_from(s.to_string())
             Json(j) => @js.Value::cast_from(j.stringify())
-            Form(f) => @js.Value::cast_from(f)
-            Multipart(m) => @js.Value::cast_from(m)
+            Form(f) => @js.Value::cast_from(form_encode(f))
+            Multipart(m) => @js.Value::cast_from(encode_multipart(m, boundary))
             Empty => @js.Value::cast_from("")
           },
         )
@@ -466,3 +476,29 @@ pub extern "js" fn ws_unsubscribe(id : String, channel : String) -> Unit = "(id,
 
 ///|
 pub extern "js" fn ws_publish(channel : String, msg : String) -> Unit = "(ch, msg) => { const ids = globalThis.__ws_get_members_js ? globalThis.__ws_get_members_js(ch) : []; const bindings = globalThis.ws_port_bindings && globalThis.ws_port_bindings.values().next().value; if (bindings && bindings.send) { for (const id of ids) { bindings.send(id, msg); } } }"
+
+///|
+fn encode_multipart(
+  m : Map[String, MultipartFormValue],
+  boundary : String,
+) -> String {
+  let sb = StringBuilder::new()
+  m.each(fn(name, v) {
+    sb.write_string("--" + boundary + "\r\n")
+    sb.write_string("Content-Disposition: form-data; name=\"" + name + "\"")
+    match v.filename {
+      Some(fnm) => sb.write_string("; filename=\"" + fnm + "\"")
+      None => ()
+    }
+    sb.write_string("\r\n")
+    match v.content_type {
+      Some(ct) => sb.write_string("Content-Type: " + ct + "\r\n")
+      None => ()
+    }
+    sb.write_string("\r\n")
+    sb.write_string(@encoding/utf8.decode(v.data) catch { _ => "" })
+    sb.write_string("\r\n")
+  })
+  sb.write_string("--" + boundary + "--\r\n")
+  sb.to_string()
+}
