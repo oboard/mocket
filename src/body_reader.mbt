@@ -29,6 +29,16 @@ fn read_body(
           )
         { subtype: "x-www-form-urlencoded", .. } =>
           Form(parse_form_data(body_bytes))
+        { subtype: "form-data" | "multipart", params, .. } => {
+          let boundary = match params.get("boundary") {
+            Some(b) => Some(b)
+            None => params.get("BOUNDARY")
+          }
+          match boundary {
+            Some(b) => Multipart(parse_multipart(body_bytes, b.to_string()))
+            None => Bytes(body_bytes)
+          }
+        }
         _ => Bytes(body_bytes)
       }
     }

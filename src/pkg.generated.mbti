@@ -2,30 +2,14 @@
 package "oboard/mocket"
 
 import(
+  "illusory0x0/native"
   "moonbitlang/core/builtin"
-  "oboard/mocket/js"
 )
 
 // Values
-fn __get_port_by_connection_js(String) -> Int
-
-fn __get_port_by_connection_js_export((String) -> Int) -> Unit
-
-fn __ws_emit_js_export((String, Int, String, String) -> Unit) -> Unit
-
-fn __ws_emit_js_port(String, Int, String, String) -> Unit
-
-fn __ws_get_members_js(String) -> Array[String]
-
-fn __ws_state_js_export((String, String) -> Unit, (String, String) -> Unit, (String) -> Array[String]) -> Unit
-
-fn __ws_subscribe_js(String, String) -> Unit
-
-fn __ws_unsubscribe_js(String, String) -> Unit
+fn __ws_emit(@native.CStr, @native.CStr, @native.CStr) -> Unit
 
 fn async_run(async () -> Unit noraise) -> Unit
-
-fn create_server((HttpRequestInternal, HttpResponseInternal, () -> Unit) -> Unit, Int) -> Unit
 
 async fn execute_middlewares(Array[(String, async (HttpEvent, async () -> HttpBody noraise) -> HttpBody noraise)], HttpEvent, async (HttpEvent) -> HttpBody noraise) -> HttpBody noraise
 
@@ -40,6 +24,8 @@ fn new_logger(enabled? : Bool, level? : LogLevel) -> Logger
 fn new_production_logger() -> Logger
 
 fn parse_form_data(BytesView) -> Map[String, String]
+
+fn parse_multipart(BytesView, String) -> Map[String, MultipartFormValue]
 
 fn register_ws_handler(Mocket, Int) -> Unit
 
@@ -101,8 +87,8 @@ pub(all) struct HttpRequest {
 
 #external
 pub type HttpRequestInternal
-fn HttpRequestInternal::req_method(Self) -> String
-fn HttpRequestInternal::url(Self) -> String
+fn HttpRequestInternal::on_complete(Self, FuncRef[() -> Unit]) -> Unit
+fn HttpRequestInternal::on_headers(Self, FuncRef[(@native.CStr) -> Unit]) -> Unit
 
 pub(all) struct HttpResponse {
   mut status_code : Int
@@ -111,8 +97,9 @@ pub(all) struct HttpResponse {
 
 #external
 pub type HttpResponseInternal
-fn HttpResponseInternal::end(Self, @js.Value) -> Unit
-fn HttpResponseInternal::url(Self) -> String
+
+#external
+pub type HttpServerInternal
 
 pub enum LogLevel {
   Debug

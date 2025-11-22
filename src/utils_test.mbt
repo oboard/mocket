@@ -41,3 +41,40 @@ test "parse_form_data" {
   assert_eq(map.get("key"), Some("value"))
   assert_eq(map.get("foo"), Some("bar baz"))
 }
+
+///|
+test "parse_multipart" {
+  let boundary = "boundary"
+  let body = "--boundary\r\nContent-Disposition: form-data; name=\"field1\"\r\n\r\nvalue1\r\n--boundary\r\nContent-Disposition: form-data; name=\"field2\"; filename=\"example.txt\"\r\nContent-Type: text/plain\r\n\r\nvalue2\r\n--boundary--"
+  let bytes = @encoding/utf8.encode(body)
+  let parts = parse_multipart(bytes[:], boundary)
+  inspect(
+    parts
+    .get("field1")
+    .map(v => @encoding/utf8.decode(v.data) catch { _ => "" }),
+    content=(
+      #|Some("value1")
+    ),
+  )
+  inspect(parts.get("field1").bind(fn(v) { v.filename }), content="None")
+  inspect(
+    parts
+    .get("field2")
+    .map(v => @encoding/utf8.decode(v.data) catch { _ => "" }),
+    content=(
+      #|Some("value2")
+    ),
+  )
+  inspect(
+    parts.get("field2").bind(v => v.filename),
+    content=(
+      #|Some("example.txt")
+    ),
+  )
+  inspect(
+    parts.get("field2").bind(v => v.content_type),
+    content=(
+      #|Some("text/plain")
+    ),
+  )
+}
