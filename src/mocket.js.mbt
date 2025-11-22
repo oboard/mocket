@@ -230,7 +230,7 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
   create_server(
     fn(req, res, _) {
       // 优化：简化 headers 转换逻辑
-      let string_headers = {}
+      let string_headers : Map[StringView, StringView] = {}
       guard (try? req.headers().to_value().to_json()) is Ok(Object(headers)) else {
         res.write_head(400, @js.Object::new().to_value())
         res.end(@js.Value::cast_from("Invalid headers"))
@@ -240,7 +240,7 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
       // 批量转换 headers，减少单个处理的开销
       headers.each(fn(key, value) {
         if value is String(v) {
-          string_headers.set(key, v)
+          string_headers.set(key, v.to_string_view())
         }
       })
       let (params, handler) = match
