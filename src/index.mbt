@@ -1,13 +1,23 @@
 ///|
+pub(all) struct MultipartFormValue {
+  filename : String?
+  content_type : String?
+  data : BytesView
+}
+
+///|
 pub(all) enum HttpBody {
   Json(Json)
   Text(StringView)
   HTML(StringView)
   Bytes(BytesView)
+  Form(Map[String, String])
+  Multipart(Map[String, MultipartFormValue])
   Empty
 }
 
 ///|
+#alias(T)
 pub(all) struct Mocket {
   base_path : String
   mappings : Map[(String, String), HttpHandler]
@@ -18,10 +28,13 @@ pub(all) struct Mocket {
   dynamic_routes : Map[String, Array[(String, HttpHandler)]]
   // 日志记录器
   logger : Logger
+  // WebSocket 路由（按路径匹配，不区分方法）
+  ws_static_routes : Map[String, WebSocketHandler]
+  ws_dynamic_routes : Array[(String, WebSocketHandler)]
+  ws_clients : Map[String, Unit]
+  ws_channels : Map[String, Map[String, Unit]]
+  ws_client_port : Map[String, Int]
 }
-
-///|
-pub typealias Mocket as T
 
 ///|
 pub fn new(
@@ -35,6 +48,11 @@ pub fn new(
     static_routes: {},
     dynamic_routes: {},
     logger,
+    ws_static_routes: {},
+    ws_dynamic_routes: [],
+    ws_clients: {},
+    ws_channels: {},
+    ws_client_port: {},
   }
 }
 
@@ -208,4 +226,21 @@ pub fn Mocket::group(
   })
   // 合并中间件
   group.middlewares.iter().each(self.middlewares.push(_))
+}
+
+///|
+// 注册 WebSocket 路由（不区分方法，按路径匹配）
+pub fn Mocket::ws(
+  self : Mocket,
+  path : String,
+  handler : WebSocketHandler,
+) -> Unit {
+  let path = self.base_path + path
+  // 静态路径直接缓存
+  if path.find(":").unwrap_or(-1) == -1 && path.find("*").unwrap_or(-1) == -1 {
+    self.ws_static_routes.set(path, handler)
+  } else {
+    // 动态路径加入列表
+    self.ws_dynamic_routes.push((path, handler))
+  }
 }

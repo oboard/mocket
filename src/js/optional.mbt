@@ -8,7 +8,6 @@ pub fn[T] Optional::is_undefined(self : Optional[T]) -> Bool {
 }
 
 ///|
-#deprecated("get_exn does not check for undefined values. Use unwrap instead")
 pub fn[T] Optional::get_exn(self : Optional[T]) -> T = "%identity"
 
 ///|
