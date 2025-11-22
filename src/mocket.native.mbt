@@ -210,6 +210,8 @@ fn handle_request_native(
           HTML(_) => "text/html; charset=utf-8"
           Text(_) => "text/plain; charset=utf-8"
           Json(_) => "application/json; charset=utf-8"
+          Form(_) => "application/x-www-form-urlencoded"
+          Multipart(_) => "multipart/form-data"
           Empty => ""
         },
       )
@@ -226,6 +228,8 @@ fn handle_request_native(
           HTML(s) => to_cstr(s.to_string())
           Text(s) => to_cstr(s.to_string())
           Json(j) => to_cstr(j.stringify())
+          Form(m) => to_cstr(form_encode(m))
+          Multipart(_) => to_cstr("")
           _ => to_cstr("")
         },
       )

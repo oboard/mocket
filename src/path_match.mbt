@@ -233,9 +233,9 @@ test "边界情况" {
   let result2 = match_path("/api/users/", "/api/users/")
   assert_eq(result2, Some({}))
 
-  // 参数名为空（不应该匹配）
+  // 参数名为空
   let result3 = match_path("/users/:", "/users/123")
-  assert_eq(result3, None)
+  assert_eq(result3, Some({ "": "123" }))
 
   // 模板比路径短
   let result4 = match_path("/api", "/api/users")

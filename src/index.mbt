@@ -1,9 +1,18 @@
 ///|
+pub(all) struct MultipartFormValue {
+  filename : String?
+  content_type : String?
+  data : BytesView
+}
+
+///|
 pub(all) enum HttpBody {
   Json(Json)
   Text(StringView)
   HTML(StringView)
   Bytes(BytesView)
+  Form(Map[String, String])
+  Multipart(Map[String, MultipartFormValue])
   Empty
 }
 

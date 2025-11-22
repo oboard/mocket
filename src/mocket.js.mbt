@@ -280,6 +280,8 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
               HTML(_) => "text/html; charset=utf-8"
               Text(_) => "text/plain; charset=utf-8"
               Json(_) => "application/json; charset=utf-8"
+              Form(_) => "application/x-www-form-urlencoded; charset=utf-8"
+              Multipart(_) => "multipart/form-data; charset=utf-8"
               Empty => ""
             },
           )
@@ -296,6 +298,8 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
             HTML(s) => @js.Value::cast_from(s.to_string())
             Text(s) => @js.Value::cast_from(s.to_string())
             Json(j) => @js.Value::cast_from(j.stringify())
+            Form(f) => @js.Value::cast_from(f)
+            Multipart(m) => @js.Value::cast_from(m)
             Empty => @js.Value::cast_from("")
           },
         )
