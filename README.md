@@ -105,6 +105,25 @@ This creates routes:
 
 All routes in the group will execute the group middleware in addition to any global middleware.
 
+### WebSocket Support
+
+Mocket provides built-in WebSocket support with a simple event-based API.
+
+```moonbit
+app.ws("/ws", event => match event {
+  Open(peer) => println("WS open: " + peer.to_string())
+  Message(peer, body) => {
+    let msg = match body {
+      Text(s) => s.to_string()
+      _ => ""
+    }
+    println("WS message: " + msg)
+    peer.send(msg)
+  }
+  Close(peer) => println("WS close: " + peer.to_string())
+})
+```
+
 ## Example usage
 
 ```moonbit
