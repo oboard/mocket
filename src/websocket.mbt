@@ -52,7 +52,7 @@ pub fn WebSocketPeer::to_string(self : WebSocketPeer) -> String {
 ///|
 pub enum WebSocketEvent {
   Open(WebSocketPeer)
-  Message(WebSocketPeer, HttpBody)
+  Message(WebSocketPeer, Bytes)
   Close(WebSocketPeer)
 }
 

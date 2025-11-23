@@ -2,7 +2,8 @@
   "import": [
     "oboard/mocket/js",
     "illusory0x0/native",
-    "tonyfettes/uri"
+    "tonyfettes/uri",
+    "moonbitlang/x/fs"
   ],
   "expose": [
     "__ws_emit_js",

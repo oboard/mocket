@@ -197,7 +197,7 @@ pub extern "js" fn create_server(
   #|       }
   #|       // Text
   #|       if (frame.opcode === 0x1) {
-  #|         const msg = (frame.data || Buffer.alloc(0)).toString('utf8');
+  #|         const msg = frame.data || Buffer.alloc(0);
   #|         // console.log('[ws-bridge] emit message', port, connectionId, msg);
   #|         if (typeof globalThis.__ws_emit_port === 'function') {
   #|           globalThis.__ws_emit_port('message', port, connectionId, msg);
@@ -256,10 +256,10 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
         req: {
           http_method: req.req_method(),
           url: req.url(),
-          body: Empty,
           headers: string_headers,
+          raw_body: "",
         },
-        res: { status_code: 200, headers: {}, cookies: {} },
+        res: HttpResponse::new(200),
         params,
       }
       async_run(() => {
@@ -271,21 +271,12 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
             req.on("end", _ => res(buffer.to_string()))
           }))
           |> ignore
-          event.req.body = read_body(string_headers, buffer.to_bytes()) catch {
-            _ => {
-              res.write_head(400, @js.Object::new().to_value())
-              res.end(@js.Value::cast_from("Invalid body"))
-              return
-            }
-          }
+          event.req.raw_body = buffer.to_bytes()
         }
 
         // 执行中间件链和处理器
         let body = execute_middlewares(mocket.middlewares, event, handler)
-        let boundary = "----------------moonbit-" + port.to_string()
-        if not(body is Empty) {
-          event.res.headers.set("Content-Type", body.content_type(boundary~))
-        }
+        // let boundary = "----------------moonbit-" + port.to_string()
         res.write_head(
           event.res.status_code,
           {
@@ -302,17 +293,9 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
             headers_obj
           },
         )
-        res.end(
-          match body {
-            Bytes(b) => @js.Value::cast_from(b.to_bytes())
-            HTML(s) => @js.Value::cast_from(s.to_string())
-            Text(s) => @js.Value::cast_from(s.to_string())
-            Json(j) => @js.Value::cast_from(j.stringify())
-            Form(f) => @js.Value::cast_from(form_encode(f))
-            Multipart(m) => @js.Value::cast_from(encode_multipart(m, boundary))
-            Empty => @js.Value::cast_from("")
-          },
-        )
+        let buf = @buffer.new()
+        body.output(buf)
+        res.end(@js.Value::cast_from(buf.to_bytes()))
       })
     },
     port,
@@ -355,7 +338,7 @@ pub fn __ws_emit_js_port(
   event_type : String,
   port : Int,
   connection_id : String,
-  payload : String,
+  payload : Bytes,
 ) -> Unit {
   let handler = match ws_handler_map.get(port) {
     Some(h) => h
@@ -382,7 +365,7 @@ pub fn __ws_emit_js_port(
   let peer = WebSocketPeer::{ connection_id, subscribed_channels: [] }
   match event_type {
     "open" => handler(WebSocketEvent::Open(peer))
-    "message" => handler(WebSocketEvent::Message(peer, Text(payload)))
+    "message" => handler(WebSocketEvent::Message(peer, payload))
     "close" => handler(WebSocketEvent::Close(peer))
     _ => ()
   }
@@ -391,7 +374,7 @@ pub fn __ws_emit_js_port(
 ///|
 /// 导出 MoonBit 函数到 JS 全局
 pub extern "js" fn __ws_emit_js_export(
-  cb : (String, Int, String, String) -> Unit,
+  cb : (String, Int, String, Bytes) -> Unit,
 ) -> Unit = "(cb) => { globalThis.__ws_emit_port = (type, port, id, payload) => { try { cb(type, port, id, payload); } catch (_) {} }; }"
 
 ///|
@@ -478,7 +461,7 @@ pub extern "js" fn ws_unsubscribe(id : String, channel : String) -> Unit = "(id,
 pub extern "js" fn ws_publish(channel : String, msg : String) -> Unit = "(ch, msg) => { const ids = globalThis.__ws_get_members_js ? globalThis.__ws_get_members_js(ch) : []; const bindings = globalThis.ws_port_bindings && globalThis.ws_port_bindings.values().next().value; if (bindings && bindings.send) { for (const id of ids) { bindings.send(id, msg); } } }"
 
 ///|
-fn encode_multipart(
+pub fn encode_multipart(
   m : Map[String, MultipartFormValue],
   boundary : String,
 ) -> String {

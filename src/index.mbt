@@ -6,38 +6,6 @@ pub(all) struct MultipartFormValue {
 }
 
 ///|
-pub(all) enum HttpBody {
-  Json(Json)
-  Text(StringView)
-  HTML(StringView)
-  Bytes(BytesView)
-  Form(Map[String, String])
-  Multipart(Map[String, MultipartFormValue])
-  Empty
-}
-
-///|
-pub fn HttpBody::content_type(
-  self : HttpBody,
-  boundary? : String = "",
-) -> String {
-  match self {
-    Bytes(_) => "application/octet-stream"
-    HTML(_) => "text/html; charset=utf-8"
-    Text(_) => "text/plain; charset=utf-8"
-    Json(_) => "application/json; charset=utf-8"
-    Form(_) => "application/x-www-form-urlencoded; charset=utf-8"
-    Multipart(_) =>
-      if boundary == "" {
-        "multipart/form-data"
-      } else {
-        "multipart/form-data; boundary=" + boundary
-      }
-    Empty => ""
-  }
-}
-
-///|
 #alias(T)
 pub(all) struct Mocket {
   base_path : String
@@ -82,7 +50,7 @@ pub(all) struct HttpRequest {
   http_method : String
   url : String
   headers : Map[StringView, StringView]
-  mut body : HttpBody
+  mut raw_body : Bytes
 }
 
 ///|
@@ -149,14 +117,6 @@ pub impl Show for CookieItem with to_string(self : CookieItem) -> String {
   let buf = @buffer.new()
   self.output(buf)
   buf.to_string()
-}
-
-///|
-pub(all) struct HttpResponse {
-  mut status_code : Int
-  headers : Map[StringView, StringView]
-  cookies : Map[String, CookieItem]
-  // body : Body
 }
 
 ///|

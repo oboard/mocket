@@ -4,9 +4,9 @@ fn main {
   app.get("/", e => {
     e.res.set_cookie("session_id", "12345", max_age=3600)
     if e.req.get_cookie("session_id") is Some(session_id) {
-      Text(session_id.value)
+      session_id.value
     } else {
-      Text("No session_id")
+      "No session_id"
     }
   })
 

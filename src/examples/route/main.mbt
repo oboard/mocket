@@ -11,10 +11,10 @@ fn main {
   ..use_middleware(@cors.handle_cors())
 
   // Text Response
-  ..get("/", _event => Text("⚡️ Tadaa!"))
+  ..get("/", _event => "⚡️ Tadaa!")
 
   // Hello World
-  ..on("GET", "/hello", _ => Text("Hello world!"))
+  ..on("GET", "/hello", _ => "Hello world!")
   ..group("/api", group => {
     // 添加组级中间件
     group.use_middleware((event, next) => {
@@ -23,8 +23,8 @@ fn main {
       )
       next()
     })
-    group.get("/hello", _ => Text("Hello world!"))
-    group.get("/json", _ => Json({
+    group.get("/hello", _ => "Hello world!")
+    group.get("/json", _ => @mocket.json({
       "name": "John Doe",
       "age": 30,
       "city": "New York",
@@ -32,7 +32,7 @@ fn main {
   })
 
   // JSON Response
-  ..get("/json", _event => Json({
+  ..get("/json", _event => @mocket.json({
     "name": "John Doe",
     "age": 30,
     "city": "New York",
@@ -40,35 +40,35 @@ fn main {
 
   // Async Response
   ..get("/async_data", async fn(_event) noraise {
-    Json({ "name": "John Doe", "age": 30, "city": "New York" })
+    @mocket.json({ "name": "John Doe", "age": 30, "city": "New York" })
   })
 
   // Dynamic Routes
   // /hello2/World = Hello, World!
   ..get("/hello/:name", event => {
     let name = event.params.get("name").unwrap_or("World")
-    Text("Hello, \{name}!")
+    "Hello, \{name}!"
   })
   // /hello2/World = Hello, World!
   ..get("/hello2/*", event => {
     let name = event.params.get("_").unwrap_or("World")
-    Text("Hello, \{name}!")
+    "Hello, \{name}!"
   })
 
   // Wildcard Routes
   // /hello3/World/World = Hello, World/World!
   ..get("/hello3/**", event => {
     let name = event.params.get("_").unwrap_or("World")
-    Text("Hello, \{name}!")
+    "Hello, \{name}!"
   })
 
   // Echo Server
-  ..post("/echo", e => e.req.body)
+  ..post("/echo", e => e.req)
 
   // 404 Page
   ..get("/404", e => {
     e.res.status_code = 404
-    HTML(
+    @mocket.html(
       (
         #|<html>
         #|<body>

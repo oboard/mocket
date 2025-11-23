@@ -4,10 +4,11 @@ fn main {
   app.ws("/ws", event => match event {
     Open(peer) => println("WS open: " + peer.to_string())
     Message(peer, body) => {
-      let msg = match body {
-        Text(s) => s.to_string()
-        _ => ""
-      }
+      // let msg = match body {
+      //   Text(s) => s.to_string()
+      //   _ => ""
+      // }
+      let msg = body.to_string()
       println("WS message: " + msg)
       peer.send(msg)
     }
