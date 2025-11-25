@@ -5,9 +5,21 @@ pub(all) struct WebSocketPeer {
 }
 
 ///|
-pub fn WebSocketPeer::send(self : WebSocketPeer, message : String) -> Unit {
+pub fn WebSocketPeer::text(self : WebSocketPeer, message : String) -> Unit {
   // 真正发送到后端连接
   ws_send(self.connection_id, message)
+}
+
+///|
+pub fn WebSocketPeer::binary(self : WebSocketPeer, message : Bytes) -> Unit {
+  // 真正发送到后端连接
+  ws_send_bytes(self.connection_id, message)
+}
+
+///|
+pub fn WebSocketPeer::pong(self : WebSocketPeer) -> Unit {
+  // 真正发送到后端连接
+  ws_pong(self.connection_id)
 }
 
 ///|
@@ -52,8 +64,15 @@ pub fn WebSocketPeer::to_string(self : WebSocketPeer) -> String {
 ///|
 pub enum WebSocketEvent {
   Open(WebSocketPeer)
-  Message(WebSocketPeer, Bytes)
+  Message(WebSocketPeer, WebSocketAggregatedMessage)
   Close(WebSocketPeer)
+}
+
+///|
+pub enum WebSocketAggregatedMessage {
+  Text(String)
+  Binary(Bytes)
+  Ping
 }
 
 ///|

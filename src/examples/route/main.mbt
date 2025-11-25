@@ -1,13 +1,10 @@
 ///|
 fn main {
-  let app = @mocket.new(logger=@mocket.new_production_logger())
+  let app = @mocket.new()
 
   // Register global middleware
   app
-  ..use_middleware((event, next) => {
-    println("📝 Request: \{event.req.http_method} \{event.req.url}")
-    next()
-  })
+  ..use_middleware(logger_middleware)
   ..use_middleware(@cors.handle_cors())
 
   // Text Response
@@ -24,23 +21,17 @@ fn main {
       next()
     })
     group.get("/hello", _ => "Hello world!")
-    group.get("/json", _ => @mocket.json({
-      "name": "John Doe",
-      "age": 30,
-      "city": "New York",
-    }))
+    group.get("/json", _ => (
+      { "name": "John Doe", "age": 30, "city": "New York" } : Json))
   })
 
   // JSON Response
-  ..get("/json", _event => @mocket.json({
-    "name": "John Doe",
-    "age": 30,
-    "city": "New York",
-  }))
+  ..get("/json", _event => (
+    { "name": "John Doe", "age": 30, "city": "New York" } : Json))
 
   // Async Response
   ..get("/async_data", async fn(_event) noraise {
-    @mocket.json({ "name": "John Doe", "age": 30, "city": "New York" })
+    ({ "name": "John Doe", "age": 30, "city": "New York" } : Json)
   })
 
   // Dynamic Routes
@@ -66,8 +57,7 @@ fn main {
   ..post("/echo", e => e.req)
 
   // 404 Page
-  ..get("/404", e => {
-    e.res.status_code = 404
+  ..get("/404", _ => @mocket.HttpResponse::new(@mocket.NotFound).body(
     @mocket.html(
       (
         #|<html>
@@ -76,8 +66,8 @@ fn main {
         #|</body>
         #|</html>
       ),
-    )
-  })
+    ),
+  ))
 
   // Print Server URL
   for path in app.mappings.keys() {
@@ -86,4 +76,16 @@ fn main {
 
   // Serve
   app.serve(port=4000)
+}
+
+///|
+pub async fn logger_middleware(
+  event : @mocket.MocketEvent,
+  next : async () -> &@mocket.Responder noraise,
+) -> &@mocket.Responder noraise {
+  let start_time = @env.now()
+  let res = next()
+  let duration = @env.now() - start_time
+  println("\{event.req.http_method} \{event.req.url} - \{duration}ms")
+  res
 }

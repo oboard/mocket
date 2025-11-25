@@ -94,28 +94,17 @@ fn Mocket::find_route(
   http_method : String,
   path : String,
 ) -> (HttpHandler, Map[String, StringView])? {
-  self.logger.route_lookup(http_method, path)
   // 优化：首先尝试静态路由缓存
   match self.static_routes.get(http_method) {
     Some(http_methodroutes) => {
       let routes = []
       http_methodroutes.iter().each(fn(item) { routes.push(item.0) })
-      self.logger.routes_available(routes)
       match http_methodroutes.get(path) {
-        Some(handler) => {
-          self.logger.route_found(http_method, path)
-          return Some((handler, {}))
-        }
-        None => {
-          self.logger.route_not_found(path)
-          ignore(())
-        }
+        Some(handler) => return Some((handler, {}))
+        None => ignore(())
       }
     }
-    None => {
-      self.logger.debug(fn() { "No method routes for \{http_method}" })
-      ignore(())
-    }
+    None => ignore(())
   }
 
   // 检查通配符方法的静态路由

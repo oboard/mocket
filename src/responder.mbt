@@ -5,8 +5,19 @@ pub(open) trait Responder {
 }
 
 ///|
+pub impl Responder for &ToJson with options(_, res) -> Unit {
+  res.status_code = OK
+  res.headers["Content-Type"] = "application/json; charset=utf-8"
+}
+
+///|
+pub impl Responder for &ToJson with output(self, buf) -> Unit {
+  buf.write_bytes(@encoding/utf8.encode(self.to_json().stringify()))
+}
+
+///|
 pub impl Responder for HttpRequest with options(self, res) -> Unit {
-  res.status_code = 200
+  res.status_code = OK
   res.headers.merge_in_place(self.headers)
 }
 
@@ -28,18 +39,18 @@ pub impl Responder for HttpResponse with output(self, buf) -> Unit {
 
 ///|
 pub impl Responder for Json with options(_, res) -> Unit {
-  res.status_code = 200
+  res.status_code = OK
   res.headers["Content-Type"] = "application/json; charset=utf-8"
 }
 
 ///|
 pub impl Responder for Json with output(self, buf) -> Unit {
-  buf.write_string(self.stringify())
+  buf.write_bytes(@encoding/utf8.encode(self.to_json().stringify()))
 }
 
 ///|
 pub impl Responder for Bytes with options(_, res) -> Unit {
-  res.status_code = 200
+  res.status_code = OK
   res.headers["Content-Type"] = "application/octet-stream"
 }
 
@@ -50,46 +61,38 @@ pub impl Responder for Bytes with output(self, buf) -> Unit {
 
 ///|
 pub impl Responder for String with options(_, res) -> Unit {
-  res.status_code = 200
+  res.status_code = OK
   res.headers["Content-Type"] = "text/plain; charset=utf-8"
 }
 
 ///|
 pub impl Responder for String with output(self, buf) -> Unit {
-  buf.write_string(self)
+  buf.write_bytes(@encoding/utf8.encode(self))
 }
 
 ///|
 pub impl Responder for StringView with options(_, res) -> Unit {
-  res.status_code = 200
+  res.status_code = OK
   res.headers["Content-Type"] = "text/plain; charset=utf-8"
 }
 
 ///|
 pub impl Responder for StringView with output(self, buf) -> Unit {
-  buf.write_string(self.to_string())
+  buf.write_bytes(@encoding/utf8.encode(self))
 }
 
 ///|
-struct Html(StringView)
-
-///|
-type Empty
+struct Html(String)
 
 ///|
 pub impl Responder for Html with options(_, res) -> Unit {
-  res.status_code = 200
+  res.status_code = OK
   res.headers["Content-Type"] = "text/html; charset=utf-8"
 }
 
 ///|
 pub impl Responder for Html with output(self, buf) -> Unit {
-  buf.write_string(self.0.to_string())
-}
-
-///|
-pub fn json(json : Json) -> &Responder {
-  json
+  buf.write_bytes(@encoding/utf8.encode(self.0))
 }
 
 ///|
@@ -100,9 +103,4 @@ pub fn html(html : &Show) -> &Responder {
 ///|
 pub fn text(text : &Show) -> &Responder {
   text.to_string()
-}
-
-///|
-pub fn bytes(bytes : Bytes) -> &Responder {
-  bytes
 }

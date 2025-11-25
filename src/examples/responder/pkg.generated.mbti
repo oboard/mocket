@@ -1,0 +1,15 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/mocket/examples/responder"
+
+// Values
+
+// Errors
+
+// Types and methods
+type Person
+impl ToJson for Person
+
+// Type aliases
+
+// Traits
+

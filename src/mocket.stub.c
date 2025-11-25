@@ -23,6 +23,36 @@ static int WS_CLIENT_COUNT = 0;
 static channel_t CHANNELS[MAX_CHANNELS];
 static int CHANNEL_COUNT = 0;
 
+// Last received binary WS message buffer
+static uint8_t *WS_LAST_MSG = NULL;
+static size_t WS_LAST_MSG_LEN = 0;
+
+void ws_set_last_msg(const unsigned char *data, size_t len) {
+  if (WS_LAST_MSG) {
+    free(WS_LAST_MSG);
+    WS_LAST_MSG = NULL;
+    WS_LAST_MSG_LEN = 0;
+  }
+  if (data && len > 0) {
+    WS_LAST_MSG = (uint8_t *) malloc(len);
+    if (WS_LAST_MSG) {
+      memcpy(WS_LAST_MSG, data, len);
+      WS_LAST_MSG_LEN = len;
+    }
+  }
+}
+
+uint8_t *ws_msg_body(void) { return WS_LAST_MSG; }
+size_t ws_msg_body_len(void) { return WS_LAST_MSG_LEN; }
+
+size_t ws_msg_copy(uint8_t *dst, size_t max_len) {
+  if (!dst || WS_LAST_MSG_LEN == 0 || WS_LAST_MSG == NULL) return 0;
+  size_t n = WS_LAST_MSG_LEN;
+  if (n > max_len) n = max_len;
+  memcpy(dst, WS_LAST_MSG, n);
+  return n;
+}
+
 typedef void (*ws_emit_cb_t)(const char *type, const char *id, const char *payload);
 static ws_emit_cb_t WS_EMIT_CB = NULL;
 void set_ws_emit(ws_emit_cb_t cb) { WS_EMIT_CB = cb; }
@@ -95,6 +125,22 @@ void ws_send(const char *id, const char *msg) {
   if (!cl || !cl->c) return;
   if (!msg) msg = "";
   mg_ws_send(cl->c, msg, strlen(msg), WEBSOCKET_OP_TEXT);
+}
+
+// Send binary WebSocket message with explicit length
+void ws_send_bytes_len(const char *id, const uint8_t *msg, size_t msg_len) {
+  ws_client_t *cl = find_client_by_id(id);
+  if (!cl || !cl->c) return;
+  const char *data = msg ? (const char *) msg : "";
+  size_t len = msg ? msg_len : 0;
+  mg_ws_send(cl->c, data, len, WEBSOCKET_OP_BINARY);
+}
+
+// Send PONG frame
+void ws_pong(const char *id) {
+  ws_client_t *cl = find_client_by_id(id);
+  if (!cl || !cl->c) return;
+  mg_ws_send(cl->c, "", 0, WEBSOCKET_OP_PONG);
 }
 
 void ws_subscribe(const char *id, const char *channel) {
@@ -401,7 +447,8 @@ static void ev_handler(struct mg_connection *c, int ev, void *ev_data)
     struct mg_ws_message *wm = (struct mg_ws_message *) ev_data;
     ws_client_t *cl = find_client_by_conn(c);
     if (!cl) return;
-    if ((wm->flags & WEBSOCKET_OP_TEXT) == WEBSOCKET_OP_TEXT) {
+    unsigned char op = wm->flags & 0x0F;
+    if (op == WEBSOCKET_OP_TEXT) {
       size_t len = wm->data.len;
       char *tmp = (char *) malloc(len + 1);
       if (!tmp) return;
@@ -409,6 +456,11 @@ static void ev_handler(struct mg_connection *c, int ev, void *ev_data)
       tmp[len] = '\0';
       if (WS_EMIT_CB) WS_EMIT_CB("message", cl->id, tmp);
       free(tmp);
+    } else if (op == WEBSOCKET_OP_BINARY) {
+      ws_set_last_msg((const unsigned char *) wm->data.buf, wm->data.len);
+      if (WS_EMIT_CB) WS_EMIT_CB("binary", cl->id, "");
+    } else if (op == WEBSOCKET_OP_PING) {
+      if (WS_EMIT_CB) WS_EMIT_CB("ping", cl->id, "");
     }
   }
   else if (ev == MG_EV_CLOSE)

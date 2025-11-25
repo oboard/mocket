@@ -28,16 +28,16 @@ pub(open) trait ServeStaticProvider {
 pub fn Mocket::static_assets(
   self : Mocket,
   path : String,
-  options : &ServeStaticProvider,
+  provider : &ServeStaticProvider,
 ) -> Unit {
   self.use_middleware(async fn(event, next) noraise {
-    if not(event.req.url.has_prefix(path)) {
+    if not(match_path(path, event.req.url) is None) {
       return next()
     }
 
     // Method check
     if event.req.http_method != "GET" && event.req.http_method != "HEAD" {
-      if options.get_fallthrough() {
+      if provider.get_fallthrough() {
         return next()
       }
       event.res.headers.set("Allow", "GET, HEAD")
@@ -53,7 +53,7 @@ pub fn Mocket::static_assets(
       .get("Accept-Encoding")
       .map(fn(v) { v.to_string() })
       .unwrap_or("")
-    let encodings = options.get_encodings()
+    let encodings = provider.get_encodings()
     let matched_encodings = []
     if accept_encoding != "" {
       // split requires `chars` label
@@ -72,7 +72,7 @@ pub fn Mocket::static_assets(
     // Search paths
     let mut id = original_id
     let mut meta : StaticAssetMeta? = None
-    let index_names = options.get_index_names()
+    let index_names = provider.get_index_names()
     if index_names.length() == 0 {
       ignore(index_names.push("/index.html"))
     }
@@ -89,7 +89,7 @@ pub fn Mocket::static_assets(
       }
       for encoding in try_encodings {
         let try_id = id + suffix + encoding
-        match options.get_meta(try_id) {
+        match provider.get_meta(try_id) {
           Some(m) => {
             meta = Some(m)
             id = try_id
@@ -102,10 +102,10 @@ pub fn Mocket::static_assets(
     }
     match meta {
       None => {
-        if options.get_fallthrough() {
+        if provider.get_fallthrough() {
           return next()
         }
-        return HttpResponse::not_found()
+        return HttpResponse::new(NotFound)
       }
       Some(meta) => {
         // Handle caching
@@ -123,7 +123,7 @@ pub fn Mocket::static_assets(
               event.res.headers.set("ETag", etag)
             }
             if event.req.headers.get("If-None-Match") == Some(etag) {
-              return HttpResponse::not_modified()
+              return HttpResponse::new(NotModified)
             }
           }
           None => ()
@@ -137,8 +137,10 @@ pub fn Mocket::static_assets(
               // Simple extension extraction
               let parts = id.split(".").collect()
               if parts.length() > 1 {
-                // TODO: get extension
-                ()
+                match provider.get_type(parts[parts.length() - 1].to_string()) {
+                  Some(t) => event.res.headers.set("Content-Type", t)
+                  None => ()
+                }
               }
             }
           }
@@ -162,10 +164,10 @@ pub fn Mocket::static_assets(
           None => ()
         }
         if event.req.http_method == "HEAD" {
-          return HttpResponse::ok()
+          return HttpResponse::new(OK)
         }
-        let contents = options.get_contents(id)
-        event.res.status_code = 200
+        let contents = provider.get_contents(id)
+        event.res.status_code = OK
         contents
       }
     }

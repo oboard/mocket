@@ -81,20 +81,34 @@ pub extern "js" fn create_server(
   #|      // 供 FFI 调用的发送函数
   #|      function sendText(socket, str) {
   #|        const payload = Buffer.from(String(str), 'utf8');
+  #|        sendFrame(socket, payload, 0x1);
+  #|      }
+  #|
+  #|      function sendBinary(socket, bytes) {
+  #|        const payload = Buffer.from(bytes);
+  #|        sendFrame(socket, payload, 0x2);
+  #|      }
+  #|
+  #|      function sendPong(socket) {
+  #|        const payload = Buffer.alloc(0);
+  #|        sendFrame(socket, payload, 0xA);
+  #|      }
+  #|
+  #|      function sendFrame(socket, payload, opcode) {
   #|        const len = payload.length;
   #|        let header;
   #|        if (len < 126) {
   #|          header = Buffer.alloc(2);
-  #|          header[0] = 0x81; // FIN + text
+  #|          header[0] = 0x80 | opcode; // FIN + opcode
   #|          header[1] = len;
   #|        } else if (len < 65536) {
   #|          header = Buffer.alloc(4);
-  #|          header[0] = 0x81;
+  #|          header[0] = 0x80 | opcode;
   #|          header[1] = 126;
   #|          header.writeUInt16BE(len, 2);
   #|        } else {
   #|          header = Buffer.alloc(10);
-  #|          header[0] = 0x81;
+  #|          header[0] = 0x80 | opcode;
   #|          header[1] = 127;
   #|          header.writeBigUInt64BE(BigInt(len), 2);
   #|        }
@@ -140,6 +154,14 @@ pub extern "js" fn create_server(
   #|        send: (id, msg) => {
   #|          const s = clientsById.get(id);
   #|          if (s) sendText(s, msg);
+  #|        },
+  #|        sendBytes: (id, bytes) => {
+  #|          const s = clientsById.get(id);
+  #|          if (s) sendBinary(s, bytes);
+  #|        },
+  #|        pong: (id) => {
+  #|          const s = clientsById.get(id);
+  #|          if (s) sendPong(s);
   #|        }
   #|      });
   #|    
@@ -183,37 +205,42 @@ pub extern "js" fn create_server(
   #|            try { socket.end(); } catch (_) {}
   #|            if (clientsById.delete(connectionId)) {
   #|              if (typeof globalThis.__ws_emit_port === 'function') {
-  #|                globalThis.__ws_emit_port('close', port, connectionId, '');
+  #|                globalThis.__ws_emit_port('close', port, connectionId, Buffer.alloc(0));
   #|              }
   #|          }
   #|         return;
   #|       }
-  #|       // Ping -> Pong
-  #|       if (frame.opcode === 0x9) {
-  #|         const payload = frame.data || Buffer.alloc(0);
-  #|         const header = Buffer.from([0x8A, payload.length]);
-  #|         try { socket.write(Buffer.concat([header, payload])); } catch (_) {}
-  #|         return;
-  #|       }
-  #|       // Text
-  #|       if (frame.opcode === 0x1) {
-  #|         const msg = frame.data || Buffer.alloc(0);
-  #|         // console.log('[ws-bridge] emit message', port, connectionId, msg);
-  #|         if (typeof globalThis.__ws_emit_port === 'function') {
-  #|           globalThis.__ws_emit_port('message', port, connectionId, msg);
-  #|         } else {
-  #|           // console.log('[ws-bridge] __ws_emit not found');
-  #|         }
-  #|       }
-  #|     });
-  #| 
-  #|     socket.on('close', () => {
-  #|       if (clientsById.delete(connectionId)) {
-  #|         if (typeof globalThis.__ws_emit_port === 'function') {
-  #|           globalThis.__ws_emit_port('close', port, connectionId, '');
-  #|         }
-  #|       }
-  #|     });
+  #|          // Ping -> Pong
+  #|          if (frame.opcode === 0x9) {
+  #|            // Emit ping event
+  #|            if (typeof globalThis.__ws_emit_port === 'function') {
+  #|              globalThis.__ws_emit_port('ping', port, connectionId, Buffer.alloc(0));
+  #|            }
+  #|            return;
+  #|          }
+  #|          // Text
+  #|          if (frame.opcode === 0x1) {
+  #|            const msg = frame.data || Buffer.alloc(0);
+  #|            if (typeof globalThis.__ws_emit_port === 'function') {
+  #|              globalThis.__ws_emit_port('message', port, connectionId, msg);
+  #|            }
+  #|          }
+  #|          // Binary
+  #|          if (frame.opcode === 0x2) {
+  #|            const msg = frame.data || Buffer.alloc(0);
+  #|            if (typeof globalThis.__ws_emit_port === 'function') {
+  #|              globalThis.__ws_emit_port('binary', port, connectionId, msg);
+  #|            }
+  #|          }
+  #|        });
+  #|    
+  #|        socket.on('close', () => {
+  #|          if (clientsById.delete(connectionId)) {
+  #|            if (typeof globalThis.__ws_emit_port === 'function') {
+  #|              globalThis.__ws_emit_port('close', port, connectionId, Buffer.alloc(0));
+  #|            }
+  #|          }
+  #|        });
   #|        socket.on('error', () => {
   #|          clientsById.delete(connectionId);
   #|          try { socket.destroy(); } catch (_) {}
@@ -222,7 +249,7 @@ pub extern "js" fn create_server(
   #|    
   #|      // console.log('[ws-bridge] WebSocket upgrade handler attached for port', port);
   #|    };
-  #|  start(server, port); server.listen(port, () => {}) 
+  #|    start(server, port); server.listen(port, () => {});
   #|}
 
 ///|
@@ -259,7 +286,7 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
           headers: string_headers,
           raw_body: "",
         },
-        res: HttpResponse::new(200),
+        res: HttpResponse::new(OK),
         params,
       }
       async_run(() => {
@@ -275,10 +302,11 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
         }
 
         // 执行中间件链和处理器
-        let body = execute_middlewares(mocket.middlewares, event, handler)
+        let responder = execute_middlewares(mocket.middlewares, event, handler)
         // let boundary = "----------------moonbit-" + port.to_string()
+        responder.options(event.res)
         res.write_head(
-          event.res.status_code,
+          event.res.status_code.to_int(),
           {
             let headers_obj = (try? @js.Value::from_json(
               event.res.headers.to_json(),
@@ -294,8 +322,9 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
           },
         )
         let buf = @buffer.new()
-        body.output(buf)
-        res.end(@js.Value::cast_from(buf.to_bytes()))
+        responder.output(buf)
+        event.res.raw_body = buf.to_bytes()
+        res.end(@js.Value::cast_from(event.res.raw_body))
       })
     },
     port,
@@ -365,7 +394,12 @@ pub fn __ws_emit_js_port(
   let peer = WebSocketPeer::{ connection_id, subscribed_channels: [] }
   match event_type {
     "open" => handler(WebSocketEvent::Open(peer))
-    "message" => handler(WebSocketEvent::Message(peer, payload))
+    "message" => {
+      let msg = @encoding/utf8.decode(payload) catch { _ => "" }
+      handler(WebSocketEvent::Message(peer, Text(msg)))
+    }
+    "binary" => handler(WebSocketEvent::Message(peer, Binary(payload)))
+    "ping" => handler(WebSocketEvent::Message(peer, Ping))
     "close" => handler(WebSocketEvent::Close(peer))
     _ => ()
   }
@@ -450,6 +484,12 @@ pub extern "js" fn __get_port_by_connection_js_export(
 ///|
 /// 四个 FFI 包装，供 WebSocketPeer 调用
 pub extern "js" fn ws_send(id : String, msg : String) -> Unit = "(id, msg) => { const port = globalThis.__get_port_by_connection(id); const bindings = globalThis.ws_port_bindings && globalThis.ws_port_bindings.get(port); if (bindings && bindings.send) bindings.send(id, msg); }"
+
+///|
+pub extern "js" fn ws_send_bytes(id : String, msg : Bytes) -> Unit = "(id, msg) => { const port = globalThis.__get_port_by_connection(id); const bindings = globalThis.ws_port_bindings && globalThis.ws_port_bindings.get(port); if (bindings && bindings.sendBytes) bindings.sendBytes(id, msg); }"
+
+///|
+pub extern "js" fn ws_pong(id : String) -> Unit = "(id) => { const port = globalThis.__get_port_by_connection(id); const bindings = globalThis.ws_port_bindings && globalThis.ws_port_bindings.get(port); if (bindings && bindings.pong) bindings.pong(id); }"
 
 ///|
 pub extern "js" fn ws_subscribe(id : String, channel : String) -> Unit = "(id, ch) => { if (globalThis.__ws_subscribe_js) globalThis.__ws_subscribe_js(id, ch); }"

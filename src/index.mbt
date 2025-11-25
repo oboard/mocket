@@ -15,8 +15,6 @@ pub(all) struct Mocket {
   static_routes : Map[String, Map[String, HttpHandler]]
   // 添加动态路由缓存（包含参数的路由）
   dynamic_routes : Map[String, Array[(String, HttpHandler)]]
-  // 日志记录器
-  logger : Logger
   // WebSocket 路由（按路径匹配，不区分方法）
   ws_static_routes : Map[String, WebSocketHandler]
   ws_dynamic_routes : Array[(String, WebSocketHandler)]
@@ -26,31 +24,19 @@ pub(all) struct Mocket {
 }
 
 ///|
-pub fn new(
-  base_path? : String = "",
-  logger? : Logger = new_production_logger(),
-) -> Mocket {
+pub fn new(base_path? : String = "") -> Mocket {
   {
     base_path,
     mappings: {},
     middlewares: [],
     static_routes: {},
     dynamic_routes: {},
-    logger,
     ws_static_routes: {},
     ws_dynamic_routes: [],
     ws_clients: {},
     ws_channels: {},
     ws_client_port: {},
   }
-}
-
-///|
-pub(all) struct HttpRequest {
-  http_method : String
-  url : String
-  headers : Map[StringView, StringView]
-  mut raw_body : Bytes
 }
 
 ///|
@@ -127,30 +113,21 @@ pub fn Mocket::on(
   handler : HttpHandler,
 ) -> Unit {
   let path = self.base_path + path
-  self.logger.route_register(event, path)
   self.mappings.set((event, path), handler)
 
   // 优化：根据路径类型分别缓存
   if path.find(":").unwrap_or(-1) == -1 && path.find("*").unwrap_or(-1) == -1 {
     // 静态路径，直接缓存
-    self.logger.route_static(event, path)
     match self.static_routes.get(event) {
-      Some(http_methodroutes) => {
-        self.logger.route_merge_existing(event)
-        http_methodroutes.set(path, handler)
-        self.logger.route_added(path)
-      }
+      Some(http_methodroutes) => http_methodroutes.set(path, handler)
       None => {
-        self.logger.route_merge_new(event)
         let new_routes : Map[String, HttpHandler] = {}
         new_routes.set(path, handler)
         self.static_routes.set(event, new_routes)
-        self.logger.route_created(path)
       }
     }
   } else {
     // 动态路径，加入动态路由列表
-    self.logger.route_dynamic(event, path)
     match self.dynamic_routes.get(event) {
       Some(routes) => routes.push((path, handler))
       None => {
@@ -246,7 +223,7 @@ pub fn Mocket::group(
   base_path : String,
   configure : (Mocket) -> Unit,
 ) -> Unit {
-  let group = new(base_path=self.base_path + base_path, logger=self.logger)
+  let group = new(base_path=self.base_path + base_path)
   configure(group)
   // 合并路由
   group.mappings.iter().each(i => self.mappings.set(i.0, i.1))
