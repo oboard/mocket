@@ -96,15 +96,15 @@ fn HttpRequestInternal::on_complete(Self, FuncRef[() -> Unit]) -> Unit
 fn HttpRequestInternal::on_headers(Self, FuncRef[(@native.CStr) -> Unit]) -> Unit
 
 pub(all) struct HttpResponse {
-  mut status_code : &StatusCoder
+  mut status_code : StatusCode
   headers : Map[StringView, StringView]
   cookies : Map[String, CookieItem]
   mut raw_body : Bytes
 }
 fn HttpResponse::body(Self, &Responder) -> Self
 fn HttpResponse::delete_cookie(Self, String) -> Unit
-fn HttpResponse::json(Self, Json) -> Self
-fn HttpResponse::new(&StatusCoder, headers? : Map[StringView, StringView], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
+fn HttpResponse::json(Self, &ToJson) -> Self
+fn HttpResponse::new(StatusCode, headers? : Map[StringView, StringView], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
 fn HttpResponse::set_cookie(Self, String, String, max_age? : Int, path? : String, domain? : String, secure? : Bool, http_only? : Bool, same_site? : SameSiteOption) -> Unit
 fn HttpResponse::to_responder(Self) -> &Responder
 impl Responder for HttpResponse
@@ -239,10 +239,12 @@ pub(all) enum StatusCode {
   LoopDetected
   NotExtended
   NetworkAuthenticationRequired
+  Custom(Int)
 }
+fn StatusCode::from_int(Int) -> Self
+fn StatusCode::to_int(Self) -> Int
 impl Show for StatusCode
 impl ToJson for StatusCode
-impl StatusCoder for StatusCode
 
 pub enum WebSocketAggregatedMessage {
   Text(String)
@@ -303,9 +305,4 @@ pub(open) trait ServeStaticProvider {
   get_index_names(Self) -> Array[String]
   get_fallthrough(Self) -> Bool
 }
-
-pub trait StatusCoder {
-  to_int(Self) -> Int
-}
-impl StatusCoder for Int
 

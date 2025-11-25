@@ -57,7 +57,7 @@ fn main {
   ..post("/echo", e => e.req)
 
   // 404 Page
-  ..get("/404", _ => @mocket.HttpResponse::new(@mocket.NotFound).body(
+  ..get("/404", _ => @mocket.HttpResponse::new(NotFound).body(
     @mocket.html(
       (
         #|<html>

@@ -129,12 +129,13 @@ pub(all) enum StatusCode {
   Custom(Int)
 } derive(Show, ToJson)
 
+///|
 pub fn StatusCode::from_int(i : Int) -> StatusCode {
   Custom(i)
 }
 
 ///|
-pub fn StatusCode::to_int(self: StatusCode) -> Int {
+pub fn StatusCode::to_int(self : StatusCode) -> Int {
   match self {
     Continue => 100
     SwitchingProtocols => 101

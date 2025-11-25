@@ -26,10 +26,10 @@ pub impl ServeStaticProvider for StaticFileProvider with get_contents(
   self,
   id : String,
 ) -> &Responder {
-  let res : &Responder = @mocket.HttpResponse::new(@mocket.OK).body(
+  let res : &Responder = @mocket.HttpResponse::new(OK).body(
     @fs.read_file_to_bytes(self.path + "/" + id),
   ) catch {
-    _ => @mocket.HttpResponse::new(@mocket.NotFound).body("Not Found")
+    _ => @mocket.HttpResponse::new(NotFound).body("Not Found")
   }
   res
 }
