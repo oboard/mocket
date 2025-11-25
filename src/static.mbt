@@ -53,7 +53,7 @@ pub fn Mocket::static_assets(
         return next()
       }
       event.res.headers.set("Allow", "GET, HEAD")
-      return HttpResponse::new(405)
+      return HttpResponse::new(MethodNotAllowed)
     }
     let original_id = event.req.url[path.length():].to_string() catch {
       _ => return next()

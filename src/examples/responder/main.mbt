@@ -1,8 +1,16 @@
 ///|
+using @mocket {type HttpResponse}
+
+///|
 struct Person {
   name : String
   age : Int
-} derive(ToJson)
+} derive(ToJson, FromJson)
+
+///|
+impl @mocket.BodyReader for Person with from_request(req) -> Person raise {
+  @json.from_json(req.body())
+}
 
 ///|
 fn main {
@@ -13,13 +21,29 @@ fn main {
   ..get("/", _event => "⚡️ Tadaa!")
 
   // Object Response
-  ..get("/", _event => { name: "oboard", age: 21 }.to_json())
+  ..get("/json", _event => { name: "oboard", age: 21 }.to_json())
+
+  // JSON Request
+  // curl --location 'localhost:4000/json' \
+  // --header 'Content-Type: application/json' \
+  // --data '{
+  //     "name": "oboard",
+  //     "age": 21
+  // }'
+  ..post("/json", event => try {
+    let person : Person = event.req.body()
+    HttpResponse::new(OK).body(
+      "Hello, \{person.name}. You are \{person.age} years old.",
+    )
+  } catch {
+    _ => HttpResponse::new(BadRequest).body("Invalid JSON")
+  })
 
   // Echo Server
   ..post("/echo", e => e.req)
 
   // 404 Page
-  ..get("/404", _ => @mocket.HttpResponse::new(@mocket.NotFound).body(
+  ..get("/404", _ => HttpResponse::new(NotFound).body(
     @mocket.html(
       (
         #|<html>

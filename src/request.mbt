@@ -8,7 +8,7 @@ pub(all) struct HttpRequest {
 
 ///|
 pub(open) trait BodyReader {
-  from_request(HttpRequest) -> Self raise
+  from_request(req: HttpRequest) -> Self raise
 }
 
 ///|

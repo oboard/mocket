@@ -1,14 +1,4 @@
 ///|
-pub trait StatusCoder {
-  to_int(self : Self) -> Int
-}
-
-///|
-pub impl StatusCoder for Int with to_int(self) -> Int {
-  self
-}
-
-///|
 /// HTTP status codes as registered with IANA.
 /// See: https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
 pub(all) enum StatusCode {
@@ -136,10 +126,15 @@ pub(all) enum StatusCode {
   NotExtended
   /// RFC 6585, 6
   NetworkAuthenticationRequired
+  Custom(Int)
 } derive(Show, ToJson)
 
+pub fn StatusCode::from_int(i : Int) -> StatusCode {
+  Custom(i)
+}
+
 ///|
-pub impl StatusCoder for StatusCode with to_int(self) -> Int {
+pub fn StatusCode::to_int(self: StatusCode) -> Int {
   match self {
     Continue => 100
     SwitchingProtocols => 101
@@ -203,6 +198,7 @@ pub impl StatusCoder for StatusCode with to_int(self) -> Int {
     LoopDetected => 508
     NotExtended => 510
     NetworkAuthenticationRequired => 511
+    Custom(i) => i
   }
 }
 

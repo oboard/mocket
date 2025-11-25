@@ -1,6 +1,6 @@
 ///|
 pub(all) struct HttpResponse {
-  mut status_code : &StatusCoder
+  mut status_code : StatusCode
   headers : Map[StringView, StringView]
   cookies : Map[String, CookieItem]
   mut raw_body : Bytes
@@ -8,7 +8,7 @@ pub(all) struct HttpResponse {
 
 ///|
 pub fn HttpResponse::new(
-  status_code : &StatusCoder,
+  status_code : StatusCode,
   headers? : Map[StringView, StringView],
   cookies? : Map[String, CookieItem],
   raw_body? : Bytes,
@@ -33,8 +33,8 @@ pub fn HttpResponse::body(
 }
 
 ///|
-pub fn HttpResponse::json(self : HttpResponse, body : Json) -> HttpResponse {
-  self.body(body)
+pub fn HttpResponse::json(self : HttpResponse, obj : &ToJson) -> HttpResponse {
+  self.body(obj.to_json())
 }
 
 ///|
