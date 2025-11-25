@@ -9,6 +9,18 @@ pub(all) struct StaticAssetMeta {
 }
 
 ///|
+pub fn StaticAssetMeta::new(
+  asset_type? : String,
+  etag? : String,
+  mtime? : Int64,
+  path? : String,
+  size? : Int64,
+  encoding? : String,
+) -> Self {
+  { asset_type, etag, mtime, path, size, encoding }
+}
+
+///|
 pub(open) trait ServeStaticProvider {
   // This function should resolve asset meta
   get_meta(Self, id : String) -> StaticAssetMeta?
@@ -49,10 +61,7 @@ pub fn Mocket::static_assets(
 
     // Parse Accept-Encoding
     // Headers are Map[StringView, StringView]
-    let accept_encoding = event.req.headers
-      .get("Accept-Encoding")
-      .map(fn(v) { v.to_string() })
-      .unwrap_or("")
+    let accept_encoding = event.req.headers.get("Accept-Encoding").unwrap_or("")
     let encodings = provider.get_encodings()
     let matched_encodings = []
     if accept_encoding != "" {

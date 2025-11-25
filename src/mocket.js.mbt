@@ -273,11 +273,7 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
       let (params, handler) = match
         mocket.find_route(req.req_method(), req.url()) {
         Some((h, p)) => (p, h)
-        _ => {
-          res.write_head(404, @js.Object::new().to_value())
-          res.end(@js.Value::cast_from("Not Found"))
-          return
-        }
+        _ => ({}, handle_not_found)
       }
       let event = {
         req: {

@@ -57,12 +57,12 @@ extern "c" fn HttpRequestInternal::req_body_len(
   self : HttpRequestInternal,
 ) -> Int = "req_body_len"
 
-///|
-#owned(self, body)
-extern "c" fn HttpResponseInternal::end(
-  self : HttpResponseInternal,
-  body : @native.CStr,
-) -> Unit = "res_end"
+// ///|
+// #owned(self, body)
+// extern "c" fn HttpResponseInternal::end(
+//   self : HttpResponseInternal,
+//   body : @native.CStr,
+// ) -> Unit = "res_end"
 
 ///|
 #owned(self, body)
@@ -184,11 +184,7 @@ fn handle_request_native(
   })
   let (params, handler) = match mocket.find_route(http_method, path) {
     Some((h, p)) => (p, h)
-    _ => {
-      res.status(404)
-      res.end(to_cstr("Not Found"))
-      return
-    }
+    _ => ({}, handle_not_found)
   }
   let event = {
     req: { http_method, url, raw_body: "", headers: req_headers },
@@ -215,6 +211,9 @@ fn handle_request_native(
       to_cstr("Set-Cookie"),
       to_cstr(cookie.to_string()),
     ))
+    let buf = @buffer.new()
+    responder.output(buf)
+    event.res.raw_body = buf.to_bytes()
     res.end_bytes(event.res.raw_body)
   })
 }
@@ -291,7 +290,7 @@ extern "c" fn ws_send_bytes_len_native(
 extern "c" fn ws_pong_native(id : @native.CStr) -> Unit = "ws_pong"
 
 ///|
-extern "c" fn ws_msg_body() -> Bytes = "ws_msg_body"
+// extern "c" fn ws_msg_body() -> Bytes = "ws_msg_body"
 
 ///|
 extern "c" fn ws_msg_body_len() -> Int = "ws_msg_body_len"
