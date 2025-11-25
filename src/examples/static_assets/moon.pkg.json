@@ -1,0 +1,7 @@
+{
+  "is-main": true,
+  "import": [
+    "oboard/mocket",
+    "oboard/mocket/static_file"
+  ]
+}

@@ -1,2 +1,2 @@
 ///|
-pub type HttpHandler = async (MocketEvent) -> HttpBody noraise
+pub type HttpHandler = async (MocketEvent) -> &Responder noraise

@@ -1,0 +1,20 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/mocket/examples/responder"
+
+import(
+  "moonbitlang/core/json"
+)
+
+// Values
+
+// Errors
+
+// Types and methods
+type Person
+impl ToJson for Person
+impl @json.FromJson for Person
+
+// Type aliases
+
+// Traits
+

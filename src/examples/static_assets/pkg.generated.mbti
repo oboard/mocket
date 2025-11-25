@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "oboard/mocket/examples/route"
+package "oboard/mocket/examples/static_assets"
 
 import(
   "oboard/mocket"

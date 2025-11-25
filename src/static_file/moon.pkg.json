@@ -1,0 +1,3 @@
+{
+  "import": ["oboard/mocket", "moonbitlang/x/fs"]
+}

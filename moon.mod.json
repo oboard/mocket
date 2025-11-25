@@ -1,6 +1,6 @@
 {
   "name": "oboard/mocket",
-  "version": "0.5.8",
+  "version": "0.6.0",
   "deps": {
     "illusory0x0/native": "0.2.1",
     "moonbitlang/x": "0.4.34",

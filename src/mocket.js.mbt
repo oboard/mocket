@@ -81,20 +81,34 @@ pub extern "js" fn create_server(
   #|      // 供 FFI 调用的发送函数
   #|      function sendText(socket, str) {
   #|        const payload = Buffer.from(String(str), 'utf8');
+  #|        sendFrame(socket, payload, 0x1);
+  #|      }
+  #|
+  #|      function sendBinary(socket, bytes) {
+  #|        const payload = Buffer.from(bytes);
+  #|        sendFrame(socket, payload, 0x2);
+  #|      }
+  #|
+  #|      function sendPong(socket) {
+  #|        const payload = Buffer.alloc(0);
+  #|        sendFrame(socket, payload, 0xA);
+  #|      }
+  #|
+  #|      function sendFrame(socket, payload, opcode) {
   #|        const len = payload.length;
   #|        let header;
   #|        if (len < 126) {
   #|          header = Buffer.alloc(2);
-  #|          header[0] = 0x81; // FIN + text
+  #|          header[0] = 0x80 | opcode; // FIN + opcode
   #|          header[1] = len;
   #|        } else if (len < 65536) {
   #|          header = Buffer.alloc(4);
-  #|          header[0] = 0x81;
+  #|          header[0] = 0x80 | opcode;
   #|          header[1] = 126;
   #|          header.writeUInt16BE(len, 2);
   #|        } else {
   #|          header = Buffer.alloc(10);
-  #|          header[0] = 0x81;
+  #|          header[0] = 0x80 | opcode;
   #|          header[1] = 127;
   #|          header.writeBigUInt64BE(BigInt(len), 2);
   #|        }
@@ -140,6 +154,14 @@ pub extern "js" fn create_server(
   #|        send: (id, msg) => {
   #|          const s = clientsById.get(id);
   #|          if (s) sendText(s, msg);
+  #|        },
+  #|        sendBytes: (id, bytes) => {
+  #|          const s = clientsById.get(id);
+  #|          if (s) sendBinary(s, bytes);
+  #|        },
+  #|        pong: (id) => {
+  #|          const s = clientsById.get(id);
+  #|          if (s) sendPong(s);
   #|        }
   #|      });
   #|    
@@ -183,37 +205,42 @@ pub extern "js" fn create_server(
   #|            try { socket.end(); } catch (_) {}
   #|            if (clientsById.delete(connectionId)) {
   #|              if (typeof globalThis.__ws_emit_port === 'function') {
-  #|                globalThis.__ws_emit_port('close', port, connectionId, '');
+  #|                globalThis.__ws_emit_port('close', port, connectionId, Buffer.alloc(0));
   #|              }
   #|          }
   #|         return;
   #|       }
-  #|       // Ping -> Pong
-  #|       if (frame.opcode === 0x9) {
-  #|         const payload = frame.data || Buffer.alloc(0);
-  #|         const header = Buffer.from([0x8A, payload.length]);
-  #|         try { socket.write(Buffer.concat([header, payload])); } catch (_) {}
-  #|         return;
-  #|       }
-  #|       // Text
-  #|       if (frame.opcode === 0x1) {
-  #|         const msg = (frame.data || Buffer.alloc(0)).toString('utf8');
-  #|         // console.log('[ws-bridge] emit message', port, connectionId, msg);
-  #|         if (typeof globalThis.__ws_emit_port === 'function') {
-  #|           globalThis.__ws_emit_port('message', port, connectionId, msg);
-  #|         } else {
-  #|           // console.log('[ws-bridge] __ws_emit not found');
-  #|         }
-  #|       }
-  #|     });
-  #| 
-  #|     socket.on('close', () => {
-  #|       if (clientsById.delete(connectionId)) {
-  #|         if (typeof globalThis.__ws_emit_port === 'function') {
-  #|           globalThis.__ws_emit_port('close', port, connectionId, '');
-  #|         }
-  #|       }
-  #|     });
+  #|          // Ping -> Pong
+  #|          if (frame.opcode === 0x9) {
+  #|            // Emit ping event
+  #|            if (typeof globalThis.__ws_emit_port === 'function') {
+  #|              globalThis.__ws_emit_port('ping', port, connectionId, Buffer.alloc(0));
+  #|            }
+  #|            return;
+  #|          }
+  #|          // Text
+  #|          if (frame.opcode === 0x1) {
+  #|            const msg = frame.data || Buffer.alloc(0);
+  #|            if (typeof globalThis.__ws_emit_port === 'function') {
+  #|              globalThis.__ws_emit_port('message', port, connectionId, msg);
+  #|            }
+  #|          }
+  #|          // Binary
+  #|          if (frame.opcode === 0x2) {
+  #|            const msg = frame.data || Buffer.alloc(0);
+  #|            if (typeof globalThis.__ws_emit_port === 'function') {
+  #|              globalThis.__ws_emit_port('binary', port, connectionId, msg);
+  #|            }
+  #|          }
+  #|        });
+  #|    
+  #|        socket.on('close', () => {
+  #|          if (clientsById.delete(connectionId)) {
+  #|            if (typeof globalThis.__ws_emit_port === 'function') {
+  #|              globalThis.__ws_emit_port('close', port, connectionId, Buffer.alloc(0));
+  #|            }
+  #|          }
+  #|        });
   #|        socket.on('error', () => {
   #|          clientsById.delete(connectionId);
   #|          try { socket.destroy(); } catch (_) {}
@@ -222,7 +249,7 @@ pub extern "js" fn create_server(
   #|    
   #|      // console.log('[ws-bridge] WebSocket upgrade handler attached for port', port);
   #|    };
-  #|  start(server, port); server.listen(port, () => {}) 
+  #|    start(server, port); server.listen(port, () => {});
   #|}
 
 ///|
@@ -246,20 +273,16 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
       let (params, handler) = match
         mocket.find_route(req.req_method(), req.url()) {
         Some((h, p)) => (p, h)
-        _ => {
-          res.write_head(404, @js.Object::new().to_value())
-          res.end(@js.Value::cast_from("Not Found"))
-          return
-        }
+        _ => ({}, handle_not_found)
       }
       let event = {
         req: {
           http_method: req.req_method(),
           url: req.url(),
-          body: Empty,
           headers: string_headers,
+          raw_body: "",
         },
-        res: { status_code: 200, headers: {}, cookies: {} },
+        res: HttpResponse::new(OK),
         params,
       }
       async_run(() => {
@@ -271,23 +294,15 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
             req.on("end", _ => res(buffer.to_string()))
           }))
           |> ignore
-          event.req.body = read_body(string_headers, buffer.to_bytes()) catch {
-            _ => {
-              res.write_head(400, @js.Object::new().to_value())
-              res.end(@js.Value::cast_from("Invalid body"))
-              return
-            }
-          }
+          event.req.raw_body = buffer.to_bytes()
         }
 
         // 执行中间件链和处理器
-        let body = execute_middlewares(mocket.middlewares, event, handler)
-        let boundary = "----------------moonbit-" + port.to_string()
-        if not(body is Empty) {
-          event.res.headers.set("Content-Type", body.content_type(boundary~))
-        }
+        let responder = execute_middlewares(mocket.middlewares, event, handler)
+        // let boundary = "----------------moonbit-" + port.to_string()
+        responder.options(event.res)
         res.write_head(
-          event.res.status_code,
+          event.res.status_code.to_int(),
           {
             let headers_obj = (try? @js.Value::from_json(
               event.res.headers.to_json(),
@@ -302,17 +317,10 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
             headers_obj
           },
         )
-        res.end(
-          match body {
-            Bytes(b) => @js.Value::cast_from(b.to_bytes())
-            HTML(s) => @js.Value::cast_from(s.to_string())
-            Text(s) => @js.Value::cast_from(s.to_string())
-            Json(j) => @js.Value::cast_from(j.stringify())
-            Form(f) => @js.Value::cast_from(form_encode(f))
-            Multipart(m) => @js.Value::cast_from(encode_multipart(m, boundary))
-            Empty => @js.Value::cast_from("")
-          },
-        )
+        let buf = @buffer.new()
+        responder.output(buf)
+        event.res.raw_body = buf.to_bytes()
+        res.end(@js.Value::cast_from(event.res.raw_body))
       })
     },
     port,
@@ -355,7 +363,7 @@ pub fn __ws_emit_js_port(
   event_type : String,
   port : Int,
   connection_id : String,
-  payload : String,
+  payload : Bytes,
 ) -> Unit {
   let handler = match ws_handler_map.get(port) {
     Some(h) => h
@@ -382,7 +390,12 @@ pub fn __ws_emit_js_port(
   let peer = WebSocketPeer::{ connection_id, subscribed_channels: [] }
   match event_type {
     "open" => handler(WebSocketEvent::Open(peer))
-    "message" => handler(WebSocketEvent::Message(peer, Text(payload)))
+    "message" => {
+      let msg = @encoding/utf8.decode(payload) catch { _ => "" }
+      handler(WebSocketEvent::Message(peer, Text(msg)))
+    }
+    "binary" => handler(WebSocketEvent::Message(peer, Binary(payload)))
+    "ping" => handler(WebSocketEvent::Message(peer, Ping))
     "close" => handler(WebSocketEvent::Close(peer))
     _ => ()
   }
@@ -391,7 +404,7 @@ pub fn __ws_emit_js_port(
 ///|
 /// 导出 MoonBit 函数到 JS 全局
 pub extern "js" fn __ws_emit_js_export(
-  cb : (String, Int, String, String) -> Unit,
+  cb : (String, Int, String, Bytes) -> Unit,
 ) -> Unit = "(cb) => { globalThis.__ws_emit_port = (type, port, id, payload) => { try { cb(type, port, id, payload); } catch (_) {} }; }"
 
 ///|
@@ -469,6 +482,12 @@ pub extern "js" fn __get_port_by_connection_js_export(
 pub extern "js" fn ws_send(id : String, msg : String) -> Unit = "(id, msg) => { const port = globalThis.__get_port_by_connection(id); const bindings = globalThis.ws_port_bindings && globalThis.ws_port_bindings.get(port); if (bindings && bindings.send) bindings.send(id, msg); }"
 
 ///|
+pub extern "js" fn ws_send_bytes(id : String, msg : Bytes) -> Unit = "(id, msg) => { const port = globalThis.__get_port_by_connection(id); const bindings = globalThis.ws_port_bindings && globalThis.ws_port_bindings.get(port); if (bindings && bindings.sendBytes) bindings.sendBytes(id, msg); }"
+
+///|
+pub extern "js" fn ws_pong(id : String) -> Unit = "(id) => { const port = globalThis.__get_port_by_connection(id); const bindings = globalThis.ws_port_bindings && globalThis.ws_port_bindings.get(port); if (bindings && bindings.pong) bindings.pong(id); }"
+
+///|
 pub extern "js" fn ws_subscribe(id : String, channel : String) -> Unit = "(id, ch) => { if (globalThis.__ws_subscribe_js) globalThis.__ws_subscribe_js(id, ch); }"
 
 ///|
@@ -478,7 +497,7 @@ pub extern "js" fn ws_unsubscribe(id : String, channel : String) -> Unit = "(id,
 pub extern "js" fn ws_publish(channel : String, msg : String) -> Unit = "(ch, msg) => { const ids = globalThis.__ws_get_members_js ? globalThis.__ws_get_members_js(ch) : []; const bindings = globalThis.ws_port_bindings && globalThis.ws_port_bindings.values().next().value; if (bindings && bindings.send) { for (const id of ids) { bindings.send(id, msg); } } }"
 
 ///|
-fn encode_multipart(
+pub fn encode_multipart(
   m : Map[String, MultipartFormValue],
   boundary : String,
 ) -> String {

@@ -66,7 +66,7 @@ pub fn handle_cors(
       max_age~,
     )
     // 对于预检请求，直接返回空响应，不调用next()
-    @mocket.Empty
+    @mocket.HttpResponse::new(OK).to_responder()
   } else {
     append_cors_headers(
       event,

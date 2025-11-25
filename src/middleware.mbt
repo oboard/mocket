@@ -1,6 +1,6 @@
 ///|
 // 中间件类型：接受 HttpEvent 和 next 函数，返回 HttpBody
-pub type Middleware = async (MocketEvent, async () -> HttpBody noraise) -> HttpBody noraise
+pub type Middleware = async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise
 
 ///|
 // 注册中间件，支持路径匹配
@@ -20,17 +20,17 @@ pub async fn execute_middlewares(
   middlewares : Array[(String, Middleware)],
   event : MocketEvent,
   final_handler : HttpHandler,
-) -> HttpBody noraise {
+) -> &Responder noraise {
   // 过滤出匹配路径的中间件
   let matched_middlewares = []
-  for i = 0; i < middlewares.length(); i = i + 1 {
-    let (base_path, middleware) = middlewares[i]
+  middlewares.each(middleware => {
+    let (base_path, middleware) = middleware
     // 如果 base_path 为空字符串，则为全局中间件
     // 否则检查请求路径是否匹配 base_path
     if base_path == "" || event.req.url.has_prefix(base_path) {
       matched_middlewares.push(middleware)
     }
-  }
+  })
 
   // 递归构建中间件链（洋葱模型）
   execute_middleware_chain(matched_middlewares, 0, event, final_handler)
@@ -43,7 +43,7 @@ async fn execute_middleware_chain(
   index : Int,
   event : MocketEvent,
   final_handler : HttpHandler,
-) -> HttpBody noraise {
+) -> &Responder noraise {
   if index >= middlewares.length() {
     // 所有中间件都执行完毕，调用最终处理器
     final_handler(event)

@@ -10,7 +10,7 @@ fn append_cors_headers(@mocket.MocketEvent, origin? : String, methods? : String,
 
 fn append_cors_preflight_headers(@mocket.MocketEvent, origin? : String, methods? : String, allow_headers? : String, credentials? : Bool, max_age? : Int) -> Unit
 
-fn handle_cors(origin? : String, methods? : String, allow_headers? : String, expose_headers? : String, credentials? : Bool, max_age? : Int) -> async (@mocket.MocketEvent, async () -> @mocket.HttpBody noraise) -> @mocket.HttpBody noraise
+fn handle_cors(origin? : String, methods? : String, allow_headers? : String, expose_headers? : String, credentials? : Bool, max_age? : Int) -> async (@mocket.MocketEvent, async () -> &@mocket.Responder noraise) -> &@mocket.Responder noraise
 
 fn is_preflight_request(@mocket.MocketEvent) -> Bool
 

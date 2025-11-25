@@ -3,7 +3,7 @@ package "oboard/mocket"
 
 import(
   "illusory0x0/native"
-  "moonbitlang/core/builtin"
+  "moonbitlang/core/buffer"
 )
 
 // Values
@@ -13,17 +13,15 @@ fn async_run(async () -> Unit noraise) -> Unit
 
 fn cookie_to_string(Array[CookieItem]) -> String
 
-async fn execute_middlewares(Array[(String, async (MocketEvent, async () -> HttpBody noraise) -> HttpBody noraise)], MocketEvent, async (MocketEvent) -> HttpBody noraise) -> HttpBody noraise
+async fn execute_middlewares(Array[(String, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise)], MocketEvent, async (MocketEvent) -> &Responder noraise) -> &Responder noraise
 
 fn form_encode(Map[String, String]) -> String
 
-fn new(base_path? : String, logger? : Logger) -> Mocket
+async fn handle_not_found(MocketEvent) -> &Responder noraise
 
-fn new_debug_logger() -> Logger
+fn html(&Show) -> &Responder
 
-fn new_logger(enabled? : Bool, level? : LogLevel) -> Logger
-
-fn new_production_logger() -> Logger
+fn new(base_path? : String) -> Mocket
 
 fn parse_cookie(StringView) -> Map[String, CookieItem]
 
@@ -37,25 +35,25 @@ fn serve_ffi(Mocket, port~ : Int) -> Unit
 
 async fn[T, E : Error] suspend(((T) -> Unit, (E) -> Unit) -> Unit) -> T raise E
 
+fn text(&Show) -> &Responder
+
 fn url_decode(BytesView) -> String
 
 fn url_encode(String) -> String
 
+fn ws_pong(String) -> Unit
+
 fn ws_publish(String, String) -> Unit
 
 fn ws_send(String, String) -> Unit
+
+fn ws_send_bytes(String, Bytes) -> Unit
 
 fn ws_subscribe(String, String) -> Unit
 
 fn ws_unsubscribe(String, String) -> Unit
 
 // Errors
-pub suberror BodyError {
-  InvalidJsonCharset
-  InvalidJson
-  InvalidText
-}
-
 pub suberror ExecError
 impl Show for ExecError
 
@@ -79,24 +77,18 @@ pub(all) struct CookieItem {
 impl Eq for CookieItem
 impl Show for CookieItem
 
-pub(all) enum HttpBody {
-  Json(Json)
-  Text(StringView)
-  HTML(StringView)
-  Bytes(BytesView)
-  Form(Map[String, String])
-  Multipart(Map[String, MultipartFormValue])
-  Empty
-}
-fn HttpBody::content_type(Self, boundary? : String) -> String
+type Html
+impl Responder for Html
 
 pub(all) struct HttpRequest {
   http_method : String
   url : String
   headers : Map[StringView, StringView]
-  mut body : HttpBody
+  mut raw_body : Bytes
 }
+fn[T : BodyReader] HttpRequest::body(Self) -> T raise
 fn HttpRequest::get_cookie(Self, String) -> CookieItem?
+impl Responder for HttpRequest
 
 #external
 pub type HttpRequestInternal
@@ -104,12 +96,18 @@ fn HttpRequestInternal::on_complete(Self, FuncRef[() -> Unit]) -> Unit
 fn HttpRequestInternal::on_headers(Self, FuncRef[(@native.CStr) -> Unit]) -> Unit
 
 pub(all) struct HttpResponse {
-  mut status_code : Int
+  mut status_code : StatusCode
   headers : Map[StringView, StringView]
   cookies : Map[String, CookieItem]
+  mut raw_body : Bytes
 }
+fn HttpResponse::body(Self, &Responder) -> Self
 fn HttpResponse::delete_cookie(Self, String) -> Unit
+fn HttpResponse::json(Self, &ToJson) -> Self
+fn HttpResponse::new(StatusCode, headers? : Map[StringView, StringView], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
 fn HttpResponse::set_cookie(Self, String, String, max_age? : Int, path? : String, domain? : String, secure? : Bool, http_only? : Bool, same_site? : SameSiteOption) -> Unit
+fn HttpResponse::to_responder(Self) -> &Responder
+impl Responder for HttpResponse
 
 #external
 pub type HttpResponseInternal
@@ -117,62 +115,34 @@ pub type HttpResponseInternal
 #external
 pub type HttpServerInternal
 
-pub enum LogLevel {
-  Debug
-  Info
-  Warn
-  Error
-}
-
-pub struct Logger {
-  enabled : Bool
-  level : LogLevel
-}
-fn Logger::debug(Self, () -> String) -> Unit
-fn Logger::debug_str(Self, String) -> Unit
-fn Logger::error(Self, () -> String) -> Unit
-fn Logger::info(Self, () -> String) -> Unit
-fn Logger::route_added(Self, String) -> Unit
-fn Logger::route_created(Self, String) -> Unit
-fn Logger::route_dynamic(Self, String, String) -> Unit
-fn Logger::route_found(Self, String, String) -> Unit
-fn Logger::route_lookup(Self, String, String) -> Unit
-fn Logger::route_merge_existing(Self, String) -> Unit
-fn Logger::route_merge_new(Self, String) -> Unit
-fn Logger::route_not_found(Self, String) -> Unit
-fn Logger::route_register(Self, String, String) -> Unit
-fn Logger::route_static(Self, String, String) -> Unit
-fn Logger::routes_available(Self, Array[String]) -> Unit
-fn Logger::warn(Self, () -> String) -> Unit
-
 #alias(T)
 pub(all) struct Mocket {
   base_path : String
-  mappings : Map[(String, String), async (MocketEvent) -> HttpBody noraise]
-  middlewares : Array[(String, async (MocketEvent, async () -> HttpBody noraise) -> HttpBody noraise)]
-  static_routes : Map[String, Map[String, async (MocketEvent) -> HttpBody noraise]]
-  dynamic_routes : Map[String, Array[(String, async (MocketEvent) -> HttpBody noraise)]]
-  logger : Logger
+  mappings : Map[(String, String), async (MocketEvent) -> &Responder noraise]
+  middlewares : Array[(String, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise)]
+  static_routes : Map[String, Map[String, async (MocketEvent) -> &Responder noraise]]
+  dynamic_routes : Map[String, Array[(String, async (MocketEvent) -> &Responder noraise)]]
   ws_static_routes : Map[String, (WebSocketEvent) -> Unit]
   ws_dynamic_routes : Array[(String, (WebSocketEvent) -> Unit)]
   ws_clients : Map[String, Unit]
   ws_channels : Map[String, Map[String, Unit]]
   ws_client_port : Map[String, Int]
 }
-fn Mocket::all(Self, String, async (MocketEvent) -> HttpBody noraise) -> Unit
-fn Mocket::connect(Self, String, async (MocketEvent) -> HttpBody noraise) -> Unit
-fn Mocket::delete(Self, String, async (MocketEvent) -> HttpBody noraise) -> Unit
-fn Mocket::get(Self, String, async (MocketEvent) -> HttpBody noraise) -> Unit
+fn Mocket::all(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+fn Mocket::connect(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+fn Mocket::delete(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+fn Mocket::get(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 fn Mocket::group(Self, String, (Self) -> Unit) -> Unit
-fn Mocket::head(Self, String, async (MocketEvent) -> HttpBody noraise) -> Unit
-fn Mocket::on(Self, String, String, async (MocketEvent) -> HttpBody noraise) -> Unit
-fn Mocket::options(Self, String, async (MocketEvent) -> HttpBody noraise) -> Unit
-fn Mocket::patch(Self, String, async (MocketEvent) -> HttpBody noraise) -> Unit
-fn Mocket::post(Self, String, async (MocketEvent) -> HttpBody noraise) -> Unit
-fn Mocket::put(Self, String, async (MocketEvent) -> HttpBody noraise) -> Unit
+fn Mocket::head(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+fn Mocket::on(Self, String, String, async (MocketEvent) -> &Responder noraise) -> Unit
+fn Mocket::options(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+fn Mocket::patch(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+fn Mocket::post(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+fn Mocket::put(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 fn Mocket::serve(Self, port~ : Int) -> Unit
-fn Mocket::trace(Self, String, async (MocketEvent) -> HttpBody noraise) -> Unit
-fn Mocket::use_middleware(Self, async (MocketEvent, async () -> HttpBody noraise) -> HttpBody noraise, base_path? : String) -> Unit
+fn Mocket::static_assets(Self, String, &ServeStaticProvider) -> Unit
+fn Mocket::trace(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+fn Mocket::use_middleware(Self, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise, base_path? : String) -> Unit
 fn Mocket::ws(Self, String, (WebSocketEvent) -> Unit) -> Unit
 
 pub(all) struct MocketEvent {
@@ -196,9 +166,95 @@ impl Eq for SameSiteOption
 impl Show for SameSiteOption
 impl ToJson for SameSiteOption
 
+pub(all) struct StaticAssetMeta {
+  asset_type : String?
+  etag : String?
+  mtime : Int64?
+  path : String?
+  size : Int64?
+  encoding : String?
+}
+fn StaticAssetMeta::new(asset_type? : String, etag? : String, mtime? : Int64, path? : String, size? : Int64, encoding? : String) -> Self
+
+pub(all) enum StatusCode {
+  Continue
+  SwitchingProtocols
+  Processing
+  EarlyHints
+  OK
+  Created
+  Accepted
+  NonAuthoritativeInfo
+  NoContent
+  ResetContent
+  PartialContent
+  MultiStatus
+  AlreadyReported
+  IMUsed
+  MultipleChoices
+  MovedPermanently
+  Found
+  SeeOther
+  NotModified
+  UseProxy
+  TemporaryRedirect
+  PermanentRedirect
+  BadRequest
+  Unauthorized
+  PaymentRequired
+  Forbidden
+  NotFound
+  MethodNotAllowed
+  NotAcceptable
+  ProxyAuthRequired
+  RequestTimeout
+  Conflict
+  Gone
+  LengthRequired
+  PreconditionFailed
+  RequestEntityTooLarge
+  RequestUriTooLong
+  UnsupportedMediaType
+  RequestedRangeNotSatisfiable
+  ExpectationFailed
+  Teapot
+  MisdirectedRequest
+  UnprocessableEntity
+  Locked
+  FailedDependency
+  TooEarly
+  UpgradeRequired
+  PreconditionRequired
+  TooManyRequests
+  RequestHeaderFieldsTooLarge
+  UnavailableForLegalReasons
+  InternalServerError
+  NotImplemented
+  BadGateway
+  ServiceUnavailable
+  GatewayTimeout
+  HttpVersionNotSupported
+  VariantAlsoNegotiates
+  InsufficientStorage
+  LoopDetected
+  NotExtended
+  NetworkAuthenticationRequired
+  Custom(Int)
+}
+fn StatusCode::from_int(Int) -> Self
+fn StatusCode::to_int(Self) -> Int
+impl Show for StatusCode
+impl ToJson for StatusCode
+
+pub enum WebSocketAggregatedMessage {
+  Text(String)
+  Binary(Bytes)
+  Ping
+}
+
 pub enum WebSocketEvent {
   Open(WebSocketPeer)
-  Message(WebSocketPeer, HttpBody)
+  Message(WebSocketPeer, WebSocketAggregatedMessage)
   Close(WebSocketPeer)
 }
 
@@ -206,18 +262,47 @@ pub(all) struct WebSocketPeer {
   connection_id : String
   mut subscribed_channels : Array[String]
 }
+fn WebSocketPeer::binary(Self, Bytes) -> Unit
+fn WebSocketPeer::pong(Self) -> Unit
 fn WebSocketPeer::publish(String, String) -> Unit
-fn WebSocketPeer::send(Self, String) -> Unit
 fn WebSocketPeer::subscribe(Self, String) -> Unit
+fn WebSocketPeer::text(Self, String) -> Unit
 fn WebSocketPeer::to_string(Self) -> String
 fn WebSocketPeer::unsubscribe(Self, String) -> Unit
 
 // Type aliases
-pub type HttpHandler = async (MocketEvent) -> HttpBody noraise
+pub type HttpHandler = async (MocketEvent) -> &Responder noraise
 
-pub type Middleware = async (MocketEvent, async () -> HttpBody noraise) -> HttpBody noraise
+pub type Middleware = async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise
 
 pub type WebSocketHandler = (WebSocketEvent) -> Unit
 
 // Traits
+pub(open) trait BodyReader {
+  from_request(HttpRequest) -> Self raise
+}
+impl BodyReader for String
+impl BodyReader for FixedArray[Byte]
+impl BodyReader for Bytes
+impl BodyReader for Array[Byte]
+impl BodyReader for Json
+
+pub(open) trait Responder {
+  options(Self, HttpResponse) -> Unit
+  output(Self, @buffer.Buffer) -> Unit
+}
+impl Responder for String
+impl Responder for Bytes
+impl Responder for Json
+impl Responder for &ToJson
+impl Responder for StringView
+
+pub(open) trait ServeStaticProvider {
+  get_meta(Self, String) -> StaticAssetMeta?
+  get_contents(Self, String) -> &Responder
+  get_type(Self, String) -> String?
+  get_encodings(Self) -> Map[String, String]
+  get_index_names(Self) -> Array[String]
+  get_fallthrough(Self) -> Bool
+}
 

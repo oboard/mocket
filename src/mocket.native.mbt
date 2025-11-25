@@ -57,12 +57,12 @@ extern "c" fn HttpRequestInternal::req_body_len(
   self : HttpRequestInternal,
 ) -> Int = "req_body_len"
 
-///|
-#owned(self, body)
-extern "c" fn HttpResponseInternal::end(
-  self : HttpResponseInternal,
-  body : @native.CStr,
-) -> Unit = "res_end"
+// ///|
+// #owned(self, body)
+// extern "c" fn HttpResponseInternal::end(
+//   self : HttpResponseInternal,
+//   body : @native.CStr,
+// ) -> Unit = "res_end"
 
 ///|
 #owned(self, body)
@@ -184,56 +184,37 @@ fn handle_request_native(
   })
   let (params, handler) = match mocket.find_route(http_method, path) {
     Some((h, p)) => (p, h)
-    _ => {
-      res.status(404)
-      res.end(to_cstr("Not Found"))
-      return
-    }
+    _ => ({}, handle_not_found)
   }
   let event = {
-    req: { http_method, url, body: Empty, headers: req_headers },
-    res: { status_code: 200, headers: {}, cookies: {} },
+    req: { http_method, url, raw_body: "", headers: req_headers },
+    res: HttpResponse::new(OK),
     params,
   }
   if http_method == "POST" {
     let req_body_len = req.req_body_len()
     let body_bytes = req.body()[0:req_body_len]
-    let body = read_body(req_headers, body_bytes) catch {
-      _ => {
-        res.status(400)
-        res.end(to_cstr("Invalid body"))
-        return
-      }
-    }
-    event.req.body = body
+    event.req.raw_body = body_bytes.to_bytes()
   }
   async_run(async fn() noraise {
     // 执行中间件链和处理器
-    let body = execute_middlewares(mocket.middlewares, event, handler)
-    if not(body is Empty) {
-      event.res.headers.set("Content-Type", body.content_type())
-    }
-    res.status(event.res.status_code)
-    event.res.headers.each(fn(key, value) {
-      res.set_header(to_cstr(key), to_cstr(value))
-    })
-    event.res.cookies.each(fn(_, cookie) {
-      res.set_header(to_cstr("Set-Cookie"), to_cstr(cookie.to_string()))
-    })
-    if body is Bytes(bytes) {
-      res.end_bytes(bytes.to_bytes())
-    } else {
-      res.end(
-        match body {
-          HTML(s) => to_cstr(s.to_string())
-          Text(s) => to_cstr(s.to_string())
-          Json(j) => to_cstr(j.stringify())
-          Form(m) => to_cstr(form_encode(m))
-          Multipart(_) => to_cstr("")
-          _ => to_cstr("")
-        },
-      )
-    }
+    let responder = execute_middlewares(mocket.middlewares, event, handler)
+    responder.options(event.res)
+    res.status(event.res.status_code.to_int())
+    event.res.headers.each((key, value) => res.set_header(
+      to_cstr(key),
+      to_cstr(value),
+    ))
+    event.res.cookies
+    .values()
+    .each(cookie => res.set_header(
+      to_cstr("Set-Cookie"),
+      to_cstr(cookie.to_string()),
+    ))
+    let buf = @buffer.new()
+    responder.output(buf)
+    event.res.raw_body = buf.to_bytes()
+    res.end_bytes(event.res.raw_body)
   })
 }
 
@@ -245,7 +226,6 @@ pub fn __ws_emit(
 ) -> Unit {
   let et = from_cstr(event_type)
   let cid = from_cstr(connection_id)
-  let pl = from_cstr(payload)
   let handler = if ws_handler_map.is_empty() {
     fn(_) {  }
   } else {
@@ -254,7 +234,19 @@ pub fn __ws_emit(
   let peer = WebSocketPeer::{ connection_id: cid, subscribed_channels: [] }
   match et {
     "open" => handler(WebSocketEvent::Open(peer))
-    "message" => handler(WebSocketEvent::Message(peer, Text(pl)))
+    "message" => {
+      let pl = from_cstr(payload)
+      handler(WebSocketEvent::Message(peer, Text(pl)))
+    }
+    "binary" => {
+      let len = ws_msg_body_len()
+      let arr = Array::make(len, b'\x00')
+      let buf = Bytes::from_array(arr)
+      let copied = ws_msg_copy(buf)
+      let body = buf[0:copied].to_bytes()
+      handler(WebSocketEvent::Message(peer, Binary(body)))
+    }
+    "ping" => handler(WebSocketEvent::Message(peer, Ping))
     "close" => handler(WebSocketEvent::Close(peer))
     _ => ()
   }
@@ -286,8 +278,40 @@ extern "c" fn ws_publish_native(
 ) -> Unit = "ws_publish"
 
 ///|
+#owned(id, msg)
+extern "c" fn ws_send_bytes_len_native(
+  id : @native.CStr,
+  msg : Bytes,
+  len : Int,
+) -> Unit = "ws_send_bytes_len"
+
+///|
+#owned(id)
+extern "c" fn ws_pong_native(id : @native.CStr) -> Unit = "ws_pong"
+
+///|
+// extern "c" fn ws_msg_body() -> Bytes = "ws_msg_body"
+
+///|
+extern "c" fn ws_msg_body_len() -> Int = "ws_msg_body_len"
+
+///|
+#owned(dst)
+extern "c" fn ws_msg_copy(dst : Bytes) -> Int = "ws_msg_copy"
+
+///|
 pub fn ws_send(id : String, msg : String) -> Unit {
   ws_send_native(to_cstr(id), to_cstr(msg))
+}
+
+///|
+pub fn ws_send_bytes(id : String, msg : Bytes) -> Unit {
+  ws_send_bytes_len_native(to_cstr(id), msg, msg.length())
+}
+
+///|
+pub fn ws_pong(id : String) -> Unit {
+  ws_pong_native(to_cstr(id))
 }
 
 ///|

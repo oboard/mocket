@@ -1,0 +1,22 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/mocket/static_file"
+
+import(
+  "oboard/mocket"
+)
+
+// Values
+fn new(String) -> StaticFileProvider
+
+// Errors
+
+// Types and methods
+pub struct StaticFileProvider {
+  path : String
+}
+impl @mocket.ServeStaticProvider for StaticFileProvider
+
+// Type aliases
+
+// Traits
+
