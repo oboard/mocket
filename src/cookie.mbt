@@ -48,10 +48,6 @@ pub fn cookie_to_string(cookie : Array[CookieItem]) -> String {
 }
 
 ///|
-
-///|
-
-///|
 pub fn parse_cookie(cookie : StringView) -> Map[String, CookieItem] {
   fn dequote(value : StringView) -> StringView {
     if value is ['"', .. rest, '"'] {
@@ -79,9 +75,7 @@ pub fn parse_cookie(cookie : StringView) -> Map[String, CookieItem] {
               x => Some(x)
             },
           }
-        "(?i:secure)" => {
-          { ..item, secure: Some(true) }
-        }
+        "(?i:secure)" => { ..item, secure: Some(true) }
         "(?i:httponly)" => { ..item, http_only: Some(true) }
         "(?i:samesite)" => {
           let same_site = lexmatch value with longest {
