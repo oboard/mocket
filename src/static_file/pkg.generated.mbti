@@ -6,7 +6,7 @@ import(
 )
 
 // Values
-fn new(String) -> StaticFileProvider
+pub fn new(String) -> StaticFileProvider
 
 // Errors
 
@@ -14,7 +14,7 @@ fn new(String) -> StaticFileProvider
 pub struct StaticFileProvider {
   path : String
 }
-impl @mocket.ServeStaticProvider for StaticFileProvider
+pub impl @mocket.ServeStaticProvider for StaticFileProvider
 
 // Type aliases
 

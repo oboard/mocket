@@ -11,8 +11,8 @@ import(
 
 // Types and methods
 type Person
-impl ToJson for Person
-impl @json.FromJson for Person
+pub impl ToJson for Person
+pub impl @json.FromJson for Person
 
 // Type aliases
 

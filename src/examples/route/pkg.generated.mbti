@@ -6,7 +6,7 @@ import(
 )
 
 // Values
-async fn logger_middleware(@mocket.MocketEvent, async () -> &@mocket.Responder noraise) -> &@mocket.Responder noraise
+pub async fn logger_middleware(@mocket.MocketEvent, async () -> &@mocket.Responder noraise) -> &@mocket.Responder noraise
 
 // Errors
 
