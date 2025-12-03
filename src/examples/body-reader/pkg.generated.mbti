@@ -1,0 +1,14 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/mocket/examples/body-reader"
+
+// Values
+
+// Errors
+
+// Types and methods
+type Csv
+
+// Type aliases
+
+// Traits
+
