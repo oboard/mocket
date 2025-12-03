@@ -1,12 +1,7 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "oboard/mocket/examples/static_assets"
 
-import(
-  "oboard/mocket"
-)
-
 // Values
-pub async fn logger_middleware(@mocket.MocketEvent, async () -> &@mocket.Responder noraise) -> &@mocket.Responder noraise
 
 // Errors
 

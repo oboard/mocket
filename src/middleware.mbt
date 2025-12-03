@@ -1,6 +1,9 @@
 ///|
+pub type MiddlewareNext = async () -> &Responder noraise
+
+///|
 // 中间件类型：接受 HttpEvent 和 next 函数，返回 HttpBody
-pub type Middleware = async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise
+pub type Middleware = async (MocketEvent, MiddlewareNext) -> &Responder noraise
 
 ///|
 // 注册中间件，支持路径匹配

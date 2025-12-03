@@ -243,6 +243,7 @@ pub(all) enum StatusCode {
 }
 pub fn StatusCode::from_int(Int) -> Self
 pub fn StatusCode::to_int(Self) -> Int
+pub impl Eq for StatusCode
 pub impl Show for StatusCode
 pub impl ToJson for StatusCode
 
@@ -274,6 +275,8 @@ pub fn WebSocketPeer::unsubscribe(Self, String) -> Unit
 pub type HttpHandler = async (MocketEvent) -> &Responder noraise
 
 pub type Middleware = async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise
+
+pub type MiddlewareNext = async () -> &Responder noraise
 
 pub type WebSocketHandler = (WebSocketEvent) -> Unit
 

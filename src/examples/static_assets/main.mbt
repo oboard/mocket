@@ -1,7 +1,7 @@
 ///|
 fn main {
   let app = @mocket.new()
-  app.use_middleware(logger_middleware)
+  app.use_middleware(logger_middleware())
   // Register global middleware
   app.static_assets("/", @static_file.new("./"))
 
@@ -18,13 +18,12 @@ fn main {
 }
 
 ///|
-pub async fn logger_middleware(
-  event : @mocket.MocketEvent,
-  next : async () -> &@mocket.Responder noraise,
-) -> &@mocket.Responder noraise {
-  let start_time = @env.now()
-  let res = next()
-  let duration = @env.now() - start_time
-  println("\{event.req.http_method} \{event.req.url} - \{duration}ms")
-  res
+fn logger_middleware() -> @mocket.Middleware {
+  (event, next) => {
+    let start_time = @env.now()
+    let res = next()
+    let duration = @env.now() - start_time
+    println("\{event.req.http_method} \{event.req.url} - \{duration}ms")
+    res
+  }
 }

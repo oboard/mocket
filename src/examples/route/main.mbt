@@ -4,7 +4,7 @@ fn main {
 
   // Register global middleware
   app
-  ..use_middleware(logger_middleware)
+  ..use_middleware(logger_middleware())
   ..use_middleware(@cors.handle_cors())
 
   // Text Response
@@ -57,17 +57,7 @@ fn main {
   ..post("/echo", e => e.req)
 
   // 404 Page
-  ..get("/404", _ => @mocket.HttpResponse::new(NotFound).body(
-    @mocket.html(
-      (
-        #|<html>
-        #|<body>
-        #|  <h1>404</h1>
-        #|</body>
-        #|</html>
-      ),
-    ),
-  ))
+  ..use_middleware(not_found_middleware())
 
   // Print Server URL
   for path in app.mappings.keys() {
@@ -79,13 +69,33 @@ fn main {
 }
 
 ///|
-pub async fn logger_middleware(
-  event : @mocket.MocketEvent,
-  next : async () -> &@mocket.Responder noraise,
-) -> &@mocket.Responder noraise {
-  let start_time = @env.now()
-  let res = next()
-  let duration = @env.now() - start_time
-  println("\{event.req.http_method} \{event.req.url} - \{duration}ms")
-  res
+pub fn not_found_middleware() -> @mocket.Middleware {
+  (event, next) => {
+    let res = next()
+    res.options(event.res)
+    if event.res.status_code == NotFound {
+      @mocket.html(
+        (
+          #|<html>
+          #|<body>
+          #|  <h1>Custom 404</h1>
+          #|</body>
+          #|</html>
+        ),
+      )
+    } else {
+      res
+    }
+  }
+}
+
+///|
+fn logger_middleware() -> @mocket.Middleware {
+  (event, next) => {
+    let start_time = @env.now()
+    let res = next()
+    let duration = @env.now() - start_time
+    println("\{event.req.http_method} \{event.req.url} - \{duration}ms")
+    res
+  }
 }

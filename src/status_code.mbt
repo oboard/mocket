@@ -127,7 +127,7 @@ pub(all) enum StatusCode {
   /// RFC 6585, 6
   NetworkAuthenticationRequired
   Custom(Int)
-} derive(Show, ToJson)
+} derive(Show, ToJson, Eq)
 
 ///|
 pub fn StatusCode::from_int(i : Int) -> StatusCode {
