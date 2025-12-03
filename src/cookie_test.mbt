@@ -64,6 +64,10 @@ test "parse_cookie_multiple_with_attributes" {
     }
     None => fail("Expected c2")
   }
+  match cookies.get("SameSite") {
+    Some(item) => assert_eq(item.value, "Strict")
+    None => fail("Expected SameSite cookie")
+  }
 }
 
 ///|

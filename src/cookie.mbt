@@ -110,6 +110,7 @@ pub fn parse_cookie(cookie : StringView) -> Map[String, CookieItem] {
 
   for curr = cookie {
     // TODO: more spec compliance
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes
     lexmatch curr with longest {
       ("[ \t]+", rest) => continue rest
       (

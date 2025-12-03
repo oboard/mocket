@@ -2,34 +2,16 @@
 package "oboard/mocket"
 
 import(
+  "illusory0x0/native"
   "moonbitlang/core/buffer"
-  "oboard/mocket/js"
 )
 
 // Values
-fn __get_port_by_connection_js(String) -> Int
-
-fn __get_port_by_connection_js_export((String) -> Int) -> Unit
-
-fn __ws_emit_js_export((String, Int, String, Bytes) -> Unit) -> Unit
-
-fn __ws_emit_js_port(String, Int, String, Bytes) -> Unit
-
-fn __ws_get_members_js(String) -> Array[String]
-
-fn __ws_state_js_export((String, String) -> Unit, (String, String) -> Unit, (String) -> Array[String]) -> Unit
-
-fn __ws_subscribe_js(String, String) -> Unit
-
-fn __ws_unsubscribe_js(String, String) -> Unit
+fn __ws_emit(@native.CStr, @native.CStr, @native.CStr) -> Unit
 
 fn async_run(async () -> Unit noraise) -> Unit
 
 fn cookie_to_string(Array[CookieItem]) -> String
-
-fn create_server((HttpRequestInternal, HttpResponseInternal, () -> Unit) -> Unit, Int) -> Unit
-
-fn encode_multipart(Map[String, MultipartFormValue], String) -> String
 
 async fn execute_middlewares(Array[(String, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise)], MocketEvent, async (MocketEvent) -> &Responder noraise) -> &Responder noraise
 
@@ -110,8 +92,8 @@ impl Responder for HttpRequest
 
 #external
 pub type HttpRequestInternal
-fn HttpRequestInternal::req_method(Self) -> String
-fn HttpRequestInternal::url(Self) -> String
+fn HttpRequestInternal::on_complete(Self, FuncRef[() -> Unit]) -> Unit
+fn HttpRequestInternal::on_headers(Self, FuncRef[(@native.CStr) -> Unit]) -> Unit
 
 pub(all) struct HttpResponse {
   mut status_code : StatusCode
@@ -129,8 +111,9 @@ impl Responder for HttpResponse
 
 #external
 pub type HttpResponseInternal
-fn HttpResponseInternal::end(Self, @js.Value) -> Unit
-fn HttpResponseInternal::url(Self) -> String
+
+#external
+pub type HttpServerInternal
 
 #alias(T)
 pub(all) struct Mocket {
