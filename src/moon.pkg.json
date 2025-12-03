@@ -3,7 +3,9 @@
     "oboard/mocket/js",
     "illusory0x0/native",
     "tonyfettes/uri",
-    "moonbitlang/x/fs"
+    "moonbitlang/x/fs",
+    "moonbitlang/x/crypto",
+    "moonbitlang/x/codec/base64"
   ],
   "expose": [
     "__ws_emit_js",

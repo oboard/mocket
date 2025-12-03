@@ -62,21 +62,23 @@ extern "js" fn HttpResponseInternal::write_head(
 ) -> Unit = "(s, statusCode, headers) => s.writeHead(statusCode, headers)"
 
 ///|
-pub extern "js" fn create_server(
+type NodeServerInternal
+
+///|
+#module("node:http")
+extern "js" fn create_server(
   handler : (HttpRequestInternal, HttpResponseInternal, () -> Unit) -> Unit,
+) -> NodeServerInternal = "createServer"
+
+///|
+pub extern "js" fn start_server(
+  server : NodeServerInternal,
   port : Int,
+  accept_key : (String) -> String,
 ) -> Unit =
-  #|(handler, port) => { 
-  #|    const server = require('node:http').createServer(handler);
+  #|(server, port, acceptKey) => { 
   #|    function start(server, port) {
-  #|      const http = require('node:http');
-  #|      const crypto = require('node:crypto');
-  #|      const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
   #|      const clientsById = new Map();
-  #|    
-  #|      function acceptKey(key) {
-  #|        return crypto.createHash('sha1').update(String(key) + GUID).digest('base64');
-  #|      }
   #|    
   #|      // 供 FFI 调用的发送函数
   #|      function sendText(socket, str) {
@@ -254,83 +256,91 @@ pub extern "js" fn create_server(
 
 ///|
 pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
-  create_server(
-    fn(req, res, _) {
-      // 优化：简化 headers 转换逻辑
-      let string_headers : Map[StringView, StringView] = {}
-      guard (try? req.headers().to_value().to_json()) is Ok(Object(headers)) else {
-        res.write_head(400, @js.Object::new().to_value())
-        res.end(@js.Value::cast_from("Invalid headers"))
-        return
+  let server = create_server(fn(req, res, _) {
+    // 优化：简化 headers 转换逻辑
+    let string_headers : Map[StringView, StringView] = {}
+    guard (try? req.headers().to_value().to_json()) is Ok(Object(headers)) else {
+      res.write_head(400, @js.Object::new().to_value())
+      res.end(@js.Value::cast_from("Invalid headers"))
+      return
+    }
+
+    // 批量转换 headers，减少单个处理的开销
+    headers.each(fn(key, value) {
+      if value is String(v) {
+        string_headers.set(key, v.to_string_view())
+      }
+    })
+    let (params, handler) = match
+      mocket.find_route(req.req_method(), req.url()) {
+      Some((h, p)) => (p, h)
+      _ => ({}, handle_not_found)
+    }
+    let event = {
+      req: {
+        http_method: req.req_method(),
+        url: req.url(),
+        headers: string_headers,
+        raw_body: "",
+      },
+      res: HttpResponse::new(OK),
+      params,
+    }
+    async_run(() => {
+      // 如果是 post，先等待 data 事件
+      if event.req.http_method == "POST" {
+        let buffer = @buffer.new()
+        (try? suspend(fn(res, _) {
+          req.on("data", data => buffer.write_string(data.to_string()))
+          req.on("end", _ => res(buffer.to_string()))
+        }))
+        |> ignore
+        event.req.raw_body = buffer.to_bytes()
       }
 
-      // 批量转换 headers，减少单个处理的开销
-      headers.each(fn(key, value) {
-        if value is String(v) {
-          string_headers.set(key, v.to_string_view())
-        }
-      })
-      let (params, handler) = match
-        mocket.find_route(req.req_method(), req.url()) {
-        Some((h, p)) => (p, h)
-        _ => ({}, handle_not_found)
-      }
-      let event = {
-        req: {
-          http_method: req.req_method(),
-          url: req.url(),
-          headers: string_headers,
-          raw_body: "",
+      // 执行中间件链和处理器
+      let responder = execute_middlewares(mocket.middlewares, event, handler)
+      // let boundary = "----------------moonbit-" + port.to_string()
+      responder.options(event.res)
+      res.write_head(
+        event.res.status_code.to_int(),
+        {
+          let headers_obj = (try? @js.Value::from_json(
+            event.res.headers.to_json(),
+          )).or(@js.Object::new().to_value())
+          if not(event.res.cookies.is_empty()) {
+            let cookies = event.res.cookies
+              .values()
+              .map(fn(c) { c.to_string() })
+              .to_array()
+            set_js_property(headers_obj, "Set-Cookie", array_to_js(cookies))
+          }
+          headers_obj
         },
-        res: HttpResponse::new(OK),
-        params,
-      }
-      async_run(() => {
-        // 如果是 post，先等待 data 事件
-        if event.req.http_method == "POST" {
-          let buffer = @buffer.new()
-          (try? suspend(fn(res, _) {
-            req.on("data", data => buffer.write_string(data.to_string()))
-            req.on("end", _ => res(buffer.to_string()))
-          }))
-          |> ignore
-          event.req.raw_body = buffer.to_bytes()
-        }
-
-        // 执行中间件链和处理器
-        let responder = execute_middlewares(mocket.middlewares, event, handler)
-        // let boundary = "----------------moonbit-" + port.to_string()
-        responder.options(event.res)
-        res.write_head(
-          event.res.status_code.to_int(),
-          {
-            let headers_obj = (try? @js.Value::from_json(
-              event.res.headers.to_json(),
-            )).or(@js.Object::new().to_value())
-            if not(event.res.cookies.is_empty()) {
-              let cookies = event.res.cookies
-                .values()
-                .map(fn(c) { c.to_string() })
-                .to_array()
-              set_js_property(headers_obj, "Set-Cookie", array_to_js(cookies))
-            }
-            headers_obj
-          },
-        )
-        let buf = @buffer.new()
-        responder.output(buf)
-        event.res.raw_body = buf.to_bytes()
-        res.end(@js.Value::cast_from(event.res.raw_body))
-      })
-    },
-    port,
-  )
+      )
+      let buf = @buffer.new()
+      responder.output(buf)
+      event.res.raw_body = buf.to_bytes()
+      res.end(@js.Value::cast_from(event.res.raw_body))
+    })
+  })
+  start_server(server, port, websocket_accept_key)
   register_ws_handler(mocket, port)
   __ws_emit_js_export(__ws_emit_js_port)
   __ws_state_js_export(
     __ws_subscribe_js, __ws_unsubscribe_js, __ws_get_members_js,
   )
   __get_port_by_connection_js_export(__get_port_by_connection_js)
+}
+
+///|
+fn websocket_accept_key(key : String) -> String {
+  let guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+  (key + guid)
+  |> @encoding/utf8.encode
+  |> @crypto.sha1
+  |> Bytes::from_array
+  |> @base64.encode
 }
 
 ///|
