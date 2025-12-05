@@ -8,6 +8,14 @@ A web framework for MoonBit.
 
 ## Quick Start
 
+```moonbit
+fn main {
+  let app = @mocket.new()
+  app.get("/", _ => "Hello, Mocket!")
+  app.serve(port=4000)
+}
+```
+
 Mocket supports both `js` and `native` backends.
 
 ### JavaScript Backend
