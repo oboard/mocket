@@ -94,7 +94,7 @@ pub impl Show for CookieItem with output(self, logger) -> Unit {
   }
   if self.same_site is Some(same_site) {
     logger.write_string("; SameSite=")
-    logger.write_string(same_site.to_json().as_string().unwrap())
+    logger.write_string(same_site.to_string())
   }
 }
 

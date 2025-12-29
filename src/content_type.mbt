@@ -11,22 +11,22 @@ fn parse_content_type(s : StringView) -> ContentType? {
   if parts.is_empty() {
     None
   } else {
-    let main_part_str = parts[0].trim_space()
+    let main_part_str = parts[0].trim()
     let media_type_parts = main_part_str.split("/").to_array()
     if media_type_parts.length() != 2 {
       None
     } else {
-      let media_type = media_type_parts[0].trim_space()
-      let subtype = media_type_parts[1].trim_space()
+      let media_type = media_type_parts[0].trim()
+      let subtype = media_type_parts[1].trim()
       let params = {}
       for i in 1..<parts.length() {
-        let param_part = parts[i].trim_space()
+        let param_part = parts[i].trim()
         let eq_index = param_part.find("=")
         try {
           match eq_index {
             Some(idx) => {
-              let key = param_part[0:idx].trim_space()
-              let value = param_part[idx + 1:].trim_space()
+              let key = param_part[0:idx].trim()
+              let value = param_part[idx + 1:].trim()
               params[key] = value
             }
             None => () // Ignore malformed parameters

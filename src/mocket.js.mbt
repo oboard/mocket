@@ -274,7 +274,7 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
     let (params, handler) = match
       mocket.find_route(req.req_method(), req.url()) {
       Some((h, p)) => (p, h)
-      _ => ({}, handle_not_found)
+      _ => ({}, handle_not_found())
     }
     let event = {
       req: {

@@ -166,14 +166,14 @@ fn handle_request_native(
   headers_str
   .split("\n")
   .each(fn(line) {
-    let line = line.trim_space()
+    let line = line.trim()
     if line == "" {
       return
     }
     try {
       if line.find(":") is Some(idx) {
-        let key = line[0:idx].trim_space()
-        let value = line[idx + 1:].trim_space()
+        let key = line[0:idx].trim()
+        let value = line[idx + 1:].trim()
         if key != "" {
           req_headers.set(key, value)
         }
@@ -184,7 +184,7 @@ fn handle_request_native(
   })
   let (params, handler) = match mocket.find_route(http_method, path) {
     Some((h, p)) => (p, h)
-    _ => ({}, handle_not_found)
+    _ => ({}, handle_not_found())
   }
   let event = {
     req: { http_method, url, raw_body: "", headers: req_headers },

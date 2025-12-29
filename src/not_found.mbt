@@ -1,4 +1,4 @@
 ///|
-pub async fn handle_not_found(_ : MocketEvent) -> &Responder noraise {
-  HttpResponse::new(NotFound).body("Not Found")
+pub fn handle_not_found() -> HttpHandler {
+  (_ : MocketEvent) => HttpResponse::new(NotFound).body("Not Found")
 }

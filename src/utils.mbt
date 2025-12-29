@@ -266,13 +266,13 @@ fn parse_multipart_part(
   for header in headers {
     let parts = header.split(":").to_array()
     if parts.length() >= 2 {
-      let key = parts[0].trim_space().to_lower()
-      let val = parts[1].trim_space()
+      let key = parts[0].trim().to_lower()
+      let val = parts[1].trim()
       if key == "content-disposition" {
         // form-data; name="field"; filename="file.txt"
         let directives = val.split(";").to_array()
         for i = 0; i < directives.length(); i = i + 1 {
-          let directive = directives[i].trim_space()
+          let directive = directives[i].trim()
           if directive.has_prefix("name=") {
             let d_str = directive.to_string()
             try {

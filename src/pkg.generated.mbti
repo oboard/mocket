@@ -17,7 +17,7 @@ pub async fn execute_middlewares(Array[(String, async (MocketEvent, async () -> 
 
 pub fn form_encode(Map[String, String]) -> String
 
-pub async fn handle_not_found(MocketEvent) -> &Responder noraise
+pub fn handle_not_found() -> async (MocketEvent) -> &Responder noraise
 
 pub fn html(&Show) -> &Responder
 

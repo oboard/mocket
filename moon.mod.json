@@ -1,9 +1,9 @@
 {
   "name": "oboard/mocket",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "deps": {
     "illusory0x0/native": "0.2.1",
-    "moonbitlang/x": "0.4.37",
+    "moonbitlang/x": "0.4.38",
     "tonyfettes/uri": "0.1.0"
   },
   "readme": "README.md",
