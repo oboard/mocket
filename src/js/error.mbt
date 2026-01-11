@@ -1,5 +1,7 @@
 ///|
-pub suberror Error_ Value
+pub suberror Error_ {
+  Error_(Value)
+}
 
 ///|
 extern "js" fn Error_::cause_ffi(self : Value) -> Value = "(self) => self.cause"

@@ -1,4 +1,6 @@
 node_modules/
 target/
+target
+_build/
 .mooncakes/
 .DS_Store
