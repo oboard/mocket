@@ -1,4 +1,7 @@
 {
+    "import":[
+        "moonbitlang/core/json"
+    ],
     "targets": {
         "async.mbt": [
             "js"

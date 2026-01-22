@@ -1,6 +1,6 @@
 {
   "name": "oboard/mocket",
-  "version": "0.6.4",
+  "version": "0.6.6",
   "deps": {
     "illusory0x0/native": "0.2.1",
     "moonbitlang/x": "0.4.38",
@@ -14,6 +14,5 @@
     "server"
   ],
   "description": "A web framework for MoonBit.",
-  "source": "src",
   "preferred-target": "native"
 }

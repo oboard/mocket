@@ -44,7 +44,7 @@ pub fn url_decode(bytes : BytesView) -> String {
   }
   let final_bytes = Bytes::from_array(res)
   let view = final_bytes[0:w]
-  @encoding/utf8.decode(view) catch {
+  @utf8.decode(view) catch {
     _ => ""
   }
 }
@@ -113,7 +113,7 @@ fn is_unreserved(b : Byte) -> Bool {
 
 ///|
 pub fn url_encode(s : String) -> String {
-  let bytes = @encoding/utf8.encode(s)
+  let bytes = @utf8.encode(s)
   let buf = StringBuilder::new()
   for i = 0; i < bytes.length(); i = i + 1 {
     let b = bytes[i]
@@ -188,7 +188,7 @@ pub fn parse_multipart(
   boundary : String,
 ) -> Map[String, MultipartFormValue] {
   let res = Map::new()
-  let boundary_bytes = @encoding/utf8.encode("--" + boundary)
+  let boundary_bytes = @utf8.encode("--" + boundary)
   let boundary_len = boundary_bytes.length()
   let len = bytes.length()
   let mut start = 0
@@ -258,7 +258,7 @@ fn parse_multipart_part(
   }
   let headers_bytes = part[0:body_start - 4]
   let body_bytes = part[body_start:len]
-  let headers_str = @encoding/utf8.decode(headers_bytes) catch { _ => return }
+  let headers_str = @utf8.decode(headers_bytes) catch { _ => return }
   let headers = headers_str.split("\r\n")
   let mut name = ""
   let mut filename : String? = None

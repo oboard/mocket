@@ -5,7 +5,11 @@
     "tonyfettes/uri",
     "moonbitlang/x/fs",
     "moonbitlang/x/crypto",
-    "moonbitlang/x/codec/base64"
+    "moonbitlang/x/codec/base64",
+    "moonbitlang/core/json",
+    "moonbitlang/core/strconv",
+    "moonbitlang/core/buffer",
+    "moonbitlang/core/encoding/utf8"
   ],
   "expose": [
     "__ws_emit_js",

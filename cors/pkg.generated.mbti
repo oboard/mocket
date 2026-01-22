@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "oboard/mocket/cors"
 
-import(
-  "oboard/mocket"
-)
+import {
+  "oboard/mocket",
+}
 
 // Values
 pub fn append_cors_headers(@mocket.MocketEvent, origin? : String, methods? : String, allow_headers? : String, expose_headers? : String, credentials? : Bool) -> Unit

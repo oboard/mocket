@@ -11,8 +11,9 @@ test "CookieItem::to_string" {
     same_site: Some(SameSiteNone),
   }
   let s = Show::to_string(item)
-  assert_eq(
-    s, "session_id=12345; Max-Age=3600; Path=/; Domain=example.com; Secure; HttpOnly; SameSite=none",
+  inspect(
+    s,
+    content="session_id=12345; Max-Age=3600; Path=/; Domain=example.com; Secure; HttpOnly; SameSite=SameSiteNone",
   )
 }
 

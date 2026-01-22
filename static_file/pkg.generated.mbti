@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "oboard/mocket/static_file"
 
-import(
-  "oboard/mocket"
-)
+import {
+  "oboard/mocket",
+}
 
 // Values
 pub fn new(String) -> StaticFileProvider

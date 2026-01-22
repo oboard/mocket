@@ -18,12 +18,12 @@ pub fn[T : BodyReader] HttpRequest::body(self : HttpRequest) -> T raise {
 
 ///|
 pub impl BodyReader for String with from_request(req : HttpRequest) -> String raise {
-  @encoding/utf8.decode(req.raw_body)
+  @utf8.decode(req.raw_body)
 }
 
 ///|
 pub impl BodyReader for Json with from_request(req : HttpRequest) -> Json raise {
-  @json.parse(@encoding/utf8.decode(req.raw_body))
+  @json.parse(@utf8.decode(req.raw_body))
 }
 
 ///|
@@ -61,5 +61,5 @@ test "read_body" {
       #|{"Hello":"World!"}
     ),
   )
-  @json.inspect(json, content={ "Hello": "World!" })
+  json_inspect(json, content={ "Hello": "World!" })
 }
