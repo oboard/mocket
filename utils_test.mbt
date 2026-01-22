@@ -1,13 +1,13 @@
 ///|
 test "url_decode" {
-  let encoded = @encoding/utf8.encode("Hello%20World%21")
+  let encoded = @utf8.encode("Hello%20World%21")
   let decoded = url_decode(encoded[:])
   assert_eq(decoded, "Hello World!")
 }
 
 ///|
 test "url_decode_plus" {
-  let encoded = @encoding/utf8.encode("Hello+World")
+  let encoded = @utf8.encode("Hello+World")
   let decoded = url_decode(encoded[:])
   assert_eq(decoded, "Hello World")
 }
@@ -15,7 +15,7 @@ test "url_decode_plus" {
 ///|
 test "url_decode_utf8" {
   // %E4%BD%A0%E5%A5%BD = 你好
-  let encoded = @encoding/utf8.encode("%E4%BD%A0%E5%A5%BD")
+  let encoded = @utf8.encode("%E4%BD%A0%E5%A5%BD")
   let decoded = url_decode(encoded[:])
   assert_eq(decoded, "你好")
 }
@@ -36,7 +36,7 @@ test "form_encode" {
 
 ///|
 test "parse_form_data" {
-  let encoded = @encoding/utf8.encode("key=value&foo=bar%20baz")
+  let encoded = @utf8.encode("key=value&foo=bar%20baz")
   let map = parse_form_data(encoded[:])
   assert_eq(map.get("key"), Some("value"))
   assert_eq(map.get("foo"), Some("bar baz"))
@@ -46,21 +46,17 @@ test "parse_form_data" {
 test "parse_multipart" {
   let boundary = "boundary"
   let body = "--boundary\r\nContent-Disposition: form-data; name=\"field1\"\r\n\r\nvalue1\r\n--boundary\r\nContent-Disposition: form-data; name=\"field2\"; filename=\"example.txt\"\r\nContent-Type: text/plain\r\n\r\nvalue2\r\n--boundary--"
-  let bytes = @encoding/utf8.encode(body)
+  let bytes = @utf8.encode(body)
   let parts = parse_multipart(bytes[:], boundary)
   inspect(
-    parts
-    .get("field1")
-    .map(v => @encoding/utf8.decode(v.data) catch { _ => "" }),
+    parts.get("field1").map(v => @utf8.decode(v.data) catch { _ => "" }),
     content=(
       #|Some("value1")
     ),
   )
   inspect(parts.get("field1").bind(fn(v) { v.filename }), content="None")
   inspect(
-    parts
-    .get("field2")
-    .map(v => @encoding/utf8.decode(v.data) catch { _ => "" }),
+    parts.get("field2").map(v => @utf8.decode(v.data) catch { _ => "" }),
     content=(
       #|Some("value2")
     ),

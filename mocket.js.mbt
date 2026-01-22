@@ -337,7 +337,7 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
 fn websocket_accept_key(key : String) -> String {
   let guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
   (key + guid)
-  |> @encoding/utf8.encode
+  |> @utf8.encode
   |> @crypto.sha1
   |> Bytes::from_array
   |> @base64.encode
@@ -401,7 +401,7 @@ pub fn __ws_emit_js_port(
   match event_type {
     "open" => handler(WebSocketEvent::Open(peer))
     "message" => {
-      let msg = @encoding/utf8.decode(payload) catch { _ => "" }
+      let msg = @utf8.decode(payload) catch { _ => "" }
       handler(WebSocketEvent::Message(peer, Text(msg)))
     }
     "binary" => handler(WebSocketEvent::Message(peer, Binary(payload)))
@@ -525,7 +525,7 @@ pub fn encode_multipart(
       None => ()
     }
     sb.write_string("\r\n")
-    sb.write_string(@encoding/utf8.decode(v.data) catch { _ => "" })
+    sb.write_string(@utf8.decode(v.data) catch { _ => "" })
     sb.write_string("\r\n")
   })
   sb.write_string("--" + boundary + "--\r\n")

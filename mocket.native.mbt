@@ -331,7 +331,7 @@ pub fn ws_publish(channel : String, msg : String) -> Unit {
 
 ///|
 fn[T : Show] to_cstr(s : T) -> @native.CStr {
-  let bytes = @encoding/utf8.encode(s.to_string())
+  let bytes = @utf8.encode(s.to_string())
   let utf8_ptr = @native.unsafe_coerce(bytes)
   utf8_ptr
 }
@@ -339,6 +339,6 @@ fn[T : Show] to_cstr(s : T) -> @native.CStr {
 ///|
 fn from_cstr(cstr : @native.CStr) -> String {
   let bytes = cstr.to_bytes()[:-1]
-  let utf8 = @encoding/utf8.decode(bytes) catch { _ => panic() }
+  let utf8 = @utf8.decode(bytes) catch { _ => panic() }
   utf8
 }

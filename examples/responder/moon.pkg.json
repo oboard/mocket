@@ -2,6 +2,6 @@
   "is-main": true,
   "import": [
     "oboard/mocket",
-    "oboard/mocket/cors"
+    "moonbitlang/core/json"
   ]
 }

@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "oboard/mocket/examples/route"
 
-import(
-  "oboard/mocket"
-)
+import {
+  "oboard/mocket",
+}
 
 // Values
 pub fn not_found_middleware() -> async (@mocket.MocketEvent, async () -> &@mocket.Responder noraise) -> &@mocket.Responder noraise
