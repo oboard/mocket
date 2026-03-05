@@ -30,30 +30,34 @@ fn main {
   //     "name": "oboard",
   //     "age": 21
   // }'
-  ..post("/json", event => try {
-    let person : Person = event.req.body()
-    HttpResponse::new(OK).body(
-      "Hello, \{person.name}. You are \{person.age} years old.",
-    )
-  } catch {
-    _ => HttpResponse::new(BadRequest).body("Invalid JSON")
+  ..post("/json", event => {
+    try {
+      let person : Person = event.req.body()
+      HttpResponse::new(OK).body(
+        "Hello, \{person.name}. You are \{person.age} years old.",
+      )
+    } catch {
+      _ => HttpResponse::new(BadRequest).body("Invalid JSON")
+    }
   })
 
   // Echo Server
   ..post("/echo", e => e.req)
 
   // 404 Page
-  ..get("/404", _ => HttpResponse::new(NotFound).body(
-    @mocket.html(
-      (
-        #|<html>
-        #|<body>
-        #|  <h1>404</h1>
-        #|</body>
-        #|</html>
+  .get("/404", _ => {
+    HttpResponse::new(NotFound).body(
+      @mocket.html(
+        (
+          #|<html>
+          #|<body>
+          #|  <h1>404</h1>
+          #|</body>
+          #|</html>
+        ),
       ),
-    ),
-  ))
+    )
+  })
 
   // Print Server URL
   for path in app.mappings.keys() {

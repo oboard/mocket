@@ -1,0 +1,9 @@
+import {
+  "moonbitlang/core/env",
+  "oboard/mocket",
+  "oboard/mocket/cors",
+}
+
+options(
+  "is-main": true,
+)

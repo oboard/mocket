@@ -250,7 +250,7 @@ pub fn Mocket::group(
     }
   })
   // 合并中间件
-  group.middlewares.iter().each(self.middlewares.push(_))
+  self.middlewares.append(group.middlewares)
 }
 
 ///|

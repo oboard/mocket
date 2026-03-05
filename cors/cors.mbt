@@ -56,27 +56,29 @@ pub fn handle_cors(
   credentials? : Bool = false,
   max_age? : Int = 86400,
 ) -> @mocket.Middleware {
-  (event, next) => if is_preflight_request(event) {
-    append_cors_preflight_headers(
-      event,
-      origin~,
-      methods~,
-      allow_headers~,
-      credentials~,
-      max_age~,
-    )
-    // 对于预检请求，直接返回空响应，不调用next()
-    @mocket.HttpResponse::new(OK).to_responder()
-  } else {
-    append_cors_headers(
-      event,
-      origin~,
-      methods~,
-      allow_headers~,
-      expose_headers~,
-      credentials~,
-    )
-    // 对于普通请求，继续执行后续中间件和处理器
-    next()
+  (event, next) => {
+    if is_preflight_request(event) {
+      append_cors_preflight_headers(
+        event,
+        origin~,
+        methods~,
+        allow_headers~,
+        credentials~,
+        max_age~,
+      )
+      // 对于预检请求，直接返回空响应，不调用next()
+      @mocket.HttpResponse::new(OK).to_responder()
+    } else {
+      append_cors_headers(
+        event,
+        origin~,
+        methods~,
+        allow_headers~,
+        expose_headers~,
+        credentials~,
+      )
+      // 对于普通请求，继续执行后续中间件和处理器
+      next()
+    }
   }
 }

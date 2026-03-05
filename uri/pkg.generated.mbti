@@ -1,0 +1,48 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/mocket/uri"
+
+// Values
+
+// Errors
+pub suberror ParseError {
+  InvalidScheme(BytesView)
+  InvalidHeirPart(BytesView)
+  InvalidPercentEncoding(BytesView)
+  MissingColon
+  MissingScheme
+  InvalidSegment(BytesView)
+  InvalidSchemeOrSegment(BytesView)
+  Invalid(BytesView)
+}
+
+// Types and methods
+pub struct Authority {
+  mut userinfo : BytesView?
+  mut host : Host
+  mut port : Int?
+}
+pub impl Eq for Authority
+pub impl Show for Authority
+
+pub enum Host {
+  IPv6Address(BytesView)
+  RegName(BytesView)
+}
+pub impl Eq for Host
+pub impl Show for Host
+
+pub struct Uri {
+  mut scheme : BytesView?
+  mut authority : Authority?
+  path : Array[BytesView]
+  mut query : BytesView?
+  mut fragment : BytesView?
+}
+pub fn Uri::parse(BytesView) -> Self raise ParseError
+pub impl Eq for Uri
+pub impl Show for Uri
+
+// Type aliases
+
+// Traits
+

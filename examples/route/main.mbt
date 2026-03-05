@@ -21,16 +21,18 @@ fn main {
       next()
     })
     group.get("/hello", _ => "Hello world!")
-    group.get("/json", _ => (
-      { "name": "John Doe", "age": 30, "city": "New York" } : Json))
+    group.get("/json", _ => {
+      ({ "name": "John Doe", "age": 30, "city": "New York" } : Json)
+    })
   })
 
   // JSON Response
-  ..get("/json", _event => (
-    { "name": "John Doe", "age": 30, "city": "New York" } : Json))
+  ..get("/json", _event => {
+    ({ "name": "John Doe", "age": 30, "city": "New York" } : Json)
+  })
 
   // Async Response
-  ..get("/async_data", async fn(_event) noraise {
+  ..get("/async_data", fn(_event) noraise {
     ({ "name": "John Doe", "age": 30, "city": "New York" } : Json)
   })
 
@@ -57,7 +59,7 @@ fn main {
   ..post("/echo", e => e.req)
 
   // 404 Page
-  ..use_middleware(not_found_middleware())
+  .use_middleware(not_found_middleware())
 
   // Print Server URL
   for path in app.mappings.keys() {

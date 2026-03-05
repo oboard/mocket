@@ -391,8 +391,10 @@ pub fn __ws_emit_js_port(
     "close" => {
       ignore(mocket.ws_clients.remove(connection_id))
       ignore(mocket.ws_client_port.remove(connection_id))
-      mocket.ws_channels.each((_ch, set) => if set.get(connection_id) is Some(_) {
-        ignore(set.remove(connection_id))
+      mocket.ws_channels.each((_ch, set) => {
+        if set.get(connection_id) is Some(_) {
+          ignore(set.remove(connection_id))
+        }
       })
     }
     _ => ()

@@ -201,16 +201,14 @@ fn handle_request_native(
     let responder = execute_middlewares(mocket.middlewares, event, handler)
     responder.options(event.res)
     res.status(event.res.status_code.to_int())
-    event.res.headers.each((key, value) => res.set_header(
-      to_cstr(key),
-      to_cstr(value),
-    ))
+    event.res.headers.each((key, value) => {
+      res.set_header(to_cstr(key), to_cstr(value))
+    })
     event.res.cookies
     .values()
-    .each(cookie => res.set_header(
-      to_cstr("Set-Cookie"),
-      to_cstr(cookie.to_string()),
-    ))
+    .each(cookie => {
+      res.set_header(to_cstr("Set-Cookie"), to_cstr(cookie.to_string()))
+    })
     let buf = @buffer.new()
     responder.output(buf)
     event.res.raw_body = buf.to_bytes()

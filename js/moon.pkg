@@ -1,0 +1,21 @@
+import {
+  "moonbitlang/core/json",
+}
+
+options(
+  targets: {
+    "async.mbt": [ "js" ],
+    "async_test.mbt": [ "js" ],
+    "cast.mbt": [ "js" ],
+    "error.mbt": [ "js" ],
+    "null.mbt": [ "js" ],
+    "object.mbt": [ "js" ],
+    "object_test.mbt": [ "js" ],
+    "optional.mbt": [ "js" ],
+    "require.mbt": [ "js" ],
+    "symbol.mbt": [ "js" ],
+    "union.mbt": [ "js" ],
+    "value.mbt": [ "js" ],
+    "value_test.mbt": [ "js" ],
+  },
+)

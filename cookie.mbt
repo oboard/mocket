@@ -44,7 +44,7 @@ pub fn HttpResponse::delete_cookie(self : HttpResponse, key : String) -> Unit {
 
 ///|
 pub fn cookie_to_string(cookie : Array[CookieItem]) -> String {
-  cookie.map(_.to_string()).join(";")
+  cookie.map(x => x.to_string()).join(";")
 }
 
 ///|

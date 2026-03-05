@@ -1,0 +1,7 @@
+import {
+  "oboard/mocket",
+}
+
+options(
+  "is-main": true,
+)
