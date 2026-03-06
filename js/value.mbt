@@ -153,7 +153,7 @@ pub impl @json.FromJson for Value with from_json(json : Json, path) {
 
 ///|
 pub fn Value::from_json_string(str : String) -> Value raise {
-  Error_::wrap(fn() { Value::from_json_string_ffi(str) })
+  Error_::wrap(() => Value::from_json_string_ffi(str))
 }
 
 ///|
@@ -161,7 +161,7 @@ extern "js" fn Value::from_json_string_ffi(str : String) -> Value = "JSON.parse"
 
 ///|
 pub fn Value::to_json_string(self : Value) -> String raise {
-  Error_::wrap(fn() { self.to_json_string_ffi() })
+  Error_::wrap(() => self.to_json_string_ffi())
 }
 
 ///|

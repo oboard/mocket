@@ -32,7 +32,7 @@ pub fn[K, V] Object::extend_iter(self : Object, it : Iter[(K, V)]) -> Unit {
 ///|
 pub fn[K, V] Object::from_iter(it : Iter[(K, V)]) -> Object {
   let obj = Object::new()
-  obj..extend_iter(it)
+  obj.extend_iter(it)
   obj
 }
 
@@ -46,7 +46,7 @@ pub fn[K, V] Object::extend_iter2(self : Object, it : Iter2[K, V]) -> Unit {
 ///|
 pub fn[K, V] Object::from_iter2(it : Iter2[K, V]) -> Object {
   let obj = Object::new()
-  obj..extend_iter2(it)
+  obj.extend_iter2(it)
   obj
 }
 

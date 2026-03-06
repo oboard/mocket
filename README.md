@@ -44,11 +44,6 @@ Then visit http://localhost:4000
 
 Minimum Example: https://github.com/oboard/mocket_example
 
-## Q & A
-### Why not moonbitlang/async ?
-
-moonbitlang/async is a great library, but it is not supported by the js backend.
-
 🙌快来吧！🙌
 
 QQ 群号：**949886784**

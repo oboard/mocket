@@ -15,6 +15,8 @@ pub fn cookie_to_string(Array[CookieItem]) -> String
 
 pub async fn execute_middlewares(Array[(String, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise)], MocketEvent, async (MocketEvent) -> &Responder noraise) -> &Responder noraise
 
+pub async fn fetch(String, body? : String, HttpMethod, data? : &Responder, headers? : Map[String, String], credentials? : FetchCredentials, mode? : FetchMode) -> HttpResponse
+
 pub fn form_encode(Map[String, String]) -> String
 
 pub fn handle_not_found() -> async (MocketEvent) -> &Responder noraise
@@ -57,6 +59,11 @@ pub fn ws_unsubscribe(String, String) -> Unit
 pub suberror ExecError
 pub impl Show for ExecError
 
+pub suberror FetchError {
+  RequestFailed(String)
+}
+pub impl Show for FetchError
+
 pub suberror IOError
 pub impl Show for IOError
 
@@ -77,8 +84,41 @@ pub(all) struct CookieItem {
 pub impl Eq for CookieItem
 pub impl Show for CookieItem
 
+pub(all) enum FetchCredentials {
+  Omit
+  SameOrigin
+  Include
+}
+pub fn FetchCredentials::to_string(Self) -> String
+pub impl Eq for FetchCredentials
+pub impl Show for FetchCredentials
+
+pub(all) enum FetchMode {
+  Cors
+  NoCors
+  SameOrigin
+  Navigate
+}
+pub fn FetchMode::to_string(Self) -> String
+pub impl Eq for FetchMode
+pub impl Show for FetchMode
+
 type Html
 pub impl Responder for Html
+
+pub(all) enum HttpMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+  HEAD
+  OPTIONS
+  TRACE
+  CONNECT
+}
+pub impl Eq for HttpMethod
+pub impl Show for HttpMethod
 
 pub(all) struct HttpRequest {
   http_method : String
@@ -105,6 +145,7 @@ pub fn HttpResponse::body(Self, &Responder) -> Self
 pub fn HttpResponse::delete_cookie(Self, String) -> Unit
 pub fn HttpResponse::json(Self, &ToJson) -> Self
 pub fn HttpResponse::new(StatusCode, headers? : Map[StringView, StringView], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
+pub fn[T : BodyReader] HttpResponse::read_body(Self) -> T raise
 pub fn HttpResponse::set_cookie(Self, String, String, max_age? : Int, path? : String, domain? : String, secure? : Bool, http_only? : Bool, same_site? : SameSiteOption) -> Unit
 pub fn HttpResponse::to_responder(Self) -> &Responder
 pub impl Responder for HttpResponse

@@ -18,7 +18,19 @@ pub fn[T : BodyReader] HttpRequest::body(self : HttpRequest) -> T raise {
 
 ///|
 pub impl BodyReader for String with from_request(req : HttpRequest) -> String raise {
-  @utf8.decode(req.raw_body)
+  let bytes = req.raw_body
+  let arr = bytes.to_array()
+  if arr.length() > 0 {
+    let mut zero_count = 0
+    arr.each(fn(b) { if b == b'\x00' { zero_count = zero_count + 1 } })
+    // Some servers may return UTF-16-ish payloads for HTML; printing such
+    // strings directly often looks like only a few characters (e.g. "<h").
+    if zero_count * 4 > arr.length() {
+      let filtered = arr.filter(fn(b) { b != b'\x00' })
+      return @utf8.decode(Bytes::from_array(filtered))
+    }
+  }
+  @utf8.decode(bytes)
 }
 
 ///|

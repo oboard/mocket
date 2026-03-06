@@ -373,20 +373,32 @@ fn parse_path_abempty_then_query(
   loop s {
     ['%', .. k] => continue parse_percent_encoding(k)
     ['/', .. k] as s => {
-      uri.path.push(source.slice_until(s))
+      let segment = source.slice_until(s)
+      if segment != "" {
+        uri.path.push(segment)
+      }
       parse_path_abempty_then_query(k, uri)
     }
     ['?', .. k] as s => {
-      uri.path.push(source.slice_until(s))
+      let segment = source.slice_until(s)
+      if segment != "" {
+        uri.path.push(segment)
+      }
       parse_query_then_fragment(k, uri)
     }
     ['#', .. k] as s => {
-      uri.path.push(source.slice_until(s))
+      let segment = source.slice_until(s)
+      if segment != "" {
+        uri.path.push(segment)
+      }
       parse_fragment(k, uri)
     }
     [b, .. k] if is_pchar_byte(b) => continue k
     [] as s => {
-      uri.path.push(source.slice_until(s))
+      let segment = source.slice_until(s)
+      if segment != "" {
+        uri.path.push(segment)
+      }
       s
     }
     [..] as s => raise ParseError::InvalidSegment(s)
@@ -443,7 +455,9 @@ fn parse_path_abempty_then_query_no_fragment(
   loop s {
     ['/', .. k] => {
       let (remaining, segment_val) = parse_segment(k)
-      uri.path.push(segment_val)
+      if segment_val != "" {
+        uri.path.push(segment_val)
+      }
       continue remaining
     }
     _ as s => parse_query_no_fragment_or_done(s, uri)
@@ -700,11 +714,11 @@ test "RFC 3986 Absolute URI Parsing" {
     query: None,
     fragment: None,
   }
-  inspect(
+  assert_eq(
     parse_absolute_uri(
       "http://example.com/path/to/resource?query=parameter", uri,
     ),
-    content="",
+    "",
   )
   assert_eq(uri.scheme, Some("http"))
   assert_eq(

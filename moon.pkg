@@ -29,6 +29,9 @@ options(
   "native-stub": [ "mocket.stub.c", "mongoose.c" ],
   "supported-targets": [ "js", "native", "llvm" ],
   targets: {
+    "fetch.js.mbt": [ "js" ],
+    "fetch.native.mbt": [ "native" ],
+    "fetch.wasm.mbt": [ "wasm", "wasm-gc" ],
     "mocket.js.mbt": [ "js" ],
     "mocket.native.mbt": [ "native" ],
     "mocket.wasm.mbt": [ "wasm", "wasm-gc" ],

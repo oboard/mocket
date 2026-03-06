@@ -17,6 +17,10 @@
 //
 // SPDX-License-Identifier: GPL-2.0-only or commercial
 
+#ifndef MG_TLS
+#define MG_TLS 3
+#endif
+
 #include "mongoose.h"
 
 #ifdef MG_ENABLE_LINES
