@@ -193,7 +193,15 @@ fn handle_request_native(
   }
   if http_method == "POST" {
     let req_body_len = req.req_body_len()
-    let body_bytes = req.body()[0:req_body_len]
+    let req_body = req.body()
+    let safe_body_len = if req_body_len < 0 {
+      0
+    } else if req_body_len > req_body.length() {
+      req_body.length()
+    } else {
+      req_body_len
+    }
+    let body_bytes = req_body[0:safe_body_len]
     event.req.raw_body = body_bytes.to_bytes()
   }
   async_run(async fn() noraise {

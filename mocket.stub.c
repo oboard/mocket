@@ -1,4 +1,5 @@
 #include "mongoose.h"
+#include "moonbit.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -338,23 +339,32 @@ const char *req_headers(request_t *req)
   return "";
 }
 
-// Get complete request body as uint8_t*
-uint8_t *req_body(request_t *req)
+// Get complete request body as MoonBit Bytes object
+moonbit_bytes_t req_body(request_t *req)
 {
-  if (req && req->hm && req->hm->body.len > 0)
+  if (!req || !req->hm || !req->hm->body.buf || req->hm->body.len == 0)
   {
-    return (uint8_t *)req->hm->body.buf;
+    return moonbit_empty_int8_array;
   }
-  return NULL;
+
+  size_t len = req->hm->body.len;
+  if (len > INT32_MAX)
+  {
+    len = INT32_MAX;
+  }
+  moonbit_bytes_t buf = moonbit_make_bytes_raw((int32_t)len);
+  memcpy(buf, req->hm->body.buf, len);
+  return buf;
 }
 
-size_t req_body_len(request_t *req)
+int32_t req_body_len(request_t *req)
 {
-  if (req && req->hm)
+  if (!req || !req->hm)
   {
-    return req->hm->body.len;
+    return 0;
   }
-  return 0;
+  size_t len = req->hm->body.len;
+  return len > INT32_MAX ? INT32_MAX : (int32_t)len;
 }
 
 // Set response header (wrapper for res_set_header)
