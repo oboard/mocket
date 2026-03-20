@@ -170,16 +170,13 @@ fn handle_request_native(
     if line == "" {
       return
     }
-    try {
-      if line.find(":") is Some(idx) {
-        let key = line[0:idx].trim()
-        let value = line[idx + 1:].trim()
-        if key != "" {
-          req_headers.set(key, value)
-        }
+
+    if line.find(":") is Some(idx) {
+      let key = line[0:idx].trim()
+      let value = line[idx + 1:].trim()
+      if key != "" {
+        req_headers.set(key, value)
       }
-    } catch {
-      _ => ()
     }
   })
   let (params, handler) = match mocket.find_route(http_method, path) {

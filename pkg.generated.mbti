@@ -2,8 +2,8 @@
 package "oboard/mocket"
 
 import {
-  "illusory0x0/native",
   "moonbitlang/core/buffer",
+  "oboard/mocket/native",
 }
 
 // Values

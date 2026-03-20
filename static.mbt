@@ -55,9 +55,7 @@ pub fn Mocket::static_assets(
       event.res.headers.set("Allow", "GET, HEAD")
       return HttpResponse::new(MethodNotAllowed)
     }
-    let original_id = event.req.url[path.length():].to_string() catch {
-      _ => return next()
-    }
+    let original_id = event.req.url[path.length():].to_string()
 
     // Parse Accept-Encoding
     // Headers are Map[StringView, StringView]

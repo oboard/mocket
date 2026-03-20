@@ -22,17 +22,11 @@ fn parse_content_type(s : StringView) -> ContentType? {
       for i in 1..<parts.length() {
         let param_part = parts[i].trim()
         let eq_index = param_part.find("=")
-        try {
-          match eq_index {
-            Some(idx) => {
-              let key = param_part[0:idx].trim()
-              let value = param_part[idx + 1:].trim()
-              params[key] = value
-            }
-            None => () // Ignore malformed parameters
-          }
-        } catch {
-          _ => ()
+
+        if eq_index is Some(idx) {
+          let key = param_part[0:idx].trim()
+          let value = param_part[idx + 1:].trim()
+          params[key] = value
         }
       }
       Some({ media_type, subtype, params })

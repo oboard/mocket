@@ -45,14 +45,10 @@ fn parse_headers_native(headers_text : String) -> Map[StringView, StringView] {
     let line = line.trim()
     if line != "" {
       if line.find(":") is Some(idx) {
-        try {
-          let key = line[:idx].trim()
-          let value = line[idx + 1:].trim()
-          if key != "" {
-            headers.set(key, value)
-          }
-        } catch {
-          _ => ()
+        let key = line[:idx].trim()
+        let value = line[idx + 1:].trim()
+        if key != "" {
+          headers.set(key, value)
         }
       }
     }

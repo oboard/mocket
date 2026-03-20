@@ -1,6 +1,6 @@
 import {
   "oboard/mocket/js",
-  "illusory0x0/native",
+  "oboard/mocket/native",
   "oboard/mocket/uri",
   "moonbitlang/x/fs",
   "moonbitlang/x/crypto",
@@ -27,7 +27,6 @@ options(
     "ws_publish",
   ],
   "native-stub": [ "mocket.stub.c", "mongoose.c" ],
-  "supported-targets": [ "js", "native", "llvm" ],
   targets: {
     "fetch.js.mbt": [ "js" ],
     "fetch.native.mbt": [ "native" ],

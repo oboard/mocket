@@ -275,20 +275,12 @@ fn parse_multipart_part(
           let directive = directives[i].trim()
           if directive.has_prefix("name=") {
             let d_str = directive.to_string()
-            try {
-              let substr = d_str[6:d_str.length() - 1]
-              name = substr.to_string()
-            } catch {
-              _ => ()
-            }
+            let substr = d_str[6:d_str.length() - 1]
+            name = substr.to_string()
           } else if directive.has_prefix("filename=") {
             let d_str = directive.to_string()
-            try {
-              let substr = d_str[10:d_str.length() - 1]
-              filename = Some(substr.to_string())
-            } catch {
-              _ => ()
-            }
+            let substr = d_str[10:d_str.length() - 1]
+            filename = Some(substr.to_string())
           }
         }
       } else if key == "content-type" {

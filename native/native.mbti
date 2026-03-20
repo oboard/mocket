@@ -1,0 +1,124 @@
+package "illusory0x0/native"
+
+// Values
+fn free(Ptr[Byte]) -> Unit
+
+fn malloc(UInt64) -> Ptr[Byte]
+
+fn memcmp(ConstPtr[Byte], ConstPtr[Byte], UInt64) -> Int
+
+fn memcpy(Ptr[Byte], ConstPtr[Byte], UInt64) -> Unit
+
+fn memmove(Ptr[Byte], ConstPtr[Byte], UInt64) -> Unit
+
+fn memset(Ptr[Byte], Byte, UInt64) -> Unit
+
+fn realloc(Ptr[Byte], UInt64) -> Ptr[Byte]
+
+let size_of_byte : Int64
+
+let size_of_char : Int64
+
+let size_of_double : Int64
+
+let size_of_float : Int64
+
+let size_of_int : Int64
+
+let size_of_int16 : Int64
+
+let size_of_int64 : Int64
+
+let size_of_uint : Int64
+
+let size_of_uint16 : Int64
+
+let size_of_uint64 : Int64
+
+fn[V, E : Error] try_finally(() -> V raise E, finally_~ : () -> Unit) -> V raise E
+
+fn[A, B] unsafe_coerce(A) -> B
+
+// Types and methods
+type CStr
+fn CStr::from_bytes(Bytes) -> (Self, Rc[Bytes])
+fn CStr::reinterpret_as_const_byte_ptr(Self) -> ConstPtr[Byte]
+fn CStr::to_bytes(Self) -> Bytes
+fn CStr::unsafe_from_byte_ptr(Ptr[Byte]) -> Self
+fn CStr::unsafe_from_const_byte_ptr(ConstPtr[Byte]) -> Self
+
+type ConstPtr[T]
+fn[T : Sized] ConstPtr::add(Self[T], Int64) -> Self[T]
+fn[T] ConstPtr::compare(Self[T], Self[T]) -> Int
+fn[T] ConstPtr::from_rc_bytes(Rc[Bytes]) -> Self[T]
+fn[T] ConstPtr::from_rc_fixedarray(Rc[FixedArray[T]]) -> Self[T]
+fn[T] ConstPtr::from_rc_string(Rc[String]) -> Self[T]
+fn[T : Getter] ConstPtr::get(Self[T]) -> T
+fn[T] ConstPtr::is_null(Self[T]) -> Bool
+fn[T] ConstPtr::null_pointer() -> Self[T]
+fn[T] ConstPtr::reinterpret_as_const_byte_ptr(Self[T]) -> Self[Byte]
+fn[T] ConstPtr::reinterpret_as_int64(Self[T]) -> Int64
+fn[T] ConstPtr::reinterpret_as_uint64(Self[T]) -> UInt64
+fn[T : Sized] ConstPtr::sub(Self[T], Self[T]) -> Int64
+
+type Ptr[T]
+fn[T : Sized] Ptr::add(Self[T], Int64) -> Self[T]
+fn[T] Ptr::compare(Self[T], Self[T]) -> Int
+fn[T] Ptr::from_rc_fixedarray(Rc[FixedArray[T]]) -> Self[T]
+fn[T : Getter] Ptr::get(Self[T]) -> T
+fn[T] Ptr::is_null(Self[T]) -> Bool
+fn[T] Ptr::null_pointer() -> Self[T]
+fn[T] Ptr::reinterpret_as_byte_ptr(Self[T]) -> Self[Byte]
+fn[T] Ptr::reinterpret_as_const_byte_ptr(Self[T]) -> ConstPtr[Byte]
+fn[T] Ptr::reinterpret_as_int64(Self[T]) -> Int64
+fn[T] Ptr::reinterpret_as_uint64(Self[T]) -> UInt64
+fn[T : Setter] Ptr::set(Self[T], T) -> Unit
+fn[T : Sized] Ptr::sub(Self[T], Self[T]) -> Int64
+fn[T] Ptr::to_const_ptr(Self[T]) -> ConstPtr[T]
+
+type Rc[T]
+fn Rc::from_bytes(Bytes) -> Self[Bytes]
+fn[T] Rc::from_fixedarray(FixedArray[T]) -> Self[FixedArray[T]]
+fn[T] Rc::release(Self[T]) -> Unit
+fn[R] Rc::scope_bytes(Bytes, (ConstPtr[Byte], Int) -> R) -> R
+fn[T, R] Rc::scope_fixedarray(FixedArray[T], (Ptr[T], Int) -> R) -> R
+
+// Type aliases
+
+// Traits
+trait Getter
+impl Getter for Byte
+impl Getter for Char
+impl Getter for Int
+impl Getter for Int16
+impl Getter for Int64
+impl Getter for UInt
+impl Getter for UInt16
+impl Getter for UInt64
+impl Getter for Float
+impl Getter for Double
+
+trait Setter
+impl Setter for Byte
+impl Setter for Char
+impl Setter for Int
+impl Setter for Int16
+impl Setter for Int64
+impl Setter for UInt
+impl Setter for UInt16
+impl Setter for UInt64
+impl Setter for Float
+impl Setter for Double
+
+trait Sized
+impl Sized for Byte
+impl Sized for Char
+impl Sized for Int
+impl Sized for Int16
+impl Sized for Int64
+impl Sized for UInt
+impl Sized for UInt16
+impl Sized for UInt64
+impl Sized for Float
+impl Sized for Double
+
