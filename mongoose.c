@@ -1931,6 +1931,9 @@ static void static_cb(struct mg_connection *c, int ev, void *ev_data) {
     size_t n, max = MG_IO_SIZE, space;
     size_t *cl = (size_t *) &c->data[(sizeof(c->data) - sizeof(size_t)) /
                                      sizeof(size_t) * sizeof(size_t)];
+    // Use a wider send window for large static files without inflating
+    // formatter-backed keep-alive buffers for tiny replies.
+    if (*cl > 4096 && max < 4096) max = 4096;
     if (c->send.size < max) mg_iobuf_resize(&c->send, max);
     if (c->send.len >= c->send.size) return;  // Rate limit
     if ((space = c->send.size - c->send.len) > *cl) space = *cl;
@@ -7734,7 +7737,10 @@ size_t mg_queue_printf(struct mg_queue *q, const char *fmt, ...) {
 
 static void mg_pfn_iobuf_private(char ch, void *param, bool expand) {
   struct mg_iobuf *io = (struct mg_iobuf *) param;
-  if (expand && io->len + 2 > io->size) mg_iobuf_resize(io, io->len + 2);
+  // Grow geometrically, but do not impose a large minimum for small
+  // formatted writes because connection send buffers retain their capacity.
+  if (expand && io->len + 2 > io->size)
+    mg_iobuf_resize(io, io->size > 0 ? io->size * 2 : io->len + 2);
   if (io->len + 2 <= io->size) {
     io->buf[io->len++] = (uint8_t) ch;
     io->buf[io->len] = 0;
