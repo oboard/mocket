@@ -20,16 +20,12 @@ pub struct Authority {
   mut userinfo : BytesView?
   mut host : Host
   mut port : Int?
-}
-pub impl Eq for Authority
-pub impl Show for Authority
+} derive(Eq, Show)
 
 pub enum Host {
   IPv6Address(BytesView)
   RegName(BytesView)
-}
-pub impl Eq for Host
-pub impl Show for Host
+} derive(Eq, Show)
 
 pub struct Uri {
   mut scheme : BytesView?
@@ -37,10 +33,8 @@ pub struct Uri {
   path : Array[BytesView]
   mut query : BytesView?
   mut fragment : BytesView?
-}
+} derive(Eq, Show)
 pub fn Uri::parse(BytesView) -> Self raise ParseError
-pub impl Eq for Uri
-pub impl Show for Uri
 
 // Type aliases
 

@@ -24,7 +24,7 @@ pub fn WebSocketPeer::pong(self : WebSocketPeer) -> Unit {
 
 ///|
 pub fn WebSocketPeer::subscribe(self : WebSocketPeer, channel : String) -> Unit {
-  if not(self.subscribed_channels.contains(channel)) {
+  if !self.subscribed_channels.contains(channel) {
     self.subscribed_channels.push(channel)
     ws_subscribe(self.connection_id, channel)
   }

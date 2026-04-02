@@ -10,9 +10,7 @@ import {
 // Errors
 
 // Types and methods
-type Person
-pub impl ToJson for Person
-pub impl @json.FromJson for Person
+type Person derive(ToJson, @json.FromJson)
 
 // Type aliases
 

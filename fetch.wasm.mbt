@@ -9,11 +9,14 @@ pub async fn fetch(
   mode? : FetchMode,
 ) -> HttpResponse raise Error {
   ignore(url)
-  ignore(body)
   ignore(http_method)
-  ignore(data)
-  ignore(headers)
   ignore(credentials)
   ignore(mode)
-  raise FetchError::RequestFailed("fetch is not implemented on wasm target")
+  ignore(body)
+  ignore(data)
+  ignore(headers)
+  ignore(prepare_fetch_payload)
+  suspend(fn(_ok_cb, reject) {
+    reject(FetchError::RequestFailed("fetch is not implemented on wasm target"))
+  })
 }

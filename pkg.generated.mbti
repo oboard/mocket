@@ -56,19 +56,15 @@ pub fn ws_subscribe(String, String) -> Unit
 pub fn ws_unsubscribe(String, String) -> Unit
 
 // Errors
-pub suberror ExecError
-pub impl Show for ExecError
+pub suberror ExecError derive(Show)
 
 pub suberror FetchError {
   RequestFailed(String)
-}
-pub impl Show for FetchError
+} derive(Show)
 
-pub suberror IOError
-pub impl Show for IOError
+pub suberror IOError derive(Show)
 
-pub suberror NetworkError
-pub impl Show for NetworkError
+pub suberror NetworkError derive(Show)
 
 // Types and methods
 pub(all) struct CookieItem {
@@ -80,28 +76,23 @@ pub(all) struct CookieItem {
   secure : Bool?
   http_only : Bool?
   same_site : SameSiteOption?
-}
-pub impl Eq for CookieItem
+} derive(Eq)
 pub impl Show for CookieItem
 
 pub(all) enum FetchCredentials {
   Omit
   SameOrigin
   Include
-}
+} derive(Eq, Show)
 pub fn FetchCredentials::to_string(Self) -> String
-pub impl Eq for FetchCredentials
-pub impl Show for FetchCredentials
 
 pub(all) enum FetchMode {
   Cors
   NoCors
   SameOrigin
   Navigate
-}
+} derive(Eq, Show)
 pub fn FetchMode::to_string(Self) -> String
-pub impl Eq for FetchMode
-pub impl Show for FetchMode
 
 type Html
 pub impl Responder for Html
@@ -116,9 +107,7 @@ pub(all) enum HttpMethod {
   OPTIONS
   TRACE
   CONNECT
-}
-pub impl Eq for HttpMethod
-pub impl Show for HttpMethod
+} derive(Eq, Show)
 
 pub(all) struct HttpRequest {
   http_method : String
@@ -202,9 +191,7 @@ pub(all) enum SameSiteOption {
   Lax
   Strict
   SameSiteNone
-}
-pub impl Eq for SameSiteOption
-pub impl Show for SameSiteOption
+} derive(Eq, Show)
 pub impl ToJson for SameSiteOption
 
 pub(all) struct StaticAssetMeta {
@@ -281,12 +268,9 @@ pub(all) enum StatusCode {
   NotExtended
   NetworkAuthenticationRequired
   Custom(Int)
-}
+} derive(Eq, Show, ToJson)
 pub fn StatusCode::from_int(Int) -> Self
 pub fn StatusCode::to_int(Self) -> Int
-pub impl Eq for StatusCode
-pub impl Show for StatusCode
-pub impl ToJson for StatusCode
 
 pub enum WebSocketAggregatedMessage {
   Text(String)

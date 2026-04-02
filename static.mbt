@@ -43,7 +43,7 @@ pub fn Mocket::static_assets(
   provider : &ServeStaticProvider,
 ) -> Unit {
   self.use_middleware(async fn(event, next) noraise {
-    if not(match_path(path, event.req.url) is None) {
+    if !(match_path(path, event.req.url) is None) {
       return next()
     }
 
@@ -126,7 +126,7 @@ pub fn Mocket::static_assets(
         }
         match meta.etag {
           Some(etag) => {
-            if not(event.res.headers.contains("ETag")) {
+            if !event.res.headers.contains("ETag") {
               event.res.headers.set("ETag", etag)
             }
             if event.req.headers.get("If-None-Match") == Some(etag) {
@@ -137,7 +137,7 @@ pub fn Mocket::static_assets(
         }
 
         // Content-Type
-        if not(event.res.headers.contains("Content-Type")) {
+        if !event.res.headers.contains("Content-Type") {
           match meta.asset_type {
             Some(t) => event.res.headers.set("Content-Type", t)
             None => {
@@ -156,7 +156,7 @@ pub fn Mocket::static_assets(
         // Content-Encoding
         match meta.encoding {
           Some(enc) =>
-            if not(event.res.headers.contains("Content-Encoding")) {
+            if !event.res.headers.contains("Content-Encoding") {
               event.res.headers.set("Content-Encoding", enc)
             }
           None => ()
@@ -165,7 +165,7 @@ pub fn Mocket::static_assets(
         // Content-Length
         match meta.size {
           Some(size) =>
-            if size > 0L && not(event.res.headers.contains("Content-Length")) {
+            if size > 0L && !event.res.headers.contains("Content-Length") {
               event.res.headers.set("Content-Length", size.to_string())
             }
           None => ()

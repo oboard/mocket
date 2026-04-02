@@ -308,7 +308,7 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
           let headers_obj = (try? @js.Value::from_json(
             event.res.headers.to_json(),
           )).or(@js.Object::new().to_value())
-          if not(event.res.cookies.is_empty()) {
+          if !event.res.cookies.is_empty() {
             let cookies = event.res.cookies
               .values()
               .map(fn(c) { c.to_string() })
@@ -358,7 +358,7 @@ extern "js" fn _init_bindings_map() -> @js.Value = "() => { if (!globalThis.ws_p
 pub fn register_ws_handler(mocket : Mocket, port : Int) -> Unit {
   let mut done = false
   mocket.ws_static_routes.each(fn(_, handler) {
-    if not(done) {
+    if !done {
       ws_handler_map.set(port, handler)
       ws_mocket_map.set(port, mocket)
       ignore(_init_bindings_map())

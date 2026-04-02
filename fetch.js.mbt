@@ -54,7 +54,7 @@ pub async fn fetch(
   if req_body is Some(body_str) {
     options["body"] = body_str
   }
-  if not(req_headers.is_empty()) {
+  if !req_headers.is_empty() {
     let headers_obj = @js.Object::new()
     req_headers.each(fn(k, v) { headers_obj[k] = v })
     options["headers"] = headers_obj.to_value()
