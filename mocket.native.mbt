@@ -104,7 +104,7 @@ let ws_handler_map : Map[Int, WebSocketHandler] = Map::new()
 pub fn register_ws_handler(mocket : Mocket, port : Int) -> Unit {
   let mut done = false
   mocket.ws_static_routes.each(fn(_, handler) {
-    if not(done) {
+    if !done {
       ws_handler_map.set(port, handler)
       done = true
     }

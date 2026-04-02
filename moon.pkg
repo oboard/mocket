@@ -7,6 +7,7 @@ import {
   "moonbitlang/x/codec/base64",
   "moonbitlang/core/json",
   "moonbitlang/core/strconv",
+  "moonbitlang/core/string",
   "moonbitlang/core/buffer",
   "moonbitlang/core/encoding/utf8",
 }

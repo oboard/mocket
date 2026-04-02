@@ -2,7 +2,7 @@
 // 匹配路径并提取参数 - 重写版本，消除复杂性
 fn match_path(template : String, path : String) -> Map[String, StringView]? {
   // 静态路径直接比较 - 好品味：消除特殊情况
-  if not(template.contains(":")) && not(template.contains("*")) {
+  if !template.contains(":") && !template.contains("*") {
     return if template == path { Some({}) } else { None }
   }
 
