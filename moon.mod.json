@@ -1,6 +1,6 @@
 {
   "name": "oboard/mocket",
-  "version": "0.6.11",
+  "version": "0.6.12",
   "deps": {
     "moonbitlang/x": "0.4.41"
   },
