@@ -145,7 +145,7 @@ pub fn form_encode(map : Map[String, String]) -> String {
   let buf = StringBuilder::new()
   let mut first = true
   map.each(fn(k, v) {
-    if not(first) {
+    if !first {
       buf.write_char('&')
     }
     first = false

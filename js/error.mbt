@@ -10,7 +10,7 @@ extern "js" fn Error_::cause_ffi(self : Value) -> Value = "(self) => self.cause"
 pub fn Error_::cause(self : Error_) -> Value? {
   let Error_(inner) = self
   let cause = Error_::cause_ffi(inner)
-  guard not(cause.is_undefined()) else { None }
+  guard !cause.is_undefined() else { None }
   Some(cause.cast())
 }
 
