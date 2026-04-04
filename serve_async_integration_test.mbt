@@ -468,6 +468,13 @@ fn raw_websocket_close_frame(code : UInt16, reason : Bytes) -> Bytes {
 }
 
 ///|
+fn raw_websocket_small_frame(first_byte : Byte, payload : Bytes) -> Bytes {
+  Bytes::from_array(
+    [first_byte, payload.length().to_byte(), ..payload.to_array()],
+  )
+}
+
+///|
 fn raw_header_value(raw_headers : String, header_name : String) -> String? {
   let needle = header_name.to_lower()
   for line in raw_headers.split("\r\n") {
@@ -1272,6 +1279,182 @@ async test "serve_async ignores unsolicited websocket pong frames without leakin
     assert_eq(healthy_response.code, 200)
     inspect(healthy_body.text(), content="ok")
     assert_eq(healthy_hits.val, 1)
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async routes fragmented websocket messages while replying to in-flight pings" {
+  let opened : Ref[Int] = Ref::new(0)
+  let closed : Ref[Int] = Ref::new(0)
+  let messages : Ref[Int] = Ref::new(0)
+  let healthy_hits : Ref[Int] = Ref::new(0)
+  let app = new()
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => opened.val += 1
+      Message(peer, Text(text)) => {
+        messages.val += 1
+        peer.text(text)
+      }
+      Message(peer, Binary(bytes)) => {
+        messages.val += 1
+        peer.binary(bytes)
+      }
+      Close(_) => closed.val += 1
+    }
+  })
+  app.get("/healthy", _ => {
+    healthy_hits.val += 1
+    "ok"
+  })
+  with_test_server(app, port => {
+    let http_client = @http.Client::new("http://127.0.0.1:\{port}")
+    defer http_client.close()
+    ignore(@websocket.from_http_client(http_client, "/ws"))
+
+    http_client.write(raw_websocket_small_frame(b'\x01', b"a"))
+    http_client.write(raw_websocket_small_frame(b'\x89', b"mid!"))
+    http_client.write(raw_websocket_small_frame(b'\x80', b"b"))
+
+    let (pong_opcode, pong_payload) = read_raw_websocket_frame(http_client)
+    assert_eq(pong_opcode, 0x0a)
+    inspect(
+      @utf8.decode(pong_payload) catch {
+        _ => fail("websocket pong payload was not valid UTF-8")
+      },
+      content="mid!",
+    )
+
+    let (text_opcode, text_payload) = read_raw_websocket_frame(http_client)
+    assert_eq(text_opcode, 0x01)
+    inspect(
+      @utf8.decode(text_payload) catch {
+        _ => fail("websocket text payload was not valid UTF-8")
+      },
+      content="ab",
+    )
+    assert_eq(messages.val, 1)
+
+    http_client.write(raw_websocket_close_frame(1000, b""))
+    let (close_code, close_reason) = read_raw_websocket_close_frame(http_client)
+    assert_eq(close_code, @websocket.CloseCode::Normal)
+    inspect(close_reason.unwrap_or(""), content="")
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
+    })
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+    assert_eq(healthy_hits.val, 1)
+
+    let healthy_ws_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+    defer healthy_ws_client.close()
+    healthy_ws_client.send_text("ok")
+    inspect(healthy_ws_client.recv().read_all().text(), content="ok")
+    healthy_ws_client.send_close()
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 2)
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async replies to multiple websocket pings in order without leaking control messages" {
+  let opened : Ref[Int] = Ref::new(0)
+  let closed : Ref[Int] = Ref::new(0)
+  let messages : Ref[Int] = Ref::new(0)
+  let healthy_hits : Ref[Int] = Ref::new(0)
+  let app = new()
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => opened.val += 1
+      Message(peer, Text(text)) => {
+        messages.val += 1
+        peer.text(text)
+      }
+      Message(peer, Binary(bytes)) => {
+        messages.val += 1
+        peer.binary(bytes)
+      }
+      Close(_) => closed.val += 1
+    }
+  })
+  app.get("/healthy", _ => {
+    healthy_hits.val += 1
+    "ok"
+  })
+  with_test_server(app, port => {
+    let http_client = @http.Client::new("http://127.0.0.1:\{port}")
+    defer http_client.close()
+    ignore(@websocket.from_http_client(http_client, "/ws"))
+
+    http_client.write(raw_websocket_small_frame(b'\x89', b"p1"))
+    http_client.write(raw_websocket_small_frame(b'\x89', b"p2"))
+
+    let (first_opcode, first_payload) = read_raw_websocket_frame(http_client)
+    assert_eq(first_opcode, 0x0a)
+    inspect(
+      @utf8.decode(first_payload) catch {
+        _ => fail("first websocket pong payload was not valid UTF-8")
+      },
+      content="p1",
+    )
+
+    let (second_opcode, second_payload) = read_raw_websocket_frame(http_client)
+    assert_eq(second_opcode, 0x0a)
+    inspect(
+      @utf8.decode(second_payload) catch {
+        _ => fail("second websocket pong payload was not valid UTF-8")
+      },
+      content="p2",
+    )
+    assert_eq(messages.val, 0)
+
+    http_client.write(raw_websocket_small_frame(b'\x81', b"ok"))
+    let (text_opcode, text_payload) = read_raw_websocket_frame(http_client)
+    assert_eq(text_opcode, 0x01)
+    inspect(
+      @utf8.decode(text_payload) catch {
+        _ => fail("websocket text payload was not valid UTF-8")
+      },
+      content="ok",
+    )
+
+    http_client.write(raw_websocket_close_frame(1000, b""))
+    let (close_code, close_reason) = read_raw_websocket_close_frame(http_client)
+    assert_eq(close_code, @websocket.CloseCode::Normal)
+    inspect(close_reason.unwrap_or(""), content="")
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 1)
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+    assert_eq(healthy_hits.val, 1)
+
+    let healthy_ws_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+    defer healthy_ws_client.close()
+    healthy_ws_client.send_text("fresh")
+    inspect(healthy_ws_client.recv().read_all().text(), content="fresh")
+    healthy_ws_client.send_close()
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 2)
   }) catch {
     SocketBindUnavailable => return
     err => raise err
