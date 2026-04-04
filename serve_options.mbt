@@ -3,6 +3,7 @@ pub suberror NativeServeError {
   InvalidMaxConnections(Int)
   InvalidMaxRequestBodyBytes(Int)
   InvalidRequestBodyReadTimeoutMs(Int)
+  InvalidWebSocketMaxMessageBytes(Int)
   InvalidWebSocketOutgoingQueueCapacity(Int)
   InvalidWebSocketReadTimeoutMs(Int)
 } derive(Show, ToJson)
@@ -21,6 +22,7 @@ pub struct NativeServeOptions {
   websocket_outgoing_queue_capacity : Int?
   websocket_overflow_policy : NativeWebSocketOverflowPolicy?
   websocket_read_timeout_ms : Int?
+  websocket_max_message_bytes : Int?
 }
 
 ///|
@@ -29,6 +31,8 @@ pub struct NativeServeOptions {
 /// with `413 Request Entity Too Large`.
 /// `request_body_read_timeout_ms`, if present, rejects slow request bodies
 /// with `408 Request Timeout`.
+/// `websocket_max_message_bytes`, if present, closes websocket connections
+/// with `1009 MessageTooBig` when an inbound message exceeds that many bytes.
 /// `websocket_outgoing_queue_capacity`, if present, bounds buffered outbound
 /// websocket messages per connection.
 /// `websocket_overflow_policy`, if present, chooses whether a full outbound
@@ -42,6 +46,7 @@ pub fn NativeServeOptions::new(
   websocket_outgoing_queue_capacity? : Int,
   websocket_overflow_policy? : NativeWebSocketOverflowPolicy,
   websocket_read_timeout_ms? : Int,
+  websocket_max_message_bytes? : Int,
 ) -> NativeServeOptions {
   {
     max_connections,
@@ -50,6 +55,7 @@ pub fn NativeServeOptions::new(
     websocket_outgoing_queue_capacity,
     websocket_overflow_policy,
     websocket_read_timeout_ms,
+    websocket_max_message_bytes,
   }
 }
 
@@ -97,6 +103,23 @@ fn resolve_native_request_body_read_timeout_ms(
         )
       }
       Some(request_body_read_timeout_ms)
+    }
+    None => None
+  }
+}
+
+///|
+fn resolve_native_websocket_max_message_bytes(
+  options : NativeServeOptions,
+) -> Int? raise Error {
+  match options.websocket_max_message_bytes {
+    Some(websocket_max_message_bytes) => {
+      guard websocket_max_message_bytes >= 0 else {
+        raise NativeServeError::InvalidWebSocketMaxMessageBytes(
+          websocket_max_message_bytes,
+        )
+      }
+      Some(websocket_max_message_bytes)
     }
     None => None
   }

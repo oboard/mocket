@@ -1035,6 +1035,88 @@ async test "serve_async_until_with rejects non-positive websocket_read_timeout_m
 }
 
 ///|
+async test "serve_async_on_with rejects negative websocket_max_message_bytes" {
+  let app = new()
+  let server = allocate_test_server()
+  defer server.close()
+  let result : Result[Unit, Error] = try? app.serve_async_on_with(
+    server,
+    NativeServeOptions::new(websocket_max_message_bytes=-1),
+  )
+  match result {
+    Err(NativeServeError::InvalidWebSocketMaxMessageBytes(-1)) => ()
+    Err(err) =>
+      fail("unexpected invalid websocket_max_message_bytes error: \{err}")
+    Ok(_) =>
+      fail(
+        "expected serve_async_on_with to reject websocket_max_message_bytes=-1",
+      )
+  }
+}
+
+///|
+async test "serve_async_on_until_with rejects negative websocket_max_message_bytes" {
+  let app = new()
+  let server = allocate_test_server()
+  defer server.close()
+  let shutdown = @async.Queue::new(kind=Unbounded)
+  let result : Result[Unit, Error] = try? app.serve_async_on_until_with(
+    server,
+    shutdown,
+    NativeServeOptions::new(websocket_max_message_bytes=-1),
+  )
+  match result {
+    Err(NativeServeError::InvalidWebSocketMaxMessageBytes(-1)) => ()
+    Err(err) =>
+      fail(
+        "unexpected serve_async_on_until_with websocket_max_message_bytes error: \{err}",
+      )
+    Ok(_) =>
+      fail(
+        "expected serve_async_on_until_with to reject websocket_max_message_bytes=-1",
+      )
+  }
+}
+
+///|
+async test "serve_async_with rejects negative websocket_max_message_bytes" {
+  let app = new()
+  let result : Result[Unit, Error] = try? app.serve_async_with(
+    port=0,
+    NativeServeOptions::new(websocket_max_message_bytes=-1),
+  )
+  match result {
+    Err(NativeServeError::InvalidWebSocketMaxMessageBytes(-1)) => ()
+    Err(err) =>
+      fail("unexpected invalid websocket_max_message_bytes error: \{err}")
+    Ok(_) =>
+      fail("expected serve_async_with to reject websocket_max_message_bytes=-1")
+  }
+}
+
+///|
+async test "serve_async_until_with rejects negative websocket_max_message_bytes" {
+  let app = new()
+  let shutdown = @async.Queue::new(kind=Unbounded)
+  let result : Result[Unit, Error] = try? app.serve_async_until_with(
+    port=0,
+    shutdown,
+    NativeServeOptions::new(websocket_max_message_bytes=-1),
+  )
+  match result {
+    Err(NativeServeError::InvalidWebSocketMaxMessageBytes(-1)) => ()
+    Err(err) =>
+      fail(
+        "unexpected serve_async_until_with websocket_max_message_bytes error: \{err}",
+      )
+    Ok(_) =>
+      fail(
+        "expected serve_async_until_with to reject websocket_max_message_bytes=-1",
+      )
+  }
+}
+
+///|
 async test "serve_async_on_with times out slow request bodies" {
   let app = new()
   let handled : Ref[Int] = Ref::new(0)
@@ -2030,6 +2112,212 @@ async test "serve_async closes websocket clients after read timeout between mess
       )
       assert_eq(healthy_response.code, 200)
       inspect(healthy_body.text(), content="ok")
+    },
+  ) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async closes oversized websocket text messages and stays healthy" {
+  let log : Array[String] = []
+  let app = new()
+  app.get("/healthy", _ => "ok")
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => log.push("open")
+      Message(peer, Text(text)) => {
+        log.push("text:\{text}")
+        peer.text("echo:\{text}")
+      }
+      Close(_) => log.push("close")
+      _ => ()
+    }
+  })
+  with_test_server_options(
+    app,
+    NativeServeOptions::new(websocket_max_message_bytes=4),
+    port => {
+      let oversized_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+      defer oversized_client.close()
+
+      oversized_client.send_text("12345")
+      match
+        @async.with_timeout_opt(300, () => {
+          try? oversized_client.recv().read_all().text()
+        }) {
+        Some(
+          Err(
+            @websocket.ConnectionClosed(
+              @websocket.CloseCode::MessageTooBig,
+              Some(reason)
+            )
+          )
+        ) => inspect(reason, content="websocket message too big")
+        Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+          fail(
+            "expected oversized websocket text close code, got \{code} / \{reason}",
+          )
+        Some(Err(err)) =>
+          fail("expected oversized websocket text closure, got error: \{err}")
+        Some(Ok(text)) =>
+          fail("expected oversized websocket text closure, got text: \{text}")
+        None => fail("timed out waiting for oversized websocket text closure")
+      }
+
+      @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+        guard log.contains("open") && log.contains("close") else {
+          raise ServerNotReady
+        }
+        guard !log.contains("text:12345") else {
+          fail("oversized websocket text message reached the handler")
+        }
+      })
+
+      let healthy_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+      defer healthy_client.close()
+
+      healthy_client.send_text("1234")
+      inspect(healthy_client.recv().read_all().text(), content="echo:1234")
+      healthy_client.send_close()
+
+      let (healthy_response, healthy_body) = @http.get(
+        localhost_url(port, "/healthy"),
+      )
+      assert_eq(healthy_response.code, 200)
+      inspect(healthy_body.text(), content="ok")
+    },
+  ) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async closes oversized websocket binary messages" {
+  let log : Array[String] = []
+  let app = new()
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => log.push("open")
+      Message(peer, Binary(bytes)) => {
+        log.push("binary:\{bytes.length()}")
+        peer.binary(bytes)
+      }
+      Close(_) => log.push("close")
+      _ => ()
+    }
+  })
+  with_test_server_options(
+    app,
+    NativeServeOptions::new(websocket_max_message_bytes=4),
+    port => {
+      let client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+      defer client.close()
+
+      client.send_binary([0, 1, 2, 3, 4])
+      match
+        @async.with_timeout_opt(300, () => {
+          try? client.recv().read_all().binary()
+        }) {
+        Some(
+          Err(
+            @websocket.ConnectionClosed(
+              @websocket.CloseCode::MessageTooBig,
+              Some(reason)
+            )
+          )
+        ) => inspect(reason, content="websocket message too big")
+        Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+          fail(
+            "expected oversized websocket binary close code, got \{code} / \{reason}",
+          )
+        Some(Err(err)) =>
+          fail("expected oversized websocket binary closure, got error: \{err}")
+        Some(Ok(bytes)) =>
+          fail(
+            "expected oversized websocket binary closure, got \{bytes.length()} bytes",
+          )
+        None => fail("timed out waiting for oversized websocket binary closure")
+      }
+
+      @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+        guard log.contains("open") && log.contains("close") else {
+          raise ServerNotReady
+        }
+        guard !log.contains("binary:5") else {
+          fail("oversized websocket binary message reached the handler")
+        }
+      })
+    },
+  ) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async enforces websocket_max_message_bytes across multiple reads" {
+  let log : Array[String] = []
+  let app = new()
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => log.push("open")
+      Message(peer, Text(text)) => {
+        log.push("text:\{text.length()}")
+        peer.text(text.length().to_string())
+      }
+      Close(_) => log.push("close")
+      _ => ()
+    }
+  })
+  with_test_server_options(
+    app,
+    NativeServeOptions::new(websocket_max_message_bytes=1536),
+    port => {
+      let oversized_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+      defer oversized_client.close()
+
+      oversized_client.send_text(repeated_ascii_text("a", 1537))
+      match
+        @async.with_timeout_opt(300, () => {
+          try? oversized_client.recv().read_all().text()
+        }) {
+        Some(
+          Err(
+            @websocket.ConnectionClosed(
+              @websocket.CloseCode::MessageTooBig,
+              Some(reason)
+            )
+          )
+        ) => inspect(reason, content="websocket message too big")
+        Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+          fail(
+            "expected multi-read websocket limit close code, got \{code} / \{reason}",
+          )
+        Some(Err(err)) =>
+          fail("expected multi-read websocket limit closure, got error: \{err}")
+        Some(Ok(text)) =>
+          fail("expected multi-read websocket limit closure, got text: \{text}")
+        None => fail("timed out waiting for multi-read websocket limit closure")
+      }
+
+      @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+        guard log.contains("open") && log.contains("close") else {
+          raise ServerNotReady
+        }
+        guard !log.contains("text:1537") else {
+          fail("oversized multi-read websocket message reached the handler")
+        }
+      })
+
+      let exact_limit_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+      defer exact_limit_client.close()
+
+      exact_limit_client.send_text(repeated_ascii_text("a", 1536))
+      inspect(exact_limit_client.recv().read_all().text(), content="1536")
+      exact_limit_client.send_close()
     },
   ) catch {
     SocketBindUnavailable => return

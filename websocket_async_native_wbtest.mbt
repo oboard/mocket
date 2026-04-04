@@ -65,6 +65,17 @@ fn test_native_ws_connection(
 }
 
 ///|
+test "native websocket message limit helpers handle int max boundaries" {
+  let max_int = 2_147_483_647
+  inspect(next_native_ws_message_chunk_size(max_int, 0), content="1024")
+  inspect(native_ws_chunk_exceeds_limit(max_int, max_int, 1), content="true")
+  inspect(
+    native_ws_chunk_exceeds_limit(max_int, max_int - 1, 1),
+    content="false",
+  )
+}
+
+///|
 test "enqueue_native_ws_outgoing_to_connection drops oldest when configured" {
   let connection = test_native_ws_connection(
     2,

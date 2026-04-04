@@ -31,6 +31,9 @@ const DEFAULT_NATIVE_WS_OUTGOING_QUEUE_CAPACITY : Int = 256
 const NATIVE_WS_READ_TIMEOUT_REASON : String = "websocket read timeout"
 
 ///|
+const NATIVE_WS_MESSAGE_TOO_BIG_REASON : String = "websocket message too big"
+
+///|
 const NATIVE_WS_SERVER_SHUTDOWN_REASON : String = "websocket server shutdown"
 
 ///|
@@ -301,6 +304,79 @@ async fn recv_native_ws_message(
 }
 
 ///|
+fn decode_native_ws_message(
+  message_kind : @websocket.MessageKind,
+  contents : Bytes,
+) -> WebSocketAggregatedMessage {
+  match message_kind {
+    Text =>
+      Text(
+        @utf8.decode(contents) catch {
+          _ => abort("validated websocket text message must be valid UTF-8")
+        },
+      )
+    Binary => Binary(contents)
+  }
+}
+
+///|
+fn next_native_ws_message_chunk_size(limit : Int, total : Int) -> Int {
+  let remaining = limit - total
+  if remaining >= 1024 {
+    1024
+  } else {
+    remaining + 1
+  }
+}
+
+///|
+fn native_ws_chunk_exceeds_limit(
+  limit : Int,
+  total : Int,
+  chunk_length : Int,
+) -> Bool {
+  chunk_length > limit - total
+}
+
+///|
+async fn read_native_ws_message_contents(
+  ws : @websocket.Conn,
+  message : @websocket.Message,
+  max_message_bytes : Int?,
+) -> WebSocketAggregatedMessage? raise Error {
+  match max_message_bytes {
+    None =>
+      Some(
+        match message.kind {
+          Text => Text(message.read_all().text())
+          Binary => Binary(message.read_all().binary())
+        },
+      )
+    Some(limit) => {
+      let buffer = @buffer.new()
+      let mut total = 0
+      for ;; {
+        let next_chunk_size = next_native_ws_message_chunk_size(limit, total)
+        guard message.read_some(max_len=next_chunk_size) is Some(chunk) else {
+          return Some(decode_native_ws_message(message.kind, buffer.contents()))
+        }
+        if native_ws_chunk_exceeds_limit(limit, total, chunk.length()) {
+          ignore(
+            try? ws.send_close(
+              code=@websocket.CloseCode::MessageTooBig,
+              reason=NATIVE_WS_MESSAGE_TOO_BIG_REASON,
+            ),
+          )
+          return None
+        }
+        total += chunk.length()
+        buffer.write_bytes(chunk)
+      }
+    }
+  }
+}
+
+///|
 async fn send_native_ws_shutdown_close(ws : @websocket.Conn) -> Unit {
   ignore(
     try? @async.protect_from_cancel(resume_on_cancel=true, () => {
@@ -318,6 +394,7 @@ async fn handle_websocket_route_async(
   request : @http.Request,
   conn : @http.ServerConnection,
   handler : WebSocketHandler,
+  max_message_bytes : Int?,
   outgoing_queue_capacity : Int,
   overflow_policy : NativeWebSocketOverflowPolicy,
   read_timeout_ms : Int?,
@@ -339,9 +416,9 @@ async fn handle_websocket_route_async(
         None => break
       }
       let peer = snapshot_native_ws_peer(connection_id)
-      match message.kind {
-        Text => handler(Message(peer, Text(message.read_all().text())))
-        Binary => handler(Message(peer, Binary(message.read_all().binary())))
+      match read_native_ws_message_contents(ws, message, max_message_bytes) {
+        Some(aggregated_message) => handler(Message(peer, aggregated_message))
+        None => break
       }
     }
     outgoing.close()

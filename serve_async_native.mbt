@@ -327,6 +327,9 @@ async fn handle_request_async(
 ) -> Unit raise Error {
   let request_path = request_target_path(request.path)
   if is_websocket_upgrade_request(request) {
+    let websocket_max_message_bytes = resolve_native_websocket_max_message_bytes(
+      options,
+    )
     let websocket_outgoing_queue_capacity = match
       resolve_native_websocket_outgoing_queue_capacity(options) {
       Some(capacity) => capacity
@@ -341,8 +344,8 @@ async fn handle_request_async(
     match app.find_ws_route(request_path) {
       Some(ws_handler) => {
         handle_websocket_route_async(
-          ws_runtime_id, request, conn, ws_handler, websocket_outgoing_queue_capacity,
-          websocket_overflow_policy, websocket_read_timeout_ms,
+          ws_runtime_id, request, conn, ws_handler, websocket_max_message_bytes,
+          websocket_outgoing_queue_capacity, websocket_overflow_policy, websocket_read_timeout_ms,
         )
         return
       }
@@ -392,6 +395,7 @@ async fn run_native_server(
   let max_connections = resolve_native_max_connections(options)
   ignore(resolve_native_max_request_body_bytes(options))
   ignore(resolve_native_request_body_read_timeout_ms(options))
+  ignore(resolve_native_websocket_max_message_bytes(options))
   ignore(resolve_native_websocket_outgoing_queue_capacity(options))
   ignore(resolve_native_websocket_overflow_policy(options))
   ignore(resolve_native_websocket_read_timeout_ms(options))
@@ -432,6 +436,8 @@ pub async fn Mocket::serve_async_on(
 /// with `413 Request Entity Too Large`.
 /// `request_body_read_timeout_ms`, if present, rejects slow request bodies
 /// with `408 Request Timeout`.
+/// `websocket_max_message_bytes`, if present, closes websocket connections
+/// with `1009 MessageTooBig` when an inbound message exceeds that many bytes.
 /// `websocket_outgoing_queue_capacity`, if present, bounds buffered outbound
 /// websocket messages per connection.
 /// `websocket_overflow_policy`, if present, chooses whether a full outbound
@@ -472,6 +478,8 @@ pub async fn Mocket::serve_async_on_until(
 /// with `413 Request Entity Too Large`.
 /// `request_body_read_timeout_ms`, if present, rejects slow request bodies
 /// with `408 Request Timeout`.
+/// `websocket_max_message_bytes`, if present, closes websocket connections
+/// with `1009 MessageTooBig` when an inbound message exceeds that many bytes.
 /// `websocket_outgoing_queue_capacity`, if present, bounds buffered outbound
 /// websocket messages per connection.
 /// `websocket_overflow_policy`, if present, chooses whether a full outbound
@@ -508,6 +516,8 @@ pub async fn Mocket::serve_async(
 /// with `413 Request Entity Too Large`.
 /// `request_body_read_timeout_ms`, if present, rejects slow request bodies
 /// with `408 Request Timeout`.
+/// `websocket_max_message_bytes`, if present, closes websocket connections
+/// with `1009 MessageTooBig` when an inbound message exceeds that many bytes.
 /// `websocket_outgoing_queue_capacity`, if present, bounds buffered outbound
 /// websocket messages per connection.
 /// `websocket_overflow_policy`, if present, chooses whether a full outbound
@@ -522,6 +532,7 @@ pub async fn Mocket::serve_async_with(
   ignore(resolve_native_max_connections(options))
   ignore(resolve_native_max_request_body_bytes(options))
   ignore(resolve_native_request_body_read_timeout_ms(options))
+  ignore(resolve_native_websocket_max_message_bytes(options))
   ignore(resolve_native_websocket_outgoing_queue_capacity(options))
   ignore(resolve_native_websocket_overflow_policy(options))
   ignore(resolve_native_websocket_read_timeout_ms(options))
@@ -554,6 +565,8 @@ pub async fn Mocket::serve_async_until(
 /// with `413 Request Entity Too Large`.
 /// `request_body_read_timeout_ms`, if present, rejects slow request bodies
 /// with `408 Request Timeout`.
+/// `websocket_max_message_bytes`, if present, closes websocket connections
+/// with `1009 MessageTooBig` when an inbound message exceeds that many bytes.
 /// `websocket_outgoing_queue_capacity`, if present, bounds buffered outbound
 /// websocket messages per connection.
 /// `websocket_overflow_policy`, if present, chooses whether a full outbound
@@ -569,6 +582,7 @@ pub async fn Mocket::serve_async_until_with(
   ignore(resolve_native_max_connections(options))
   ignore(resolve_native_max_request_body_bytes(options))
   ignore(resolve_native_request_body_read_timeout_ms(options))
+  ignore(resolve_native_websocket_max_message_bytes(options))
   ignore(resolve_native_websocket_outgoing_queue_capacity(options))
   ignore(resolve_native_websocket_overflow_policy(options))
   ignore(resolve_native_websocket_read_timeout_ms(options))
