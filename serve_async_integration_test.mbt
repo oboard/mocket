@@ -383,25 +383,8 @@ fn websocket_close_code_from_wire(code : UInt) -> @websocket.CloseCode {
 async fn read_raw_websocket_close_frame(
   client : @http.Client,
 ) -> (@websocket.CloseCode, String?) {
-  let header = match
-    @async.with_timeout_opt(200, () => client.read_exactly(2)) {
-    Some(header) => header
-    None => fail("timed out waiting for websocket close frame header")
-  }
-  let opcode = header[0].to_int() & 0x0f
+  let (opcode, payload) = read_raw_websocket_frame(client)
   assert_eq(opcode, 0x08)
-  let payload_len = header[1].to_int() & 0x7f
-  guard payload_len < 126 else {
-    fail("unexpected extended websocket close frame length: \{payload_len}")
-  }
-  let payload = if payload_len == 0 {
-    b""
-  } else {
-    match @async.with_timeout_opt(200, () => client.read_exactly(payload_len)) {
-      Some(payload) => payload
-      None => fail("timed out waiting for websocket close frame payload")
-    }
-  }
   if payload is [u16be(code), .. reason] {
     let reason = @utf8.decode(reason) catch {
       _ => fail("websocket close reason was not valid UTF-8")
@@ -410,6 +393,41 @@ async fn read_raw_websocket_close_frame(
     (websocket_close_code_from_wire(code), reason)
   } else {
     (@websocket.CloseCode::Normal, None)
+  }
+}
+
+///|
+async fn read_raw_websocket_frame_opt(
+  client : @http.Client,
+  timeout_ms : Int,
+) -> (Int, Bytes)? {
+  let header = match
+    @async.with_timeout_opt(timeout_ms, () => client.read_exactly(2)) {
+    Some(header) => header
+    None => return None
+  }
+  let opcode = header[0].to_int() & 0x0f
+  let payload_len = header[1].to_int() & 0x7f
+  guard payload_len < 126 else {
+    fail("unexpected extended websocket frame length: \{payload_len}")
+  }
+  let payload = if payload_len == 0 {
+    b""
+  } else {
+    match
+      @async.with_timeout_opt(timeout_ms, () => client.read_exactly(payload_len)) {
+      Some(payload) => payload
+      None => fail("timed out waiting for websocket frame payload")
+    }
+  }
+  Some((opcode, payload))
+}
+
+///|
+async fn read_raw_websocket_frame(client : @http.Client) -> (Int, Bytes) {
+  match read_raw_websocket_frame_opt(client, 200) {
+    Some(frame) => frame
+    None => fail("timed out waiting for websocket frame header")
   }
 }
 
@@ -1128,6 +1146,132 @@ async test "serve_async rejects invalid websocket close reasons and stays health
       guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 1)
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async auto-replies to websocket ping frames without leaking control messages" {
+  let opened : Ref[Int] = Ref::new(0)
+  let closed : Ref[Int] = Ref::new(0)
+  let messages : Ref[Int] = Ref::new(0)
+  let healthy_hits : Ref[Int] = Ref::new(0)
+  let app = new()
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => opened.val += 1
+      Message(peer, Text(text)) => {
+        messages.val += 1
+        peer.text(text)
+      }
+      Message(peer, Binary(bytes)) => {
+        messages.val += 1
+        peer.binary(bytes)
+      }
+      Close(_) => closed.val += 1
+    }
+  })
+  app.get("/healthy", _ => {
+    healthy_hits.val += 1
+    "ok"
+  })
+  with_test_server(app, port => {
+    let http_client = @http.Client::new("http://127.0.0.1:\{port}")
+    defer http_client.close()
+    let ws_client = @websocket.from_http_client(http_client, "/ws")
+    defer ws_client.close()
+
+    let ping_payload = b"pong"
+    http_client.write(
+      Bytes::from_array([b'\x89', 0x04, ..ping_payload.to_array()]),
+    )
+    let (opcode, payload) = read_raw_websocket_frame(http_client)
+    assert_eq(opcode, 0x0a)
+    inspect(
+      @utf8.decode(payload) catch {
+        _ => fail("websocket pong payload was not valid UTF-8")
+      },
+      content="pong",
+    )
+    assert_eq(messages.val, 0)
+
+    ws_client.send_text("ok")
+    inspect(ws_client.recv().read_all().text(), content="ok")
+    ws_client.send_close()
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 1)
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+    assert_eq(healthy_hits.val, 1)
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async ignores unsolicited websocket pong frames without leaking control messages" {
+  let opened : Ref[Int] = Ref::new(0)
+  let closed : Ref[Int] = Ref::new(0)
+  let messages : Ref[Int] = Ref::new(0)
+  let healthy_hits : Ref[Int] = Ref::new(0)
+  let app = new()
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => opened.val += 1
+      Message(peer, Text(text)) => {
+        messages.val += 1
+        peer.text(text)
+      }
+      Message(peer, Binary(bytes)) => {
+        messages.val += 1
+        peer.binary(bytes)
+      }
+      Close(_) => closed.val += 1
+    }
+  })
+  app.get("/healthy", _ => {
+    healthy_hits.val += 1
+    "ok"
+  })
+  with_test_server(app, port => {
+    let http_client = @http.Client::new("http://127.0.0.1:\{port}")
+    defer http_client.close()
+    let ws_client = @websocket.from_http_client(http_client, "/ws")
+    defer ws_client.close()
+
+    http_client.write(Bytes::from_array([b'\x8a', 0x04, ..b"noop".to_array()]))
+    match read_raw_websocket_frame_opt(http_client, 100) {
+      None => ()
+      Some((opcode, payload)) =>
+        fail(
+          "expected no wire response to unsolicited pong, got opcode \{opcode} with \{payload.length()} bytes",
+        )
+    }
+    assert_eq(messages.val, 0)
+
+    ws_client.send_text("ok")
+    inspect(ws_client.recv().read_all().text(), content="ok")
+    ws_client.send_close()
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 1)
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+    assert_eq(healthy_hits.val, 1)
   }) catch {
     SocketBindUnavailable => return
     err => raise err
