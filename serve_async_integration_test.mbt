@@ -2659,6 +2659,58 @@ async test "serve_async rejects invalid websocket handshakes on matched routes a
 }
 
 ///|
+async test "serve_async rejects unsupported websocket versions and non-get upgrades" {
+  let opened : Ref[Int] = Ref::new(0)
+  let closed : Ref[Int] = Ref::new(0)
+  let app = new()
+  app.get("/healthy", _ => "ok")
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => opened.val += 1
+      Message(peer, Text(text)) => peer.text(text)
+      Close(_) => closed.val += 1
+      _ => ()
+    }
+  })
+  with_test_server(app, port => {
+    let (version_headers, version_body) = issue_raw_request_response(
+      port, "GET /ws HTTP/1.1\r\nHost: localhost\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: \t12\t\r\n\r\n",
+    )
+    assert_true(version_headers.has_prefix("HTTP/1.1 400 "))
+    assert_true(version_body.contains("version"))
+    assert_eq(opened.val, 0)
+    assert_eq(closed.val, 0)
+
+    let (method_headers, method_body) = issue_raw_request_response(
+      port, "POST /ws HTTP/1.1\r\nHost: localhost\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nContent-Length: 4\r\n\r\ndata",
+    )
+    assert_true(method_headers.has_prefix("HTTP/1.1 400 "))
+    assert_true(method_body.contains("must be GET"))
+    assert_eq(opened.val, 0)
+    assert_eq(closed.val, 0)
+
+    let client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+    defer client.close()
+
+    client.send_text("ok")
+    inspect(client.recv().read_all().text(), content="ok")
+    client.send_close()
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
+    })
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
 async test "serve_async honors mixed-case static and websocket upgrade headers" {
   let log : Array[String] = []
   let app = new()
