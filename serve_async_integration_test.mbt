@@ -363,6 +363,73 @@ async fn read_chunked_http_body(client : @socket.Tcp) -> String {
 }
 
 ///|
+fn websocket_close_code_from_wire(code : UInt) -> @websocket.CloseCode {
+  match code {
+    1000 => @websocket.CloseCode::Normal
+    1001 => @websocket.CloseCode::GoingAway
+    1002 => @websocket.CloseCode::ProtocolError
+    1003 => @websocket.CloseCode::UnsupportedData
+    1006 => @websocket.CloseCode::Abnormal
+    1007 => @websocket.CloseCode::InvalidFramePayload
+    1008 => @websocket.CloseCode::PolicyViolation
+    1009 => @websocket.CloseCode::MessageTooBig
+    1010 => @websocket.CloseCode::MissingExtension
+    1011 => @websocket.CloseCode::InternalError
+    _ => @websocket.CloseCode::Other(code.to_uint16())
+  }
+}
+
+///|
+async fn read_raw_websocket_close_frame(
+  client : @http.Client,
+) -> (@websocket.CloseCode, String?) {
+  let header = match
+    @async.with_timeout_opt(200, () => client.read_exactly(2)) {
+    Some(header) => header
+    None => fail("timed out waiting for websocket close frame header")
+  }
+  let opcode = header[0].to_int() & 0x0f
+  assert_eq(opcode, 0x08)
+  let payload_len = header[1].to_int() & 0x7f
+  guard payload_len < 126 else {
+    fail("unexpected extended websocket close frame length: \{payload_len}")
+  }
+  let payload = if payload_len == 0 {
+    b""
+  } else {
+    match @async.with_timeout_opt(200, () => client.read_exactly(payload_len)) {
+      Some(payload) => payload
+      None => fail("timed out waiting for websocket close frame payload")
+    }
+  }
+  if payload is [u16be(code), .. reason] {
+    let reason = @utf8.decode(reason) catch {
+      _ => fail("websocket close reason was not valid UTF-8")
+    }
+    let reason = if reason == "" { None } else { Some(reason) }
+    (websocket_close_code_from_wire(code), reason)
+  } else {
+    (@websocket.CloseCode::Normal, None)
+  }
+}
+
+///|
+async fn issue_raw_websocket_close(
+  port : Int,
+  path : String,
+  frames : Array[Bytes],
+) -> (@websocket.CloseCode, String?) {
+  let http_client = @http.Client::new("http://127.0.0.1:\{port}")
+  defer http_client.close()
+  ignore(@websocket.from_http_client(http_client, path))
+  for frame in frames {
+    ignore(try? http_client.write(frame))
+    ignore(try? http_client.flush())
+  }
+  read_raw_websocket_close_frame(http_client)
+}
+
+///|
 fn raw_header_value(raw_headers : String, header_name : String) -> String? {
   let needle = header_name.to_lower()
   for line in raw_headers.split("\r\n") {
@@ -787,37 +854,9 @@ async test "serve_async keeps websocket sequencing and control-size failures con
       expected_code : @websocket.CloseCode,
       expected_reason : String,
     ) -> Unit {
-      let http_client = @http.Client::new("http://127.0.0.1:\{port}")
-      defer http_client.close()
-      let ws_client = @websocket.from_http_client(http_client, "/ws")
-      defer ws_client.close()
-      @async.with_task_group(group => {
-        group.spawn_bg(allow_failure=true, () => {
-          for frame in frames {
-            http_client.write(frame)
-          }
-        })
-        match
-          @async.with_timeout_opt(200, () => {
-            try? ws_client.recv().read_all().binary()
-          }) {
-          Some(Err(@websocket.ConnectionClosed(code, Some(reason)))) => {
-            assert_eq(code, expected_code)
-            inspect(reason, content=expected_reason)
-          }
-          Some(Err(@websocket.ConnectionClosed(code, reason))) =>
-            fail(
-              "expected \{expected_code} / \{expected_reason}, got \{code} / \{reason}",
-            )
-          Some(Err(err)) =>
-            fail("expected websocket protocol close, got error: \{err}")
-          Some(Ok(bytes)) =>
-            fail(
-              "expected websocket protocol close, got \{bytes.length()} bytes",
-            )
-          None => fail("timed out waiting for websocket protocol close")
-        }
-      })
+      let (code, reason) = issue_raw_websocket_close(port, "/ws", frames)
+      assert_eq(code, expected_code)
+      inspect(reason.unwrap_or(""), content=expected_reason)
     }
 
     expect_bad_ws_frames(
@@ -860,6 +899,97 @@ async test "serve_async keeps websocket sequencing and control-size failures con
     healthy_ws_client.send_close()
     @async.retry(@async.FixedDelay(20), max_retry=50, () => {
       guard opened.val == 3 && closed.val == 3 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 1)
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async keeps websocket continuation and length-format failures connection-local and stays healthy" {
+  let opened : Ref[Int] = Ref::new(0)
+  let closed : Ref[Int] = Ref::new(0)
+  let messages : Ref[Int] = Ref::new(0)
+  let healthy_hits : Ref[Int] = Ref::new(0)
+  let app = new()
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => opened.val += 1
+      Message(peer, Text(text)) => {
+        messages.val += 1
+        peer.text(text)
+      }
+      Message(peer, Binary(bytes)) => {
+        messages.val += 1
+        peer.binary(bytes)
+      }
+      Close(_) => closed.val += 1
+    }
+  })
+  app.get("/healthy", _ => {
+    healthy_hits.val += 1
+    "ok"
+  })
+  with_test_server(app, port => {
+    async fn expect_bad_ws_frames(
+      frames : Array[Bytes],
+      expected_code : @websocket.CloseCode,
+      expected_reason : String,
+    ) -> Unit {
+      let (code, reason) = issue_raw_websocket_close(port, "/ws", frames)
+      assert_eq(code, expected_code)
+      inspect(reason.unwrap_or(""), content=expected_reason)
+    }
+
+    expect_bad_ws_frames(
+      [Bytes::from_array([b'\x80', b'\x00'])],
+      @websocket.CloseCode::ProtocolError,
+      "Unexpected continuation frame",
+    )
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
+    })
+
+    expect_bad_ws_frames(
+      [Bytes::from_array([b'\x81', 126, b'\x00', b'\x7d'])],
+      @websocket.CloseCode::ProtocolError,
+      "Invalid payload length format",
+    )
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
+    })
+
+    expect_bad_ws_frames(
+      [
+        Bytes::from_array([
+          b'\x81', 127, b'\xff', b'\xff', b'\xff', b'\xff', b'\xff', b'\xff', b'\xff',
+          b'\xff',
+        ]),
+      ],
+      @websocket.CloseCode::ProtocolError,
+      "Invalid payload length format",
+    )
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 3 && closed.val == 3 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 0)
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+    assert_eq(healthy_hits.val, 1)
+
+    let healthy_ws_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+    defer healthy_ws_client.close()
+    healthy_ws_client.send_text("ok")
+    inspect(healthy_ws_client.recv().read_all().text(), content="ok")
+    healthy_ws_client.send_close()
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 4 && closed.val == 4 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 1)
   }) catch {
