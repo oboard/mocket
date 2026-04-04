@@ -48,19 +48,6 @@ fn normalize_mount_path(path : String) -> String {
 }
 
 ///|
-fn mounted_path_matches(mount_path : String, request_path : String) -> Bool {
-  if mount_path == "/" {
-    true
-  } else if !request_path.has_prefix(mount_path) {
-    false
-  } else if request_path.length() == mount_path.length() {
-    true
-  } else {
-    request_path[mount_path.length()] == '/'
-  }
-}
-
-///|
 fn mounted_asset_id(mount_path : String, request_path : String) -> String {
   if mount_path == "/" {
     if request_path == "/" {
@@ -200,7 +187,8 @@ pub fn Mocket::static_assets(
   let mount_path = normalize_mount_path(self.base_path + path)
   self.use_middleware(
     async fn(event, next) noraise {
-      if !mounted_path_matches(mount_path, event.req.url) {
+      let request_path = event.req.path()
+      if !path_scope_matches(mount_path, request_path) {
         return next()
       }
 
@@ -212,7 +200,7 @@ pub fn Mocket::static_assets(
         event.res.headers.set("Allow", "GET, HEAD")
         return HttpResponse::new(MethodNotAllowed)
       }
-      let original_id = mounted_asset_id(mount_path, event.req.url)
+      let original_id = mounted_asset_id(mount_path, request_path)
       let if_none_match = event.req.get_header("if-none-match")
       let if_modified_since = event.req.get_header("if-modified-since")
 

@@ -102,6 +102,10 @@ pub(all) struct HttpRequest {
 pub fn[T : BodyReader] HttpRequest::body(Self) -> T raise
 pub fn HttpRequest::get_cookie(Self, String) -> CookieItem?
 pub fn HttpRequest::get_header(Self, String) -> String?
+pub fn HttpRequest::get_query(Self, String) -> String?
+pub fn HttpRequest::path(Self) -> String
+pub fn HttpRequest::query_params(Self) -> Map[String, String]
+pub fn HttpRequest::query_string(Self) -> String?
 pub impl Responder for HttpRequest
 
 pub(all) struct HttpResponse {

@@ -302,11 +302,15 @@ async test "serve_async strips query and reads put bodies" {
   let app = new()
   app.get("/hello/:name", event => {
     let name = event.params.get("name").unwrap_or("world")
+    event.res.headers.set("X-Raw-Url", event.req.url)
+    event.res.headers.set("X-Path", event.req.path())
+    event.res.headers.set("X-Lang", event.req.get_query("lang").unwrap_or(""))
     "Hello, \{name}!"
   })
   app.put("/echo/:name", event => {
     let name = event.params.get("name").unwrap_or("")
     let payload : String = event.req.body() catch { _ => "" }
+    event.res.headers.set("X-Kind", event.req.get_query("kind").unwrap_or(""))
     HttpResponse::new(OK).body("\{name}:\{payload}")
   })
   with_test_server(app, port => {
@@ -315,6 +319,15 @@ async test "serve_async strips query and reads put bodies" {
     )
     assert_eq(response1.code, 200)
     inspect(body1.text(), content="Hello, moonbit!")
+    inspect(
+      response1.headers.get("x-raw-url").unwrap_or(""),
+      content="/hello/moonbit?lang=en",
+    )
+    inspect(
+      response1.headers.get("x-path").unwrap_or(""),
+      content="/hello/moonbit",
+    )
+    inspect(response1.headers.get("x-lang").unwrap_or(""), content="en")
 
     let (response2, body2) = @http.put(
       localhost_url(port, "/echo/native?kind=test"),
@@ -322,6 +335,7 @@ async test "serve_async strips query and reads put bodies" {
     )
     assert_eq(response2.code, 200)
     inspect(body2.text(), content="native:payload")
+    inspect(response2.headers.get("x-kind").unwrap_or(""), content="test")
   }) catch {
     SocketBindUnavailable => return
     err => raise err
@@ -368,6 +382,53 @@ async test "serve_async preserves middleware onion order" {
 }
 
 ///|
+async test "serve_async matches middleware base paths by segment boundary" {
+  let log : Array[String] = []
+  let app = new()
+  app.use_middleware(
+    (event, next) => {
+      log.push(event.req.path())
+      next()
+    },
+    base_path="/api/",
+  )
+  app.get("/api", _ => "api-root")
+  app.get("/api/", _ => "api-root-slash")
+  app.get("/api/users", _ => "api")
+  app.get("/apiary", _ => "apiary")
+  with_test_server(app, port => {
+    let (api_root_response, api_root_body) = @http.get(
+      localhost_url(port, "/api?role=admin"),
+    )
+    assert_eq(api_root_response.code, 200)
+    inspect(api_root_body.text(), content="api-root")
+
+    let (api_root_slash_response, api_root_slash_body) = @http.get(
+      localhost_url(port, "/api/?role=admin"),
+    )
+    assert_eq(api_root_slash_response.code, 200)
+    inspect(api_root_slash_body.text(), content="api-root-slash")
+
+    let (api_response, api_body) = @http.get(
+      localhost_url(port, "/api/users?role=admin"),
+    )
+    assert_eq(api_response.code, 200)
+    inspect(api_body.text(), content="api")
+
+    let (apiary_response, apiary_body) = @http.get(
+      localhost_url(port, "/apiary?role=admin"),
+    )
+    assert_eq(apiary_response.code, 200)
+    inspect(apiary_body.text(), content="apiary")
+
+    inspect(log.join(","), content="/api,/api/,/api/users")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
 async test "serve_async mounts static assets by prefix" {
   let app = new()
   app.static_assets("/assets", TestStaticProvider::{  })
@@ -384,11 +445,25 @@ async test "serve_async mounts static assets by prefix" {
     assert_eq(response2.code, 200)
     inspect(body2.text(), content="index")
 
-    let (response3, _body3) = @http.post(
+    let (response3, body3) = @http.get(
+      localhost_url(port, "/assets/hello.txt?v=1"),
+    )
+    assert_eq(response3.code, 200)
+    inspect(body3.text(), content="hi")
+
+    let (response4, body4) = @http.get(localhost_url(port, "/assets?v=1"))
+    assert_eq(response4.code, 200)
+    inspect(body4.text(), content="index")
+
+    let (response5, body5) = @http.get(localhost_url(port, "/assets/?v=1"))
+    assert_eq(response5.code, 200)
+    inspect(body5.text(), content="index")
+
+    let (response6, _body6) = @http.post(
       localhost_url(port, "/assets/hello.txt"),
       "",
     )
-    assert_eq(response3.code, 405)
+    assert_eq(response6.code, 405)
   }) catch {
     SocketBindUnavailable => return
     err => raise err

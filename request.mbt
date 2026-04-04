@@ -12,6 +12,29 @@ pub(open) trait BodyReader {
 }
 
 ///|
+pub fn HttpRequest::path(self : HttpRequest) -> String {
+  request_target_path(self.url)
+}
+
+///|
+pub fn HttpRequest::query_string(self : HttpRequest) -> String? {
+  request_target_query_string(self.url)
+}
+
+///|
+pub fn HttpRequest::query_params(self : HttpRequest) -> Map[String, String] {
+  match self.query_string() {
+    Some(query) => parse_form_data(@utf8.encode(query)[:])
+    None => {}
+  }
+}
+
+///|
+pub fn HttpRequest::get_query(self : HttpRequest, key : String) -> String? {
+  self.query_params().get(key)
+}
+
+///|
 pub fn[T : BodyReader] HttpRequest::body(self : HttpRequest) -> T raise {
   T::from_request(self)
 }
@@ -28,6 +51,21 @@ test "get_header is case-insensitive" {
   assert_eq(req.get_header("X-TEST"), Some("value"))
   assert_eq(req.get_header("Content-Type"), Some("text/plain"))
   assert_eq(req.get_header("missing"), None)
+}
+
+///|
+test "request target helpers expose path and query" {
+  let req = HttpRequest::{
+    http_method: "GET",
+    url: "/search/moonbit?q=async%20native&lang=en#frag",
+    headers: {},
+    raw_body: b"",
+  }
+  assert_eq(req.path(), "/search/moonbit")
+  assert_eq(req.query_string(), Some("q=async%20native&lang=en"))
+  assert_eq(req.get_query("q"), Some("async native"))
+  assert_eq(req.get_query("lang"), Some("en"))
+  assert_eq(req.get_query("missing"), None)
 }
 
 ///|

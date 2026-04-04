@@ -1,18 +1,4 @@
 ///|
-fn request_path_without_query(request_target : String) -> String {
-  let mut end = request_target.length()
-  match request_target.find("?") {
-    Some(index) => if index < end { end = index }
-    None => ()
-  }
-  match request_target.find("#") {
-    Some(index) => if index < end { end = index }
-    None => ()
-  }
-  request_target[:end].to_string()
-}
-
-///|
 fn request_method_to_string(meth : @http.RequestMethod) -> String {
   match meth {
     Get => "GET"
@@ -210,7 +196,7 @@ async fn handle_request_async(
   body_reader : &@io.Reader,
   conn : @http.ServerConnection,
 ) -> Unit raise Error {
-  let request_path = request_path_without_query(request.path)
+  let request_path = request_target_path(request.path)
   if is_websocket_upgrade_request(request) {
     match app.find_ws_route(request_path) {
       Some(ws_handler) => {
@@ -232,7 +218,7 @@ async fn handle_request_async(
   let event = {
     req: {
       http_method: http_method_text,
-      url: request_path,
+      url: request.path,
       headers: copy_async_headers(request.headers),
       raw_body: request_body,
     },

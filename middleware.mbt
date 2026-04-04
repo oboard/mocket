@@ -6,13 +6,26 @@ pub type MiddlewareNext = async () -> &Responder noraise
 pub type Middleware = async (MocketEvent, MiddlewareNext) -> &Responder noraise
 
 ///|
+fn normalize_middleware_base_path(base_path : String) -> String {
+  if base_path == "" {
+    ""
+  } else if base_path.length() > 1 && base_path[base_path.length() - 1:] == "/" {
+    base_path[:base_path.length() - 1].to_string()
+  } else {
+    base_path
+  }
+}
+
+///|
 // 注册中间件，支持路径匹配
 pub fn Mocket::use_middleware(
   self : Mocket,
   middleware : Middleware,
   base_path? : String,
 ) -> Unit {
-  let base_path = base_path.unwrap_or(self.base_path)
+  let base_path = normalize_middleware_base_path(
+    base_path.unwrap_or(self.base_path),
+  )
   // 将中间件和路径信息一起存储
   self.middlewares.push((base_path, middleware))
 }
@@ -26,11 +39,12 @@ pub async fn execute_middlewares(
 ) -> &Responder noraise {
   // 过滤出匹配路径的中间件
   let matched_middlewares = []
+  let request_path = event.req.path()
   middlewares.each(middleware => {
     let (base_path, middleware) = middleware
     // 如果 base_path 为空字符串，则为全局中间件
     // 否则检查请求路径是否匹配 base_path
-    if base_path == "" || event.req.url.has_prefix(base_path) {
+    if base_path == "" || path_scope_matches(base_path, request_path) {
       matched_middlewares.push(middleware)
     }
   })
