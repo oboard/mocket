@@ -253,6 +253,25 @@ priv enum RequestBodyReadOutcome {
 }
 
 ///|
+fn next_native_request_body_chunk_size(limit : Int, total : Int) -> Int {
+  let remaining = limit - total
+  if remaining >= 1024 {
+    1024
+  } else {
+    remaining + 1
+  }
+}
+
+///|
+fn native_request_body_chunk_exceeds_limit(
+  limit : Int,
+  total : Int,
+  chunk_length : Int,
+) -> Bool {
+  chunk_length > limit - total
+}
+
+///|
 async fn read_request_body_async(
   request : @http.Request,
   body_reader : &@io.Reader,
@@ -272,15 +291,15 @@ async fn read_request_body_async(
       let buffer = @buffer.new()
       let mut total = 0
       for ;; {
-        let next_chunk_size = @cmp.minimum(1024, limit - total + 1)
+        let next_chunk_size = next_native_request_body_chunk_size(limit, total)
         guard body_reader.read_some(max_len=next_chunk_size) is Some(chunk) else {
           return Body(buffer.contents())
         }
-        total += chunk.length()
-        if total > limit {
+        if native_request_body_chunk_exceeds_limit(limit, total, chunk.length()) {
           send_request_entity_too_large_async(request, conn)
           return RequestRejected
         }
+        total += chunk.length()
         buffer.write_bytes(chunk)
       }
     }
