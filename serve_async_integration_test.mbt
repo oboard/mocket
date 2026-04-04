@@ -641,6 +641,79 @@ async test "serve_async_on_with enforces max_request_body_bytes for fixed-length
 }
 
 ///|
+async test "serve_async_on_with treats max_request_body_bytes=0 as empty-body only" {
+  let app = new()
+  let handled : Ref[Int] = Ref::new(0)
+  app.post("/body", event => {
+    handled.val += 1
+    event.req.raw_body.length().to_string()
+  })
+  app.get("/healthy", _ => "ok")
+  app.get("/__mocket_ready", _ => "ready")
+  @async.with_task_group(group => {
+    let server = allocate_test_server()
+    let port = server.addr.port()
+    group.spawn_bg(no_wait=true, () => {
+      app.serve_async_on_with(
+        server,
+        NativeServeOptions::new(max_request_body_bytes=0),
+      )
+    })
+    wait_until_ready(port)
+
+    let (empty_response, empty_body) = @http.post(
+      localhost_url(port, "/body"),
+      "",
+      headers={ "Connection": "close" },
+    )
+    assert_eq(empty_response.code, 200)
+    inspect(empty_body.text(), content="0")
+    assert_eq(handled.val, 1)
+
+    let (empty_chunked_headers, empty_chunked_body) = issue_raw_request_response(
+      port, "POST /body HTTP/1.1\r\nHost: localhost\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n0\r\n\r\n",
+    )
+    inspect(
+      empty_chunked_headers.has_prefix("HTTP/1.1 200 OK").to_string(),
+      content="true",
+    )
+    inspect(empty_chunked_body.trim(chars="\r\n"), content="0")
+    assert_eq(handled.val, 2)
+
+    let (fixed_response, fixed_body) = @http.post(
+      localhost_url(port, "/body"),
+      "x",
+      headers={ "Connection": "close" },
+    )
+    assert_eq(fixed_response.code, 413)
+    inspect(
+      fixed_body.text().trim(chars="\r\n"),
+      content="Request Entity Too Large",
+    )
+    assert_eq(handled.val, 2)
+
+    let (chunked_headers, chunked_body) = issue_raw_request_response(
+      port, "POST /body HTTP/1.1\r\nHost: localhost\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n1\r\nx\r\n0\r\n\r\n",
+    )
+    inspect(
+      chunked_headers.has_prefix("HTTP/1.1 413 RequestEntityTooLarge").to_string(),
+      content="true",
+    )
+    inspect(chunked_body.trim(chars="\r\n"), content="Request Entity Too Large")
+    assert_eq(handled.val, 2)
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
 async test "serve_async_on_with enforces max_request_body_bytes for chunked bodies" {
   let app = new()
   let handled : Ref[Int] = Ref::new(0)
@@ -2250,6 +2323,127 @@ async test "serve_async closes oversized websocket binary messages" {
           fail("oversized websocket binary message reached the handler")
         }
       })
+    },
+  ) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async treats websocket_max_message_bytes=0 as empty-message only" {
+  let log : Array[String] = []
+  let app = new()
+  app.get("/healthy", _ => "ok")
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => log.push("open")
+      Message(peer, Text(text)) => {
+        log.push("text:\{text.length()}")
+        peer.text("text:\{text.length()}")
+      }
+      Message(peer, Binary(bytes)) => {
+        log.push("binary:\{bytes.length()}")
+        peer.text("binary:\{bytes.length()}")
+      }
+      Close(_) => log.push("close")
+    }
+  })
+  with_test_server_options(
+    app,
+    NativeServeOptions::new(websocket_max_message_bytes=0),
+    port => {
+      let empty_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+      defer empty_client.close()
+
+      empty_client.send_text("")
+      inspect(empty_client.recv().read_all().text(), content="text:0")
+
+      empty_client.send_binary(b"")
+      inspect(empty_client.recv().read_all().text(), content="binary:0")
+      empty_client.send_close()
+
+      let oversized_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+      defer oversized_client.close()
+
+      oversized_client.send_text("x")
+      match
+        @async.with_timeout_opt(
+          300,
+          () => try? oversized_client.recv().read_all().text(),
+        ) {
+        Some(
+          Err(
+            @websocket.ConnectionClosed(
+              @websocket.CloseCode::MessageTooBig,
+              Some(reason)
+            )
+          )
+        ) => inspect(reason, content="websocket message too big")
+        Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+          fail(
+            "expected zero-limit websocket close code, got \{code} / \{reason}",
+          )
+        Some(Err(err)) =>
+          fail("expected zero-limit websocket closure, got error: \{err}")
+        Some(Ok(text)) =>
+          fail("expected zero-limit websocket closure, got text: \{text}")
+        None => fail("timed out waiting for zero-limit websocket closure")
+      }
+
+      let oversized_binary_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+      defer oversized_binary_client.close()
+
+      oversized_binary_client.send_binary([0])
+      match
+        @async.with_timeout_opt(
+          300,
+          () => try? oversized_binary_client.recv().read_all().text(),
+        ) {
+        Some(
+          Err(
+            @websocket.ConnectionClosed(
+              @websocket.CloseCode::MessageTooBig,
+              Some(reason)
+            )
+          )
+        ) => inspect(reason, content="websocket message too big")
+        Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+          fail(
+            "expected zero-limit websocket binary close code, got \{code} / \{reason}",
+          )
+        Some(Err(err)) =>
+          fail("expected zero-limit websocket binary closure, got error: \{err}")
+        Some(Ok(text)) =>
+          fail("expected zero-limit websocket binary closure, got text: \{text}")
+        None => fail("timed out waiting for zero-limit websocket binary closure")
+      }
+
+      let healthy_ws_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+      defer healthy_ws_client.close()
+
+      healthy_ws_client.send_text("")
+      inspect(healthy_ws_client.recv().read_all().text(), content="text:0")
+      healthy_ws_client.send_close()
+
+      @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+        guard log.contains("text:0") && log.contains("binary:0") &&
+          log.contains("close") else {
+          raise ServerNotReady
+        }
+        guard !log.contains("text:1") else {
+          fail("non-empty websocket message passed through zero-byte limit")
+        }
+        guard !log.contains("binary:1") else {
+          fail("non-empty websocket binary passed through zero-byte limit")
+        }
+      })
+
+      let (healthy_response, healthy_body) = @http.get(
+        localhost_url(port, "/healthy"),
+      )
+      assert_eq(healthy_response.code, 200)
+      inspect(healthy_body.text(), content="ok")
     },
   ) catch {
     SocketBindUnavailable => return
