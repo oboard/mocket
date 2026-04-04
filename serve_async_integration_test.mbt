@@ -430,6 +430,26 @@ async fn issue_raw_websocket_close(
 }
 
 ///|
+fn uint16_be_bytes(value : UInt16) -> Bytes {
+  let result = FixedArray::make(2, b'\x00')
+  result.unsafe_write_uint16_be(0, value)
+  result.unsafe_reinterpret_as_bytes()
+}
+
+///|
+fn raw_websocket_close_frame(code : UInt16, reason : Bytes) -> Bytes {
+  let payload_len = 2 + reason.length()
+  Bytes::from_array(
+    [
+      b'\x88',
+      payload_len.to_byte(),
+      ..uint16_be_bytes(code).to_array(),
+      ..reason.to_array(),
+    ],
+  )
+}
+
+///|
 fn raw_header_value(raw_headers : String, header_name : String) -> String? {
   let needle = header_name.to_lower()
   for line in raw_headers.split("\r\n") {
@@ -990,6 +1010,122 @@ async test "serve_async keeps websocket continuation and length-format failures 
     healthy_ws_client.send_close()
     @async.retry(@async.FixedDelay(20), max_retry=50, () => {
       guard opened.val == 4 && closed.val == 4 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 1)
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async echoes websocket close reasons and stays healthy" {
+  let opened : Ref[Int] = Ref::new(0)
+  let closed : Ref[Int] = Ref::new(0)
+  let messages : Ref[Int] = Ref::new(0)
+  let healthy_hits : Ref[Int] = Ref::new(0)
+  let app = new()
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => opened.val += 1
+      Message(peer, Text(text)) => {
+        messages.val += 1
+        peer.text(text)
+      }
+      Message(peer, Binary(bytes)) => {
+        messages.val += 1
+        peer.binary(bytes)
+      }
+      Close(_) => closed.val += 1
+    }
+  })
+  app.get("/healthy", _ => {
+    healthy_hits.val += 1
+    "ok"
+  })
+  with_test_server(app, port => {
+    let (code, reason) = issue_raw_websocket_close(port, "/ws", [
+      raw_websocket_close_frame(1000, b"bye"),
+    ])
+    assert_eq(code, @websocket.CloseCode::Normal)
+    inspect(reason.unwrap_or(""), content="bye")
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 0)
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+    assert_eq(healthy_hits.val, 1)
+
+    let healthy_ws_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+    defer healthy_ws_client.close()
+    healthy_ws_client.send_text("ok")
+    inspect(healthy_ws_client.recv().read_all().text(), content="ok")
+    healthy_ws_client.send_close()
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 1)
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async rejects invalid websocket close reasons and stays healthy" {
+  let opened : Ref[Int] = Ref::new(0)
+  let closed : Ref[Int] = Ref::new(0)
+  let messages : Ref[Int] = Ref::new(0)
+  let healthy_hits : Ref[Int] = Ref::new(0)
+  let app = new()
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => opened.val += 1
+      Message(peer, Text(text)) => {
+        messages.val += 1
+        peer.text(text)
+      }
+      Message(peer, Binary(bytes)) => {
+        messages.val += 1
+        peer.binary(bytes)
+      }
+      Close(_) => closed.val += 1
+    }
+  })
+  app.get("/healthy", _ => {
+    healthy_hits.val += 1
+    "ok"
+  })
+  with_test_server(app, port => {
+    let (code, reason) = issue_raw_websocket_close(port, "/ws", [
+      raw_websocket_close_frame(1000, Bytes::from_array([b'\x80'])),
+    ])
+    assert_eq(code, @websocket.CloseCode::InvalidFramePayload)
+    inspect(reason.unwrap_or(""), content="Invalid UTF8 in close reason")
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 0)
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+    assert_eq(healthy_hits.val, 1)
+
+    let healthy_ws_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+    defer healthy_ws_client.close()
+    healthy_ws_client.send_text("ok")
+    inspect(healthy_ws_client.recv().read_all().text(), content="ok")
+    healthy_ws_client.send_close()
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 1)
   }) catch {
