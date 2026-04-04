@@ -2281,14 +2281,98 @@ async test "serve_async keeps other reused-app servers alive when one server is 
       Some(()),
     )
     match
-      @async.with_timeout_opt(200, () => try? client1.recv().read_all().text()) {
-      Some(_) => ()
+      @async.with_timeout_opt(300, () => try? client1.recv().read_all().text()) {
+      Some(
+        Err(
+          @websocket.ConnectionClosed(
+            @websocket.CloseCode::GoingAway,
+            Some(reason)
+          )
+        )
+      ) => inspect(reason, content="websocket server shutdown")
+      Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+        fail(
+          "expected cancelled server websocket client to observe going-away close, got \{code} / \{reason}",
+        )
+      Some(Err(err)) =>
+        fail(
+          "expected cancelled server websocket client to observe shutdown close, got error: \{err}",
+        )
+      Some(Ok(text)) =>
+        fail(
+          "expected cancelled server websocket client to observe shutdown close, got text: \{text}",
+        )
       None =>
         fail("expected cancelled server websocket client to observe shutdown")
     }
 
     client2.send_text("publish")
     inspect(client2.recv().read_all().text(), content="fanout")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async_on_until sends going-away close to websocket clients on shutdown signal" {
+  let app = new()
+  app.get("/__mocket_ready", _ => "ready")
+  app.ws("/ws", event => {
+    match event {
+      Message(peer, Text(text)) => peer.text(text)
+      _ => ()
+    }
+  })
+  @async.with_task_group(group => {
+    let server = allocate_test_server()
+    let port = server.addr.port()
+    let shutdown = @async.Queue::new(kind=Unbounded)
+    let task = group.spawn(no_wait=true, () => {
+      app.serve_async_on_until(server, shutdown)
+    })
+    wait_until_ready(port)
+
+    let client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+    defer client.close()
+
+    client.send_text("ping")
+    inspect(client.recv().read_all().text(), content="ping")
+
+    shutdown.put(())
+    match
+      @async.with_timeout_opt(300, () => try? client.recv().read_all().text()) {
+      Some(
+        Err(
+          @websocket.ConnectionClosed(
+            @websocket.CloseCode::GoingAway,
+            Some(reason)
+          )
+        )
+      ) => inspect(reason, content="websocket server shutdown")
+      Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+        fail(
+          "expected websocket shutdown signal to send going-away close, got \{code} / \{reason}",
+        )
+      Some(Err(err)) =>
+        fail(
+          "expected websocket shutdown signal to close client, got error: \{err}",
+        )
+      Some(Ok(text)) =>
+        fail(
+          "expected websocket shutdown signal to close client, got text: \{text}",
+        )
+      None => fail("timed out waiting for websocket shutdown close")
+    }
+
+    match @async.with_timeout_opt(300, () => try? task.wait()) {
+      Some(Ok(_)) => ()
+      Some(Err(err)) =>
+        fail(
+          "expected websocket shutdown signal to stop server cleanly: \{err}",
+        )
+      None => fail("timed out waiting for websocket server shutdown")
+    }
   }) catch {
     SocketBindUnavailable => return
     err => raise err

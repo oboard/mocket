@@ -31,6 +31,9 @@ const DEFAULT_NATIVE_WS_OUTGOING_QUEUE_CAPACITY : Int = 256
 const NATIVE_WS_READ_TIMEOUT_REASON : String = "websocket read timeout"
 
 ///|
+const NATIVE_WS_SERVER_SHUTDOWN_REASON : String = "websocket server shutdown"
+
+///|
 fn ensure_native_ws_hub(runtime_id : String) -> NativeWebSocketHub {
   match native_ws_hubs.get(runtime_id) {
     Some(hub) => hub
@@ -298,6 +301,18 @@ async fn recv_native_ws_message(
 }
 
 ///|
+async fn send_native_ws_shutdown_close(ws : @websocket.Conn) -> Unit {
+  ignore(
+    try? @async.protect_from_cancel(resume_on_cancel=true, () => {
+      ws.send_close(
+        code=@websocket.CloseCode::GoingAway,
+        reason=NATIVE_WS_SERVER_SHUTDOWN_REASON,
+      )
+    }),
+  )
+}
+
+///|
 async fn handle_websocket_route_async(
   runtime_id : String,
   request : @http.Request,
@@ -332,6 +347,9 @@ async fn handle_websocket_route_async(
     outgoing.close()
   }) catch {
     err => {
+      if @async.is_cancellation_error(err) {
+        send_native_ws_shutdown_close(ws)
+      }
       handler(Close(snapshot_native_ws_peer(connection_id)))
       unregister_native_ws_connection(connection_id)
       raise err
