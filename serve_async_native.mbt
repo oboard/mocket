@@ -234,10 +234,19 @@ async fn run_native_server(
   app : Mocket,
   ws_runtime_id : String,
   server : @http.Server,
+  options : NativeServeOptions,
 ) -> Unit raise Error {
-  server.run_forever((request, body_reader, conn) => {
-    handle_request_async(app, ws_runtime_id, request, body_reader, conn)
-  })
+  let max_connections = resolve_native_max_connections(options)
+  match max_connections {
+    Some(max_connections) =>
+      server.run_forever(max_connections~, (request, body_reader, conn) => {
+        handle_request_async(app, ws_runtime_id, request, body_reader, conn)
+      })
+    None =>
+      server.run_forever((request, body_reader, conn) => {
+        handle_request_async(app, ws_runtime_id, request, body_reader, conn)
+      })
+  }
 }
 
 ///|
@@ -250,9 +259,21 @@ pub async fn Mocket::serve_async_on(
   self : Mocket,
   server : @http.Server,
 ) -> Unit raise Error {
+  self.serve_async_on_with(server, NativeServeOptions::new())
+}
+
+///|
+/// Serve using explicit native async runtime options.
+/// `max_connections`, if present, limits the number of client connections
+/// handled in parallel by the underlying `@http.Server`.
+pub async fn Mocket::serve_async_on_with(
+  self : Mocket,
+  server : @http.Server,
+  options : NativeServeOptions,
+) -> Unit raise Error {
   let ws_runtime_id = next_ws_serve_runtime_id(self)
   defer cleanup_native_ws_runtime(ws_runtime_id)
-  run_native_server(self, ws_runtime_id, server)
+  run_native_server(self, ws_runtime_id, server, options)
 }
 
 ///|
@@ -265,10 +286,26 @@ pub async fn Mocket::serve_async_on_until(
   server : @http.Server,
   shutdown : @async.Queue[Unit],
 ) -> Unit raise Error {
+  self.serve_async_on_until_with(server, shutdown, NativeServeOptions::new())
+}
+
+///|
+/// Stop serving when `shutdown` receives a unit or is closed.
+/// `shutdown.put(())` wakes one waiter; `shutdown.close()` broadcasts to all waiters.
+/// Shutdown is cancellation-based: active requests and websocket sessions
+/// are aborted rather than drained to completion.
+/// `max_connections`, if present, limits the number of client connections
+/// handled in parallel by the underlying `@http.Server`.
+pub async fn Mocket::serve_async_on_until_with(
+  self : Mocket,
+  server : @http.Server,
+  shutdown : @async.Queue[Unit],
+  options : NativeServeOptions,
+) -> Unit raise Error {
   let ws_runtime_id = next_ws_serve_runtime_id(self)
   defer cleanup_native_ws_runtime(ws_runtime_id)
   @async.any([
-    () => run_native_server(self, ws_runtime_id, server),
+    () => run_native_server(self, ws_runtime_id, server, options),
     () => wait_for_shutdown_signal(shutdown),
   ])
 }
@@ -278,9 +315,22 @@ pub async fn Mocket::serve_async(
   self : Mocket,
   port~ : Int,
 ) -> Unit raise Error {
+  self.serve_async_with(port~, NativeServeOptions::new())
+}
+
+///|
+/// Serve on `port` using explicit native async runtime options.
+/// `max_connections`, if present, limits the number of client connections
+/// handled in parallel by the underlying `@http.Server`.
+pub async fn Mocket::serve_async_with(
+  self : Mocket,
+  port~ : Int,
+  options : NativeServeOptions,
+) -> Unit raise Error {
+  ignore(resolve_native_max_connections(options))
   let addr = @socket.Addr::parse("0.0.0.0:\{port}")
   let server = @http.Server::new(addr, reuse_addr=true)
-  self.serve_async_on(server)
+  self.serve_async_on_with(server, options)
 }
 
 ///|
@@ -293,7 +343,24 @@ pub async fn Mocket::serve_async_until(
   port~ : Int,
   shutdown : @async.Queue[Unit],
 ) -> Unit raise Error {
+  self.serve_async_until_with(port~, shutdown, NativeServeOptions::new())
+}
+
+///|
+/// Stop serving when `shutdown` receives a unit or is closed.
+/// `shutdown.put(())` wakes one waiter; `shutdown.close()` broadcasts to all waiters.
+/// Shutdown is cancellation-based: active requests and websocket sessions
+/// are aborted rather than drained to completion.
+/// `max_connections`, if present, limits the number of client connections
+/// handled in parallel by the underlying `@http.Server`.
+pub async fn Mocket::serve_async_until_with(
+  self : Mocket,
+  port~ : Int,
+  shutdown : @async.Queue[Unit],
+  options : NativeServeOptions,
+) -> Unit raise Error {
+  ignore(resolve_native_max_connections(options))
   let addr = @socket.Addr::parse("0.0.0.0:\{port}")
   let server = @http.Server::new(addr, reuse_addr=true)
-  self.serve_async_on_until(server, shutdown)
+  self.serve_async_on_until_with(server, shutdown, options)
 }

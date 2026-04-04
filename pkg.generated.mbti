@@ -49,6 +49,10 @@ pub suberror FetchError {
 
 pub suberror IOError derive(Show)
 
+pub suberror NativeServeError {
+  InvalidMaxConnections(Int)
+} derive(Show, ToJson)
+
 pub suberror NetworkError derive(Show)
 
 // Types and methods
@@ -150,7 +154,11 @@ pub fn Mocket::serve(Self, port~ : Int) -> Unit
 pub async fn Mocket::serve_async(Self, port~ : Int) -> Unit
 pub async fn Mocket::serve_async_on(Self, @http.Server) -> Unit
 pub async fn Mocket::serve_async_on_until(Self, @http.Server, @aqueue.Queue[Unit]) -> Unit
+pub async fn Mocket::serve_async_on_until_with(Self, @http.Server, @aqueue.Queue[Unit], NativeServeOptions) -> Unit
+pub async fn Mocket::serve_async_on_with(Self, @http.Server, NativeServeOptions) -> Unit
 pub async fn Mocket::serve_async_until(Self, port~ : Int, @aqueue.Queue[Unit]) -> Unit
+pub async fn Mocket::serve_async_until_with(Self, port~ : Int, @aqueue.Queue[Unit], NativeServeOptions) -> Unit
+pub async fn Mocket::serve_async_with(Self, port~ : Int, NativeServeOptions) -> Unit
 pub fn Mocket::static_assets(Self, String, &ServeStaticProvider) -> Unit
 pub fn Mocket::trace(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::use_middleware(Self, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise, base_path? : String) -> Unit
@@ -167,6 +175,11 @@ pub(all) struct MultipartFormValue {
   content_type : String?
   data : BytesView
 }
+
+pub struct NativeServeOptions {
+  max_connections : Int?
+}
+pub fn NativeServeOptions::new(max_connections? : Int) -> Self
 
 pub(all) enum SameSiteOption {
   Lax

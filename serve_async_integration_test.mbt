@@ -382,6 +382,111 @@ async test "serve_async preserves middleware onion order" {
 }
 
 ///|
+async test "serve_async_on_with enforces max_connections" {
+  let app = new()
+  let gate = @async.Queue::new(kind=Unbounded)
+  let started : Ref[Int] = Ref::new(0)
+  app.get("/serial", _ => {
+    started.val += 1
+    ignore(try? gate.get())
+    "ok"
+  })
+  app.get("/__mocket_ready", _ => "ready")
+  @async.with_task_group(group => {
+    let server = allocate_test_server()
+    let port = server.addr.port()
+    group.spawn_bg(no_wait=true, () => {
+      app.serve_async_on_with(
+        server,
+        NativeServeOptions::new(max_connections=1),
+      )
+    })
+    wait_until_ready(port)
+
+    let first = group.spawn(no_wait=true, () => {
+      try? @http.get(localhost_url(port, "/serial"))
+    })
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard started.val == 1 else { raise ServerNotReady }
+    })
+
+    let second = group.spawn(no_wait=true, () => {
+      try? @http.get(localhost_url(port, "/serial"))
+    })
+    match @async.with_timeout_opt(100, () => second.wait()) {
+      None => ()
+      Some(_) =>
+        fail(
+          "expected second request to remain blocked while max_connections=1",
+        )
+    }
+    assert_eq(started.val, 1)
+
+    gate.put(())
+    match first.wait() {
+      Ok((first_response, first_body)) => {
+        assert_eq(first_response.code, 200)
+        inspect(first_body.text(), content="ok")
+      }
+      Err(err) => fail("first limited request failed: \{err}")
+    }
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard started.val == 2 else { raise ServerNotReady }
+    })
+    match @async.with_timeout_opt(100, () => second.wait()) {
+      None => ()
+      Some(_) =>
+        fail(
+          "expected second request to stay blocked until the first handler releases it",
+        )
+    }
+
+    gate.put(())
+    match second.wait() {
+      Ok((second_response, second_body)) => {
+        assert_eq(second_response.code, 200)
+        inspect(second_body.text(), content="ok")
+      }
+      Err(err) => fail("second limited request failed: \{err}")
+    }
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async_on_with rejects non-positive max_connections" {
+  let app = new()
+  let server = allocate_test_server()
+  defer server.close()
+  let result : Result[Unit, Error] = try? app.serve_async_on_with(
+    server,
+    NativeServeOptions::new(max_connections=0),
+  )
+  match result {
+    Err(NativeServeError::InvalidMaxConnections(0)) => ()
+    Err(err) => fail("unexpected invalid max_connections error: \{err}")
+    Ok(_) => fail("expected serve_async_on_with to reject max_connections=0")
+  }
+}
+
+///|
+async test "serve_async_with rejects non-positive max_connections" {
+  let app = new()
+  let result : Result[Unit, Error] = try? app.serve_async_with(
+    port=0,
+    NativeServeOptions::new(max_connections=0),
+  )
+  match result {
+    Err(NativeServeError::InvalidMaxConnections(0)) => ()
+    Err(err) => fail("unexpected invalid max_connections error: \{err}")
+    Ok(_) => fail("expected serve_async_with to reject max_connections=0")
+  }
+}
+
+///|
 async test "serve_async matches middleware base paths by segment boundary" {
   let log : Array[String] = []
   let app = new()
