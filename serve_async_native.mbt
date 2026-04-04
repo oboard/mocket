@@ -189,12 +189,102 @@ async fn send_response_async(
 }
 
 ///|
+async fn send_response_and_close_async(
+  request : @http.Request,
+  conn : @http.ServerConnection,
+  response : HttpResponse,
+) -> Unit raise Error {
+  let headers = response_headers_to_async(response.headers)
+  append_cookie_headers(headers, response.cookies)
+  if !has_header_case_insensitive(headers, "Content-Length") {
+    headers.set("Content-Length", response.raw_body.length().to_string())
+  }
+  headers.set("Connection", "close")
+  if request.meth == Head {
+    send_raw_response_async(conn, response, headers, false)
+    return
+  }
+  conn.send_response(
+    response.status_code.to_int(),
+    response.status_code.to_string(),
+    extra_headers=headers,
+  )
+  if !response.raw_body.is_empty() {
+    conn.write(response.raw_body)
+  }
+  conn.end_response()
+  conn.close()
+}
+
+///|
+async fn send_request_entity_too_large_async(
+  request : @http.Request,
+  conn : @http.ServerConnection,
+) -> Unit raise Error {
+  let response = HttpResponse::new(RequestEntityTooLarge).body(
+    "Request Entity Too Large",
+  )
+  response.headers.set("Content-Type", "text/plain; charset=utf-8")
+  send_response_and_close_async(request, conn, response)
+}
+
+///|
+fn request_content_length(request : @http.Request) -> Int? {
+  match get_header_case_insensitive(request.headers, "content-length") {
+    Some(value) => Some(@string.parse_int(value) catch { _ => return None })
+    None => None
+  }
+}
+
+///|
+priv enum RequestBodyReadOutcome {
+  Body(Bytes)
+  RequestRejected
+}
+
+///|
+async fn read_request_body_async(
+  request : @http.Request,
+  body_reader : &@io.Reader,
+  conn : @http.ServerConnection,
+  max_request_body_bytes : Int?,
+) -> RequestBodyReadOutcome raise Error {
+  match max_request_body_bytes {
+    None => Body(body_reader.read_all().binary())
+    Some(limit) => {
+      match request_content_length(request) {
+        Some(content_length) if content_length > limit => {
+          send_request_entity_too_large_async(request, conn)
+          return RequestRejected
+        }
+        _ => ()
+      }
+      let buffer = @buffer.new()
+      let mut total = 0
+      for ;; {
+        let next_chunk_size = @cmp.minimum(1024, limit - total + 1)
+        guard body_reader.read_some(max_len=next_chunk_size) is Some(chunk) else {
+          return Body(buffer.contents())
+        }
+        total += chunk.length()
+        if total > limit {
+          send_request_entity_too_large_async(request, conn)
+          return RequestRejected
+        }
+        buffer.write_bytes(chunk)
+      }
+    }
+  }
+}
+
+///|
 async fn handle_request_async(
   app : Mocket,
   ws_runtime_id : String,
   request : @http.Request,
   body_reader : &@io.Reader,
   conn : @http.ServerConnection,
+  options : NativeServeOptions,
 ) -> Unit raise Error {
   let request_path = request_target_path(request.path)
   if is_websocket_upgrade_request(request) {
@@ -207,7 +297,12 @@ async fn handle_request_async(
     }
   }
   let http_method_text = request_method_to_string(request.meth)
-  let request_body = body_reader.read_all().binary()
+  let max_request_body_bytes = resolve_native_max_request_body_bytes(options)
+  let request_body = match
+    read_request_body_async(request, body_reader, conn, max_request_body_bytes) {
+    Body(request_body) => request_body
+    RequestRejected => return
+  }
   let (params, handler) = match
     app.lookup_http_route(http_method_text, request_path) {
     Found(matched_handler, matched_params) => (matched_params, matched_handler)
@@ -237,14 +332,19 @@ async fn run_native_server(
   options : NativeServeOptions,
 ) -> Unit raise Error {
   let max_connections = resolve_native_max_connections(options)
+  ignore(resolve_native_max_request_body_bytes(options))
   match max_connections {
     Some(max_connections) =>
       server.run_forever(max_connections~, (request, body_reader, conn) => {
-        handle_request_async(app, ws_runtime_id, request, body_reader, conn)
+        handle_request_async(
+          app, ws_runtime_id, request, body_reader, conn, options,
+        )
       })
     None =>
       server.run_forever((request, body_reader, conn) => {
-        handle_request_async(app, ws_runtime_id, request, body_reader, conn)
+        handle_request_async(
+          app, ws_runtime_id, request, body_reader, conn, options,
+        )
       })
   }
 }
@@ -266,6 +366,8 @@ pub async fn Mocket::serve_async_on(
 /// Serve using explicit native async runtime options.
 /// `max_connections`, if present, limits the number of client connections
 /// handled in parallel by the underlying `@http.Server`.
+/// `max_request_body_bytes`, if present, rejects oversized request bodies
+/// with `413 Request Entity Too Large`.
 pub async fn Mocket::serve_async_on_with(
   self : Mocket,
   server : @http.Server,
@@ -296,6 +398,8 @@ pub async fn Mocket::serve_async_on_until(
 /// are aborted rather than drained to completion.
 /// `max_connections`, if present, limits the number of client connections
 /// handled in parallel by the underlying `@http.Server`.
+/// `max_request_body_bytes`, if present, rejects oversized request bodies
+/// with `413 Request Entity Too Large`.
 pub async fn Mocket::serve_async_on_until_with(
   self : Mocket,
   server : @http.Server,
@@ -322,12 +426,15 @@ pub async fn Mocket::serve_async(
 /// Serve on `port` using explicit native async runtime options.
 /// `max_connections`, if present, limits the number of client connections
 /// handled in parallel by the underlying `@http.Server`.
+/// `max_request_body_bytes`, if present, rejects oversized request bodies
+/// with `413 Request Entity Too Large`.
 pub async fn Mocket::serve_async_with(
   self : Mocket,
   port~ : Int,
   options : NativeServeOptions,
 ) -> Unit raise Error {
   ignore(resolve_native_max_connections(options))
+  ignore(resolve_native_max_request_body_bytes(options))
   let addr = @socket.Addr::parse("0.0.0.0:\{port}")
   let server = @http.Server::new(addr, reuse_addr=true)
   self.serve_async_on_with(server, options)
@@ -353,6 +460,8 @@ pub async fn Mocket::serve_async_until(
 /// are aborted rather than drained to completion.
 /// `max_connections`, if present, limits the number of client connections
 /// handled in parallel by the underlying `@http.Server`.
+/// `max_request_body_bytes`, if present, rejects oversized request bodies
+/// with `413 Request Entity Too Large`.
 pub async fn Mocket::serve_async_until_with(
   self : Mocket,
   port~ : Int,
@@ -360,6 +469,7 @@ pub async fn Mocket::serve_async_until_with(
   options : NativeServeOptions,
 ) -> Unit raise Error {
   ignore(resolve_native_max_connections(options))
+  ignore(resolve_native_max_request_body_bytes(options))
   let addr = @socket.Addr::parse("0.0.0.0:\{port}")
   let server = @http.Server::new(addr, reuse_addr=true)
   self.serve_async_on_until_with(server, shutdown, options)

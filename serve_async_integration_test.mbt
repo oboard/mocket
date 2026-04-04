@@ -263,6 +263,74 @@ async fn issue_raw_request_headers(port : Int, request : String) -> String {
 }
 
 ///|
+async fn issue_raw_request_response(
+  port : Int,
+  request : String,
+) -> (String, String) {
+  let addr = @socket.Addr::parse("127.0.0.1:\{port}") catch {
+    _ => fail("invalid raw request address")
+  }
+  let client = @socket.Tcp::connect(addr)
+  defer client.close()
+  client.write(request)
+  let headers = client.read_until("\r\n\r\n").unwrap_or("")
+  let body = if raw_header_value(headers, "Transfer-Encoding")
+    .unwrap_or("")
+    .to_lower()
+    .contains("chunked") {
+    read_chunked_http_body(client)
+  } else {
+    match raw_header_value(headers, "Content-Length") {
+      Some(length_text) => {
+        let length = @string.parse_int(length_text) catch { _ => 0 }
+        if length == 0 {
+          ""
+        } else {
+          @utf8.decode(client.read_exactly(length)) catch {
+            _ => ""
+          }
+        }
+      }
+      None => @utf8.decode(client.read_all().binary()) catch { _ => "" }
+    }
+  }
+  (headers, body)
+}
+
+///|
+async fn read_chunked_http_body(client : @socket.Tcp) -> String {
+  let buffer = @buffer.new()
+  for ;; {
+    let chunk_len_line = client.read_until("\r\n").unwrap_or("")
+    guard chunk_len_line != "" else {
+      fail("unexpected EOF while reading chunked response size")
+    }
+    let chunk_len_text = match chunk_len_line.find(";") {
+      Some(index) => chunk_len_line[:index].to_string()
+      None => chunk_len_line
+    }
+    let chunk_len = @string.parse_int(
+      chunk_len_text.trim(chars="\r\n"),
+      base=16,
+    ) catch {
+      _ => fail("invalid chunked response size: \{chunk_len_text}")
+    }
+    if chunk_len == 0 {
+      guard client.read_exactly(2) == "\r\n" else {
+        fail("invalid chunked response terminator")
+      }
+      return @utf8.decode(buffer.contents()) catch {
+        _ => fail("chunked response body is not valid UTF-8")
+      }
+    }
+    buffer.write_bytes(client.read_exactly(chunk_len))
+    guard client.read_exactly(2) == "\r\n" else {
+      fail("invalid chunked response chunk terminator")
+    }
+  }
+}
+
+///|
 fn raw_header_value(raw_headers : String, header_name : String) -> String? {
   let needle = header_name.to_lower()
   for line in raw_headers.split("\r\n") {
@@ -483,6 +551,236 @@ async test "serve_async_with rejects non-positive max_connections" {
     Err(NativeServeError::InvalidMaxConnections(0)) => ()
     Err(err) => fail("unexpected invalid max_connections error: \{err}")
     Ok(_) => fail("expected serve_async_with to reject max_connections=0")
+  }
+}
+
+///|
+async test "serve_async_on_with enforces max_request_body_bytes for fixed-length bodies" {
+  let app = new()
+  let handled : Ref[Int] = Ref::new(0)
+  app.post("/body", event => {
+    handled.val += 1
+    event.req.raw_body
+  })
+  app.get("/healthy", _ => "ok")
+  app.get("/__mocket_ready", _ => "ready")
+  @async.with_task_group(group => {
+    let server = allocate_test_server()
+    let port = server.addr.port()
+    group.spawn_bg(no_wait=true, () => {
+      app.serve_async_on_with(
+        server,
+        NativeServeOptions::new(max_request_body_bytes=4),
+      )
+    })
+    wait_until_ready(port)
+
+    let (ok_response, ok_body) = @http.post(
+      localhost_url(port, "/body"),
+      "moon",
+      headers={ "Connection": "close" },
+    )
+    assert_eq(ok_response.code, 200)
+    inspect(ok_body.text(), content="moon")
+    assert_eq(handled.val, 1)
+
+    let (rejected_response, rejected_body) = @http.post(
+      localhost_url(port, "/body"),
+      "moonbit",
+      headers={ "Connection": "close" },
+    )
+    assert_eq(rejected_response.code, 413)
+    assert_eq(rejected_response.headers.get("connection"), Some("close"))
+    inspect(
+      rejected_body.text().trim(chars="\r\n"),
+      content="Request Entity Too Large",
+    )
+    assert_eq(handled.val, 1)
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async_on_with enforces max_request_body_bytes for chunked bodies" {
+  let app = new()
+  let handled : Ref[Int] = Ref::new(0)
+  app.post("/body", event => {
+    handled.val += 1
+    event.req.raw_body
+  })
+  app.get("/healthy", _ => "ok")
+  app.get("/__mocket_ready", _ => "ready")
+  @async.with_task_group(group => {
+    let server = allocate_test_server()
+    let port = server.addr.port()
+    group.spawn_bg(no_wait=true, () => {
+      app.serve_async_on_with(
+        server,
+        NativeServeOptions::new(max_request_body_bytes=4),
+      )
+    })
+    wait_until_ready(port)
+
+    let (headers, body) = issue_raw_request_response(
+      port, "POST /body HTTP/1.1\r\nHost: localhost\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n3\r\nmoo\r\n4\r\nnbit\r\n0\r\n\r\n",
+    )
+    inspect(
+      headers.has_prefix("HTTP/1.1 413 RequestEntityTooLarge").to_string(),
+      content="true",
+    )
+    inspect(
+      raw_header_value(headers, "Connection").unwrap_or(""),
+      content="close",
+    )
+    inspect(
+      raw_header_value(headers, "Transfer-Encoding").unwrap_or("").to_lower(),
+      content="chunked",
+    )
+    inspect(body.trim(chars="\r\n"), content="Request Entity Too Large")
+    assert_eq(handled.val, 0)
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async_on_with rejects negative max_request_body_bytes" {
+  let app = new()
+  let server = allocate_test_server()
+  defer server.close()
+  let result : Result[Unit, Error] = try? app.serve_async_on_with(
+    server,
+    NativeServeOptions::new(max_request_body_bytes=-1),
+  )
+  match result {
+    Err(NativeServeError::InvalidMaxRequestBodyBytes(-1)) => ()
+    Err(err) => fail("unexpected invalid max_request_body_bytes error: \{err}")
+    Ok(_) =>
+      fail("expected serve_async_on_with to reject max_request_body_bytes=-1")
+  }
+}
+
+///|
+async test "serve_async_on_until_with rejects negative max_request_body_bytes" {
+  let app = new()
+  let server = allocate_test_server()
+  defer server.close()
+  let shutdown = @async.Queue::new(kind=Unbounded)
+  let result : Result[Unit, Error] = try? app.serve_async_on_until_with(
+    server,
+    shutdown,
+    NativeServeOptions::new(max_request_body_bytes=-1),
+  )
+  match result {
+    Err(NativeServeError::InvalidMaxRequestBodyBytes(-1)) => ()
+    Err(err) =>
+      fail(
+        "unexpected serve_async_on_until_with max_request_body_bytes error: \{err}",
+      )
+    Ok(_) =>
+      fail(
+        "expected serve_async_on_until_with to reject max_request_body_bytes=-1",
+      )
+  }
+}
+
+///|
+async test "serve_async_with rejects negative max_request_body_bytes" {
+  let app = new()
+  let result : Result[Unit, Error] = try? app.serve_async_with(
+    port=0,
+    NativeServeOptions::new(max_request_body_bytes=-1),
+  )
+  match result {
+    Err(NativeServeError::InvalidMaxRequestBodyBytes(-1)) => ()
+    Err(err) => fail("unexpected invalid max_request_body_bytes error: \{err}")
+    Ok(_) =>
+      fail("expected serve_async_with to reject max_request_body_bytes=-1")
+  }
+}
+
+///|
+async test "serve_async_until_with rejects negative max_request_body_bytes" {
+  let app = new()
+  let shutdown = @async.Queue::new(kind=Unbounded)
+  let result : Result[Unit, Error] = try? app.serve_async_until_with(
+    port=0,
+    shutdown,
+    NativeServeOptions::new(max_request_body_bytes=-1),
+  )
+  match result {
+    Err(NativeServeError::InvalidMaxRequestBodyBytes(-1)) => ()
+    Err(err) =>
+      fail(
+        "unexpected serve_async_until_with max_request_body_bytes error: \{err}",
+      )
+    Ok(_) =>
+      fail(
+        "expected serve_async_until_with to reject max_request_body_bytes=-1",
+      )
+  }
+}
+
+///|
+async test "serve_async_on_with preserves head content-length for oversized requests" {
+  let app = new()
+  app.get("/healthy", _ => "ok")
+  app.get("/body", _ => "body")
+  app.get("/__mocket_ready", _ => "ready")
+  @async.with_task_group(group => {
+    let server = allocate_test_server()
+    let port = server.addr.port()
+    group.spawn_bg(no_wait=true, () => {
+      app.serve_async_on_with(
+        server,
+        NativeServeOptions::new(max_request_body_bytes=4),
+      )
+    })
+    wait_until_ready(port)
+
+    let headers = issue_raw_request_headers(
+      port, "HEAD /body HTTP/1.1\r\nHost: localhost\r\nContent-Length: 7\r\nConnection: close\r\n\r\nmoonbit",
+    )
+    inspect(
+      headers.has_prefix("HTTP/1.1 413 RequestEntityTooLarge").to_string(),
+      content="true",
+    )
+    inspect(
+      raw_header_value(headers, "Connection").unwrap_or(""),
+      content="close",
+    )
+    inspect(
+      raw_header_value(headers, "Content-Length").unwrap_or(""),
+      content="24",
+    )
+    inspect(
+      raw_header_value(headers, "Transfer-Encoding").unwrap_or(""),
+      content="",
+    )
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
   }
 }
 

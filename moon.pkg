@@ -8,6 +8,7 @@ import {
   "moonbitlang/async/process",
   "moonbitlang/async/socket",
   "moonbitlang/async/websocket",
+  "moonbitlang/core/cmp",
   "moonbitlang/core/json",
   "moonbitlang/core/strconv",
   "moonbitlang/core/string",
@@ -22,9 +23,9 @@ options(
     "fetch.native.mbt": [ "native" ],
     "fetch_integration_test.mbt": [ "native" ],
     "mocket.native.mbt": [ "native" ],
-    "serve_integration_test.mbt": [ "native" ],
     "serve_async_integration_test.mbt": [ "native" ],
     "serve_async_native.mbt": [ "native" ],
+    "serve_integration_test.mbt": [ "native" ],
     "websocket_async_native.mbt": [ "native" ],
   },
 )
