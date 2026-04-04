@@ -1,6 +1,7 @@
 ///|
 priv struct NativeWebSocketConnection {
   outgoing : @async.Queue[NativeWebSocketOutbound]
+  overflow_policy : NativeWebSocketOverflowPolicy
   subscribed_channels : Map[String, Unit]
 }
 
@@ -24,7 +25,7 @@ let native_ws_hubs : Map[String, NativeWebSocketHub] = Map::new()
 let native_ws_connection_hubs : Map[String, String] = Map::new()
 
 ///|
-const NATIVE_WS_OUTGOING_QUEUE_CAPACITY : Int = 256
+const DEFAULT_NATIVE_WS_OUTGOING_QUEUE_CAPACITY : Int = 256
 
 ///|
 fn ensure_native_ws_hub(runtime_id : String) -> NativeWebSocketHub {
@@ -94,10 +95,12 @@ fn register_native_ws_connection(
   runtime_id : String,
   connection_id : String,
   outgoing : @async.Queue[NativeWebSocketOutbound],
+  overflow_policy : NativeWebSocketOverflowPolicy,
 ) -> Unit {
   let hub = ensure_native_ws_hub(runtime_id)
   hub.connections.set(connection_id, {
     outgoing,
+    overflow_policy,
     subscribed_channels: Map::new(),
   })
   native_ws_connection_hubs.set(connection_id, runtime_id)
@@ -155,8 +158,31 @@ fn enqueue_native_ws_outgoing(
   message : NativeWebSocketOutbound,
 ) -> Unit {
   match resolve_native_ws_connection(connection_id) {
-    Some((_, connection)) => ignore(try? connection.outgoing.try_put(message))
+    Some((_, connection)) =>
+      enqueue_native_ws_outgoing_to_connection(connection, message)
     None => ()
+  }
+}
+
+///|
+fn enqueue_native_ws_outgoing_to_connection(
+  connection : NativeWebSocketConnection,
+  message : NativeWebSocketOutbound,
+) -> Unit {
+  let enqueue_result : Result[Bool, Error] = try? connection.outgoing.try_put(
+    message,
+  )
+  match enqueue_result {
+    Ok(true) => ()
+    Ok(false) =>
+      match connection.overflow_policy {
+        NativeWebSocketOverflowPolicy::DropOldest => {
+          ignore(try? connection.outgoing.try_get())
+          ignore(try? connection.outgoing.try_put(message))
+        }
+        NativeWebSocketOverflowPolicy::DropLatest => ()
+      }
+    Err(_) => ()
   }
 }
 
@@ -242,15 +268,17 @@ async fn handle_websocket_route_async(
   request : @http.Request,
   conn : @http.ServerConnection,
   handler : WebSocketHandler,
+  outgoing_queue_capacity : Int,
+  overflow_policy : NativeWebSocketOverflowPolicy,
 ) -> Unit raise Error {
   let ws = @websocket.from_http_server(request, conn)
   defer ws.close()
   let hub = ensure_native_ws_hub(runtime_id)
   let connection_id = next_native_ws_connection_id(runtime_id, hub)
-  let outgoing = @async.Queue::new(
-    kind=DiscardOldest(NATIVE_WS_OUTGOING_QUEUE_CAPACITY),
+  let outgoing = @async.Queue::new(kind=Blocking(outgoing_queue_capacity))
+  register_native_ws_connection(
+    runtime_id, connection_id, outgoing, overflow_policy,
   )
-  register_native_ws_connection(runtime_id, connection_id, outgoing)
   @async.with_task_group(group => {
     group.spawn_bg(() => write_native_ws_outgoing(ws, outgoing))
     handler(Open(snapshot_native_ws_peer(connection_id)))

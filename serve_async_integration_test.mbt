@@ -152,6 +152,22 @@ async fn with_test_server(app : Mocket, run_test : async (Int) -> Unit) -> Unit 
 }
 
 ///|
+async fn with_test_server_options(
+  app : Mocket,
+  options : NativeServeOptions,
+  run_test : async (Int) -> Unit,
+) -> Unit {
+  let server = allocate_test_server()
+  let port = server.addr.port()
+  app.get("/__mocket_ready", _ => "ready")
+  @async.with_task_group(group => {
+    group.spawn_bg(no_wait=true, () => app.serve_async_on_with(server, options))
+    wait_until_ready(port)
+    run_test(port)
+  })
+}
+
+///|
 async fn with_port_bound_test_server(
   app : Mocket,
   run_test : async (Int) -> Unit,
@@ -850,6 +866,90 @@ async test "serve_async_until_with rejects non-positive request_body_read_timeou
     Ok(_) =>
       fail(
         "expected serve_async_until_with to reject request_body_read_timeout_ms=0",
+      )
+  }
+}
+
+///|
+async test "serve_async_on_with rejects negative websocket_outgoing_queue_capacity" {
+  let app = new()
+  let server = allocate_test_server()
+  defer server.close()
+  let result : Result[Unit, Error] = try? app.serve_async_on_with(
+    server,
+    NativeServeOptions::new(websocket_outgoing_queue_capacity=-1),
+  )
+  match result {
+    Err(NativeServeError::InvalidWebSocketOutgoingQueueCapacity(-1)) => ()
+    Err(err) =>
+      fail("unexpected invalid websocket_outgoing_queue_capacity error: \{err}")
+    Ok(_) =>
+      fail(
+        "expected serve_async_on_with to reject websocket_outgoing_queue_capacity=-1",
+      )
+  }
+}
+
+///|
+async test "serve_async_on_until_with rejects negative websocket_outgoing_queue_capacity" {
+  let app = new()
+  let server = allocate_test_server()
+  defer server.close()
+  let shutdown = @async.Queue::new(kind=Unbounded)
+  let result : Result[Unit, Error] = try? app.serve_async_on_until_with(
+    server,
+    shutdown,
+    NativeServeOptions::new(websocket_outgoing_queue_capacity=-1),
+  )
+  match result {
+    Err(NativeServeError::InvalidWebSocketOutgoingQueueCapacity(-1)) => ()
+    Err(err) =>
+      fail(
+        "unexpected serve_async_on_until_with websocket_outgoing_queue_capacity error: \{err}",
+      )
+    Ok(_) =>
+      fail(
+        "expected serve_async_on_until_with to reject websocket_outgoing_queue_capacity=-1",
+      )
+  }
+}
+
+///|
+async test "serve_async_with rejects negative websocket_outgoing_queue_capacity" {
+  let app = new()
+  let result : Result[Unit, Error] = try? app.serve_async_with(
+    port=0,
+    NativeServeOptions::new(websocket_outgoing_queue_capacity=-1),
+  )
+  match result {
+    Err(NativeServeError::InvalidWebSocketOutgoingQueueCapacity(-1)) => ()
+    Err(err) =>
+      fail("unexpected invalid websocket_outgoing_queue_capacity error: \{err}")
+    Ok(_) =>
+      fail(
+        "expected serve_async_with to reject websocket_outgoing_queue_capacity=-1",
+      )
+  }
+}
+
+///|
+async test "serve_async_until_with rejects negative websocket_outgoing_queue_capacity" {
+  let app = new()
+  let shutdown = @async.Queue::new(kind=Unbounded)
+  let result : Result[Unit, Error] = try? app.serve_async_until_with(
+    port=0,
+    shutdown,
+    NativeServeOptions::new(websocket_outgoing_queue_capacity=-1),
+  )
+  match result {
+    Err(NativeServeError::InvalidWebSocketOutgoingQueueCapacity(-1)) => ()
+    Err(err) =>
+      fail(
+        "unexpected serve_async_until_with websocket_outgoing_queue_capacity error: \{err}",
+      )
+    Ok(_) =>
+      fail(
+        "expected serve_async_until_with to reject websocket_outgoing_queue_capacity=-1",
       )
   }
 }
@@ -1679,6 +1779,116 @@ async test "serve_async handles websocket text and binary messages" {
       }
     })
   }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async drops oldest buffered websocket messages on overflow when configured" {
+  let app = new()
+  app.ws("/ws", event => {
+    match event {
+      Open(peer) => {
+        peer.text("one")
+        peer.text("two")
+        peer.text("three")
+      }
+      _ => ()
+    }
+  })
+  with_test_server_options(
+    app,
+    NativeServeOptions::new(
+      websocket_outgoing_queue_capacity=2,
+      websocket_overflow_policy=NativeWebSocketOverflowPolicy::DropOldest,
+    ),
+    port => {
+      let client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+      defer client.close()
+
+      inspect(client.recv().read_all().text(), content="two")
+      inspect(client.recv().read_all().text(), content="three")
+      inspect(
+        @async.with_timeout_opt(100, () => client.recv().read_all().text()),
+        content="None",
+      )
+
+      client.send_close()
+    },
+  ) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async drops oldest buffered websocket messages by default" {
+  let app = new()
+  app.ws("/ws", event => {
+    match event {
+      Open(peer) => {
+        peer.text("one")
+        peer.text("two")
+        peer.text("three")
+      }
+      _ => ()
+    }
+  })
+  with_test_server_options(
+    app,
+    NativeServeOptions::new(websocket_outgoing_queue_capacity=2),
+    port => {
+      let client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+      defer client.close()
+
+      inspect(client.recv().read_all().text(), content="two")
+      inspect(client.recv().read_all().text(), content="three")
+      inspect(
+        @async.with_timeout_opt(100, () => client.recv().read_all().text()),
+        content="None",
+      )
+
+      client.send_close()
+    },
+  ) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+async test "serve_async drops latest buffered websocket messages on overflow when configured" {
+  let app = new()
+  app.ws("/ws", event => {
+    match event {
+      Open(peer) => {
+        peer.text("one")
+        peer.text("two")
+        peer.text("three")
+      }
+      _ => ()
+    }
+  })
+  with_test_server_options(
+    app,
+    NativeServeOptions::new(
+      websocket_outgoing_queue_capacity=2,
+      websocket_overflow_policy=NativeWebSocketOverflowPolicy::DropLatest,
+    ),
+    port => {
+      let client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+      defer client.close()
+
+      inspect(client.recv().read_all().text(), content="one")
+      inspect(client.recv().read_all().text(), content="two")
+      inspect(
+        @async.with_timeout_opt(100, () => client.recv().read_all().text()),
+        content="None",
+      )
+
+      client.send_close()
+    },
+  ) catch {
     SocketBindUnavailable => return
     err => raise err
   }

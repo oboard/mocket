@@ -53,6 +53,64 @@ fn native_ws_connection_hub_count() -> Int {
 }
 
 ///|
+fn test_native_ws_connection(
+  capacity : Int,
+  overflow_policy : NativeWebSocketOverflowPolicy,
+) -> NativeWebSocketConnection {
+  {
+    outgoing: @async.Queue::new(kind=Blocking(capacity)),
+    overflow_policy,
+    subscribed_channels: Map::new(),
+  }
+}
+
+///|
+test "enqueue_native_ws_outgoing_to_connection drops oldest when configured" {
+  let connection = test_native_ws_connection(
+    2,
+    NativeWebSocketOverflowPolicy::DropOldest,
+  )
+  enqueue_native_ws_outgoing_to_connection(connection, SendText("one"))
+  enqueue_native_ws_outgoing_to_connection(connection, SendText("two"))
+  enqueue_native_ws_outgoing_to_connection(connection, SendText("three"))
+
+  match connection.outgoing.try_get() {
+    Some(SendText(text)) => inspect(text, content="two")
+    Some(_) => fail("unexpected first queued websocket message kind")
+    None => fail("expected first queued websocket message")
+  }
+  match connection.outgoing.try_get() {
+    Some(SendText(text)) => inspect(text, content="three")
+    Some(_) => fail("unexpected second queued websocket message kind")
+    None => fail("expected second queued websocket message")
+  }
+  inspect(connection.outgoing.try_get() is None, content="true")
+}
+
+///|
+test "enqueue_native_ws_outgoing_to_connection drops latest when configured" {
+  let connection = test_native_ws_connection(
+    2,
+    NativeWebSocketOverflowPolicy::DropLatest,
+  )
+  enqueue_native_ws_outgoing_to_connection(connection, SendText("one"))
+  enqueue_native_ws_outgoing_to_connection(connection, SendText("two"))
+  enqueue_native_ws_outgoing_to_connection(connection, SendText("three"))
+
+  match connection.outgoing.try_get() {
+    Some(SendText(text)) => inspect(text, content="one")
+    Some(_) => fail("unexpected first queued websocket message kind")
+    None => fail("expected first queued websocket message")
+  }
+  match connection.outgoing.try_get() {
+    Some(SendText(text)) => inspect(text, content="two")
+    Some(_) => fail("unexpected second queued websocket message kind")
+    None => fail("expected second queued websocket message")
+  }
+  inspect(connection.outgoing.try_get() is None, content="true")
+}
+
+///|
 async test "serve_async_on clears websocket runtime state on cancellation" {
   let initial_hub_count = native_ws_hub_count()
   let initial_connection_hub_count = native_ws_connection_hub_count()
