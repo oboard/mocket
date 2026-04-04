@@ -124,6 +124,10 @@ async test "static_file serves head and validates etags" {
     guard etag != "" else {
       fail("expected filesystem provider to emit an ETag")
     }
+    let last_modified = get_response.headers.get("last-modified").unwrap_or("")
+    guard last_modified != "" else {
+      fail("expected filesystem provider to emit Last-Modified")
+    }
 
     let (head_response, head_body) = issue_request(
       port,
@@ -133,6 +137,7 @@ async test "static_file serves head and validates etags" {
     assert_eq(head_response.code, 200)
     assert_eq(head_body, b"")
     assert_eq(head_response.headers.get("etag"), Some(etag))
+    assert_eq(head_response.headers.get("last-modified"), Some(last_modified))
     assert_eq(head_response.headers.get("content-length"), Some("16"))
 
     let (cached_response, cached_body) = issue_request(
@@ -144,6 +149,7 @@ async test "static_file serves head and validates etags" {
     assert_eq(cached_response.code, 304)
     assert_eq(cached_body, b"")
     assert_eq(cached_response.headers.get("etag"), Some(etag))
+    assert_eq(cached_response.headers.get("last-modified"), Some(last_modified))
 
     let weak_etag = "W/\{etag}"
     let (weak_response, weak_body) = issue_request(
@@ -163,6 +169,44 @@ async test "static_file serves head and validates etags" {
     )
     assert_eq(multi_response.code, 304)
     assert_eq(multi_body, b"")
+
+    let (ims_response, ims_body) = issue_request(
+      port,
+      @http.Get,
+      "/assets/hello.txt",
+      headers={ "If-Modified-Since": last_modified },
+    )
+    assert_eq(ims_response.code, 304)
+    assert_eq(ims_body, b"")
+    assert_eq(ims_response.headers.get("etag"), Some(etag))
+    assert_eq(ims_response.headers.get("last-modified"), Some(last_modified))
+
+    let (stale_response, stale_body) = issue_request(
+      port,
+      @http.Get,
+      "/assets/hello.txt",
+      headers={ "If-Modified-Since": "Thu, 01 Jan 1970 00:00:00 GMT" },
+    )
+    assert_eq(stale_response.code, 200)
+    assert_eq(
+      stale_body,
+      @fs.read_file("static_file/testdata/hello.txt").binary(),
+    )
+
+    let (precedence_response, precedence_body) = issue_request(
+      port,
+      @http.Get,
+      "/assets/hello.txt",
+      headers={
+        "If-None-Match": "\"miss\"",
+        "If-Modified-Since": last_modified,
+      },
+    )
+    assert_eq(precedence_response.code, 200)
+    assert_eq(
+      precedence_body,
+      @fs.read_file("static_file/testdata/hello.txt").binary(),
+    )
   }) catch {
     SocketBindUnavailable => return
     err => raise err

@@ -83,6 +83,8 @@ impl ServeStaticProvider for EncodedStaticProvider with get_meta(_, id) {
       Some(
         StaticAssetMeta::new(
           asset_type="text/plain; charset=utf-8",
+          etag="\"encoded-v1\"",
+          mtime=1_709_251_199L,
           encoding="gzip",
           size=7L,
         ),
@@ -313,6 +315,72 @@ async test "serve_async preserves content-encoding for encoded static assets" {
     assert_eq(head_response.headers.get("content-encoding"), Some("gzip"))
     assert_eq(head_response.headers.get("content-length"), Some("7"))
     assert_eq(head_body, b"")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async preserves vary and last-modified on conditional static responses" {
+  let app = new()
+  app.static_assets("/assets", EncodedStaticProvider::{  })
+  with_test_server(app, port => {
+    let (get_response, get_body) = issue_request(
+      port,
+      @http.Get,
+      "/assets/hello.txt",
+      headers={ "Accept-Encoding": "gzip" },
+    )
+    assert_eq(get_response.code, 200)
+    assert_eq(get_body, b"encoded")
+    assert_eq(get_response.headers.get("vary"), Some("Accept-Encoding"))
+    let etag = get_response.headers.get("etag").unwrap_or("")
+    let last_modified = get_response.headers.get("last-modified").unwrap_or("")
+    guard etag != "" else {
+      fail("expected encoded asset response to emit an ETag")
+    }
+    guard last_modified != "" else {
+      fail("expected encoded asset response to emit Last-Modified")
+    }
+
+    let (etag_response, etag_body) = issue_request(
+      port,
+      @http.Get,
+      "/assets/hello.txt",
+      headers={ "Accept-Encoding": "gzip", "If-None-Match": etag },
+    )
+    assert_eq(etag_response.code, 304)
+    assert_eq(etag_body, b"")
+    assert_eq(etag_response.headers.get("vary"), Some("Accept-Encoding"))
+    assert_eq(etag_response.headers.get("etag"), Some(etag))
+    assert_eq(etag_response.headers.get("last-modified"), Some(last_modified))
+
+    let (ims_response, ims_body) = issue_request(
+      port,
+      @http.Get,
+      "/assets/hello.txt",
+      headers={ "Accept-Encoding": "gzip", "If-Modified-Since": last_modified },
+    )
+    assert_eq(ims_response.code, 304)
+    assert_eq(ims_body, b"")
+    assert_eq(ims_response.headers.get("vary"), Some("Accept-Encoding"))
+    assert_eq(ims_response.headers.get("etag"), Some(etag))
+    assert_eq(ims_response.headers.get("last-modified"), Some(last_modified))
+
+    let (precedence_response, precedence_body) = issue_request(
+      port,
+      @http.Get,
+      "/assets/hello.txt",
+      headers={
+        "Accept-Encoding": "gzip",
+        "If-None-Match": "\"miss\"",
+        "If-Modified-Since": last_modified,
+      },
+    )
+    assert_eq(precedence_response.code, 200)
+    assert_eq(precedence_body, b"encoded")
+    assert_eq(precedence_response.headers.get("vary"), Some("Accept-Encoding"))
   }) catch {
     SocketBindUnavailable => return
     err => raise err

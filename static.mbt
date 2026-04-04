@@ -151,6 +151,10 @@ fn static_asset_headers(
     Some(etag) => headers.set("ETag", etag)
     None => ()
   }
+  match meta.mtime {
+    Some(mtime) => headers.set("Last-Modified", format_http_date(mtime))
+    None => ()
+  }
   match meta.asset_type {
     Some(t) => headers.set("Content-Type", t)
     None => {
@@ -175,6 +179,31 @@ fn static_asset_headers(
 }
 
 ///|
+fn static_not_modified_headers(
+  response_headers : Map[String, String],
+  meta : StaticAssetMeta,
+) -> Map[String, String] {
+  let headers = copy_headers(response_headers)
+  match meta.etag {
+    Some(etag) => headers.set("ETag", etag)
+    None => ()
+  }
+  match meta.mtime {
+    Some(mtime) => headers.set("Last-Modified", format_http_date(mtime))
+    None => ()
+  }
+  headers
+}
+
+///|
+fn if_modified_since_matches(header_value : String, mtime : Int64) -> Bool {
+  match parse_http_date(header_value) {
+    Some(if_modified_since) => if_modified_since >= mtime
+    None => false
+  }
+}
+
+///|
 pub fn Mocket::static_assets(
   self : Mocket,
   path : String,
@@ -196,6 +225,16 @@ pub fn Mocket::static_assets(
         return HttpResponse::new(MethodNotAllowed)
       }
       let original_id = mounted_asset_id(mount_path, event.req.url)
+      let if_none_match = get_request_header(
+        event.req.headers,
+        "if-none-match",
+        "If-None-Match",
+      )
+      let if_modified_since = get_request_header(
+        event.req.headers,
+        "if-modified-since",
+        "If-Modified-Since",
+      )
 
       // Parse Accept-Encoding
       // Headers are Map[StringView, StringView]
@@ -261,19 +300,19 @@ pub fn Mocket::static_assets(
         Some(meta) => {
           let meta = match meta.etag {
             Some(etag) =>
-              if get_request_header(
-                  event.req.headers,
-                  "if-none-match",
-                  "If-None-Match",
-                ).map(header => if_none_match_matches(header, etag)) ==
+              if if_none_match.map(header => if_none_match_matches(header, etag)) ==
                 Some(true) {
                 match provider.get_meta(id) {
                   Some(revalidated_meta) =>
                     match revalidated_meta.etag {
                       Some(revalidated_etag) if revalidated_etag == etag =>
-                        return HttpResponse::new(NotModified, headers={
-                          "ETag": etag,
-                        })
+                        return HttpResponse::new(
+                          NotModified,
+                          headers=static_not_modified_headers(
+                            event.res.headers,
+                            revalidated_meta,
+                          ),
+                        )
                       _ => revalidated_meta
                     }
                   None => meta
@@ -283,14 +322,28 @@ pub fn Mocket::static_assets(
               }
             None => meta
           }
-          // Handle caching
-          match meta.mtime {
-            Some(_mtime) =>
-              // TODO: Date parsing/comparison is tricky without a library.
-              // For now, we just set Last-Modified.
-              // event.res.headers.set("Last-Modified", ... )
-              ()
-            None => ()
+          let meta = match (if_none_match, if_modified_since, meta.mtime) {
+            (None, Some(header), Some(mtime)) if if_modified_since_matches(
+                header, mtime,
+              ) =>
+              match provider.get_meta(id) {
+                Some(revalidated_meta) =>
+                  match revalidated_meta.mtime {
+                    Some(revalidated_mtime) if if_modified_since_matches(
+                        header, revalidated_mtime,
+                      ) =>
+                      return HttpResponse::new(
+                        NotModified,
+                        headers=static_not_modified_headers(
+                          event.res.headers,
+                          revalidated_meta,
+                        ),
+                      )
+                    _ => revalidated_meta
+                  }
+                None => meta
+              }
+            _ => meta
           }
           let asset_headers = static_asset_headers(provider, id, meta)
           if event.req.http_method == "HEAD" {
