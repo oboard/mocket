@@ -1,3 +1,10 @@
 import {
+  "moonbitlang/async",
+  "moonbitlang/async/http",
+  "moonbitlang/async/os_error",
+  "moonbitlang/async/socket",
+  "moonbitlang/core/encoding/utf8",
   "oboard/mocket",
 }
+
+warnings = "-29"

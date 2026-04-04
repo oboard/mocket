@@ -24,16 +24,28 @@ pub fn HttpResponse::set_cookie(
 }
 
 ///|
+fn get_request_header_case_insensitive(
+  headers : Map[String, String],
+  header_name : String,
+) -> String? {
+  let needle = header_name.to_lower()
+  for pair in headers {
+    let (key, value) = pair
+    if key.to_lower() == needle {
+      return Some(value)
+    }
+  }
+  None
+}
+
+///|
 pub fn HttpRequest::get_cookie(
   self : HttpRequest,
   name : String,
 ) -> CookieItem? {
-  if self.headers.get("Cookie") is Some(cookie) {
-    parse_cookie(cookie).get(name)
-  } else if self.headers.get("cookie") is Some(cookie) {
-    parse_cookie(cookie).get(name)
-  } else {
-    None
+  match get_request_header_case_insensitive(self.headers, "cookie") {
+    Some(cookie) => parse_cookie(cookie).get(name)
+    None => None
   }
 }
 
