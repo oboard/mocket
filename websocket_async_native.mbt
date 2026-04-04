@@ -389,6 +389,33 @@ async fn send_native_ws_shutdown_close(ws : @websocket.Conn) -> Unit {
 }
 
 ///|
+fn normalize_native_websocket_request_headers(
+  headers : Map[String, String],
+) -> Map[String, String] {
+  let normalized : Map[String, String] = {}
+  headers.each((key, value) => {
+    let normalized_value = match key.to_lower() {
+      "connection" =>
+        value.split(",").map(token => token.trim()).to_array().join(", ")
+      "upgrade" | "sec-websocket-version" | "sec-websocket-key" =>
+        value.trim().to_string()
+      _ => value
+    }
+    normalized.set(key, normalized_value)
+  })
+  normalized
+}
+
+///|
+fn normalize_native_websocket_request(request : @http.Request) -> @http.Request {
+  {
+    meth: request.meth,
+    path: request.path,
+    headers: normalize_native_websocket_request_headers(request.headers),
+  }
+}
+
+///|
 async fn handle_websocket_route_async(
   runtime_id : String,
   request : @http.Request,
@@ -399,7 +426,10 @@ async fn handle_websocket_route_async(
   overflow_policy : NativeWebSocketOverflowPolicy,
   read_timeout_ms : Int?,
 ) -> Unit raise Error {
-  let ws = @websocket.from_http_server(request, conn)
+  let ws = @websocket.from_http_server(
+    normalize_native_websocket_request(request),
+    conn,
+  )
   defer ws.close()
   let hub = ensure_native_ws_hub(runtime_id)
   let connection_id = next_native_ws_connection_id(runtime_id, hub)
