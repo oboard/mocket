@@ -152,6 +152,65 @@ async fn with_test_server(app : Mocket, run_test : async (Int) -> Unit) -> Unit 
 }
 
 ///|
+async fn with_port_bound_test_server(
+  app : Mocket,
+  run_test : async (Int) -> Unit,
+) -> Unit {
+  app.get("/__mocket_ready", _ => "ready")
+  let start_offset = @async.now().to_int() % 20_000
+  for attempt = 0; attempt < 2_048; attempt = attempt + 1 {
+    let port = 40_000 + (start_offset + attempt) % 20_000
+    let attempt_result : Result[Bool, Error] = try? @async.with_task_group(group => {
+      let task = group.spawn(no_wait=true, allow_failure=true, () => {
+        app.serve_async(port~)
+      })
+      match @async.with_timeout_opt(50, () => try? task.wait()) {
+        Some(Ok(_)) => {
+          task.cancel()
+          ignore(try? task.wait())
+          raise ServerNotReady
+        }
+        Some(Err(@os_error.OSError(errno, ..))) if errno == 1 => {
+          task.cancel()
+          ignore(try? task.wait())
+          raise SocketBindUnavailable
+        }
+        Some(Err(@os_error.OSError(_) as err)) if err.is_EACCES() => {
+          task.cancel()
+          ignore(try? task.wait())
+          raise SocketBindUnavailable
+        }
+        Some(Err(@os_error.OSError(errno, ..))) if errno == 48 ||
+          errno == 98 ||
+          errno == 10048 => {
+          task.cancel()
+          ignore(try? task.wait())
+          false
+        }
+        Some(Err(err)) => {
+          task.cancel()
+          ignore(try? task.wait())
+          raise err
+        }
+        None => {
+          wait_until_ready(port)
+          run_test(port)
+          task.cancel()
+          ignore(try? task.wait())
+          true
+        }
+      }
+    })
+    match attempt_result {
+      Ok(true) => return
+      Ok(false) => ()
+      Err(err) => raise err
+    }
+  }
+  raise SocketBindUnavailable
+}
+
+///|
 async fn with_two_test_servers(
   app1 : Mocket,
   app2 : Mocket,
@@ -330,6 +389,72 @@ async test "serve_async mounts static assets by prefix" {
       "",
     )
     assert_eq(response3.code, 405)
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async serves static assets from the root mount" {
+  let app = new()
+  app.static_assets("", TestStaticProvider::{  })
+  @async.with_task_group(group => {
+    let server = allocate_test_server()
+    let port = server.addr.port()
+    group.spawn_bg(no_wait=true, () => app.serve_async_on(server))
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      let (response, _body) = @http.get(localhost_url(port, "/"))
+      guard response.code == 200 else { raise ServerNotReady }
+    })
+
+    let (index_response, index_body) = @http.get(localhost_url(port, "/"))
+    assert_eq(index_response.code, 200)
+    inspect(index_body.text(), content="index")
+
+    let (file_response, file_body) = @http.get(
+      localhost_url(port, "/hello.txt"),
+    )
+    assert_eq(file_response.code, 200)
+    inspect(file_body.text(), content="hi")
+
+    let (missing_response, missing_body) = @http.get(
+      localhost_url(port, "/missing.txt"),
+    )
+    assert_eq(missing_response.code, 404)
+    inspect(missing_body.text().trim(chars="\r\n"), content="Not Found")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async normalizes trailing-slash static mounts" {
+  let app = new()
+  app.static_assets("/assets/", TestStaticProvider::{  })
+  with_test_server(app, port => {
+    let (index_response, index_body) = @http.get(localhost_url(port, "/assets"))
+    assert_eq(index_response.code, 200)
+    inspect(index_body.text(), content="index")
+
+    let (slash_response, slash_body) = @http.get(
+      localhost_url(port, "/assets/"),
+    )
+    assert_eq(slash_response.code, 200)
+    inspect(slash_body.text(), content="index")
+
+    let (file_response, file_body) = @http.get(
+      localhost_url(port, "/assets/hello.txt"),
+    )
+    assert_eq(file_response.code, 200)
+    inspect(file_body.text(), content="hi")
+
+    let (missing_response, missing_body) = @http.get(
+      localhost_url(port, "/assetsx"),
+    )
+    assert_eq(missing_response.code, 404)
+    inspect(missing_body.text().trim(chars="\r\n"), content="Not Found")
   }) catch {
     SocketBindUnavailable => return
     err => raise err
@@ -588,6 +713,33 @@ async test "serve_async handles head fallback, method not allowed, and options" 
     )
     assert_eq(missing_response.code, 404)
     inspect(@utf8.decode(missing_body) catch { _ => "" }, content="Not Found")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async binds by port and dispatches trace and connect routes" {
+  let app = new()
+  app.trace("/trace", _ => HttpResponse::new(OK).body("trace"))
+  app.connect("/connect", _ => HttpResponse::new(OK).body("connect"))
+  with_port_bound_test_server(app, port => {
+    let (trace_response, trace_body) = issue_request(
+      port,
+      @http.Trace,
+      "/trace",
+    )
+    assert_eq(trace_response.code, 200)
+    inspect(@utf8.decode(trace_body) catch { _ => "" }, content="trace")
+
+    let (connect_response, connect_body) = issue_request(
+      port,
+      @http.Connect,
+      "/connect",
+    )
+    assert_eq(connect_response.code, 200)
+    inspect(@utf8.decode(connect_body) catch { _ => "" }, content="connect")
   }) catch {
     SocketBindUnavailable => return
     err => raise err
