@@ -273,6 +273,11 @@ async fn issue_raw_request_response(
   let client = @socket.Tcp::connect(addr)
   defer client.close()
   client.write(request)
+  read_raw_http_response(client)
+}
+
+///|
+async fn read_raw_http_response(client : @socket.Tcp) -> (String, String) {
   let headers = client.read_until("\r\n\r\n").unwrap_or("")
   let body = if raw_header_value(headers, "Transfer-Encoding")
     .unwrap_or("")
@@ -295,6 +300,17 @@ async fn issue_raw_request_response(
     }
   }
   (headers, body)
+}
+
+///|
+fn repeated_ascii_text(piece : String, count : Int) -> String {
+  let buffer = @buffer.new()
+  for _ in 0..<count {
+    buffer.write_string_utf8(piece)
+  }
+  @utf8.decode(buffer.contents()) catch {
+    _ => ""
+  }
 }
 
 ///|
@@ -659,6 +675,48 @@ async test "serve_async_on_with enforces max_request_body_bytes for chunked bodi
 }
 
 ///|
+async test "serve_async_on_with accepts exact-limit chunked bodies across multiple reads" {
+  let app = new()
+  let handled : Ref[Int] = Ref::new(0)
+  app.post("/body", event => {
+    handled.val += 1
+    event.req.raw_body.length().to_string()
+  })
+  app.get("/healthy", _ => "ok")
+  app.get("/__mocket_ready", _ => "ready")
+  let chunk1 = repeated_ascii_text("a", 1024)
+  let chunk2 = repeated_ascii_text("b", 1024)
+  @async.with_task_group(group => {
+    let server = allocate_test_server()
+    let port = server.addr.port()
+    group.spawn_bg(no_wait=true, () => {
+      app.serve_async_on_with(
+        server,
+        NativeServeOptions::new(max_request_body_bytes=2048),
+      )
+    })
+    wait_until_ready(port)
+
+    let (headers, body) = issue_raw_request_response(
+      port,
+      "POST /body HTTP/1.1\r\nHost: localhost\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n400\r\n\{chunk1}\r\n400\r\n\{chunk2}\r\n0\r\n\r\n",
+    )
+    inspect(headers.has_prefix("HTTP/1.1 200 OK").to_string(), content="true")
+    inspect(body.trim(chars="\r\n"), content="2048")
+    assert_eq(handled.val, 1)
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
 async test "serve_async_on_with rejects negative max_request_body_bytes" {
   let app = new()
   let server = allocate_test_server()
@@ -711,6 +769,145 @@ async test "serve_async_with rejects negative max_request_body_bytes" {
     Err(err) => fail("unexpected invalid max_request_body_bytes error: \{err}")
     Ok(_) =>
       fail("expected serve_async_with to reject max_request_body_bytes=-1")
+  }
+}
+
+///|
+async test "serve_async_on_with rejects non-positive request_body_read_timeout_ms" {
+  let app = new()
+  let server = allocate_test_server()
+  defer server.close()
+  let result : Result[Unit, Error] = try? app.serve_async_on_with(
+    server,
+    NativeServeOptions::new(request_body_read_timeout_ms=0),
+  )
+  match result {
+    Err(NativeServeError::InvalidRequestBodyReadTimeoutMs(0)) => ()
+    Err(err) =>
+      fail("unexpected invalid request_body_read_timeout_ms error: \{err}")
+    Ok(_) =>
+      fail(
+        "expected serve_async_on_with to reject request_body_read_timeout_ms=0",
+      )
+  }
+}
+
+///|
+async test "serve_async_on_until_with rejects non-positive request_body_read_timeout_ms" {
+  let app = new()
+  let server = allocate_test_server()
+  defer server.close()
+  let shutdown = @async.Queue::new(kind=Unbounded)
+  let result : Result[Unit, Error] = try? app.serve_async_on_until_with(
+    server,
+    shutdown,
+    NativeServeOptions::new(request_body_read_timeout_ms=0),
+  )
+  match result {
+    Err(NativeServeError::InvalidRequestBodyReadTimeoutMs(0)) => ()
+    Err(err) =>
+      fail(
+        "unexpected serve_async_on_until_with request_body_read_timeout_ms error: \{err}",
+      )
+    Ok(_) =>
+      fail(
+        "expected serve_async_on_until_with to reject request_body_read_timeout_ms=0",
+      )
+  }
+}
+
+///|
+async test "serve_async_with rejects non-positive request_body_read_timeout_ms" {
+  let app = new()
+  let result : Result[Unit, Error] = try? app.serve_async_with(
+    port=0,
+    NativeServeOptions::new(request_body_read_timeout_ms=0),
+  )
+  match result {
+    Err(NativeServeError::InvalidRequestBodyReadTimeoutMs(0)) => ()
+    Err(err) =>
+      fail("unexpected invalid request_body_read_timeout_ms error: \{err}")
+    Ok(_) =>
+      fail("expected serve_async_with to reject request_body_read_timeout_ms=0")
+  }
+}
+
+///|
+async test "serve_async_until_with rejects non-positive request_body_read_timeout_ms" {
+  let app = new()
+  let shutdown = @async.Queue::new(kind=Unbounded)
+  let result : Result[Unit, Error] = try? app.serve_async_until_with(
+    port=0,
+    shutdown,
+    NativeServeOptions::new(request_body_read_timeout_ms=0),
+  )
+  match result {
+    Err(NativeServeError::InvalidRequestBodyReadTimeoutMs(0)) => ()
+    Err(err) =>
+      fail(
+        "unexpected serve_async_until_with request_body_read_timeout_ms error: \{err}",
+      )
+    Ok(_) =>
+      fail(
+        "expected serve_async_until_with to reject request_body_read_timeout_ms=0",
+      )
+  }
+}
+
+///|
+async test "serve_async_on_with times out slow request bodies" {
+  let app = new()
+  let handled : Ref[Int] = Ref::new(0)
+  app.post("/body", event => {
+    handled.val += 1
+    event.req.raw_body
+  })
+  app.get("/healthy", _ => "ok")
+  app.get("/__mocket_ready", _ => "ready")
+  @async.with_task_group(group => {
+    let server = allocate_test_server()
+    let port = server.addr.port()
+    group.spawn_bg(no_wait=true, () => {
+      app.serve_async_on_with(
+        server,
+        NativeServeOptions::new(request_body_read_timeout_ms=50),
+      )
+    })
+    wait_until_ready(port)
+
+    let addr = @socket.Addr::parse("127.0.0.1:\{port}") catch {
+      _ => fail("invalid slow-upload address")
+    }
+    let client = @socket.Tcp::connect(addr)
+    defer client.close()
+    client.write(
+      "POST /body HTTP/1.1\r\nHost: localhost\r\nContent-Length: 7\r\nConnection: close\r\n\r\nmoo",
+    )
+    @async.sleep(150)
+    let (headers, body) = read_raw_http_response(client)
+    inspect(
+      headers.has_prefix("HTTP/1.1 408 RequestTimeout").to_string(),
+      content="true",
+    )
+    inspect(
+      raw_header_value(headers, "Connection").unwrap_or(""),
+      content="close",
+    )
+    inspect(
+      raw_header_value(headers, "Transfer-Encoding").unwrap_or("").to_lower(),
+      content="chunked",
+    )
+    inspect(body.trim(chars="\r\n"), content="Request Timeout")
+    assert_eq(handled.val, 0)
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
   }
 }
 

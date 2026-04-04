@@ -52,6 +52,7 @@ pub suberror IOError derive(Show)
 pub suberror NativeServeError {
   InvalidMaxConnections(Int)
   InvalidMaxRequestBodyBytes(Int)
+  InvalidRequestBodyReadTimeoutMs(Int)
 } derive(Show, ToJson)
 
 pub suberror NetworkError derive(Show)
@@ -180,8 +181,9 @@ pub(all) struct MultipartFormValue {
 pub struct NativeServeOptions {
   max_connections : Int?
   max_request_body_bytes : Int?
+  request_body_read_timeout_ms : Int?
 }
-pub fn NativeServeOptions::new(max_connections? : Int, max_request_body_bytes? : Int) -> Self
+pub fn NativeServeOptions::new(max_connections? : Int, max_request_body_bytes? : Int, request_body_read_timeout_ms? : Int) -> Self
 
 pub(all) enum SameSiteOption {
   Lax

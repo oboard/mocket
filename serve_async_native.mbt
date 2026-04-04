@@ -229,6 +229,16 @@ async fn send_request_entity_too_large_async(
 }
 
 ///|
+async fn send_request_timeout_async(
+  request : @http.Request,
+  conn : @http.ServerConnection,
+) -> Unit raise Error {
+  let response = HttpResponse::new(RequestTimeout).body("Request Timeout")
+  response.headers.set("Content-Type", "text/plain; charset=utf-8")
+  send_response_and_close_async(request, conn, response)
+}
+
+///|
 fn request_content_length(request : @http.Request) -> Int? {
   match get_header_case_insensitive(request.headers, "content-length") {
     Some(value) => Some(@string.parse_int(value) catch { _ => return None })
@@ -278,6 +288,35 @@ async fn read_request_body_async(
 }
 
 ///|
+async fn read_request_body_with_policy_async(
+  request : @http.Request,
+  body_reader : &@io.Reader,
+  conn : @http.ServerConnection,
+  max_request_body_bytes : Int?,
+  request_body_read_timeout_ms : Int?,
+) -> RequestBodyReadOutcome raise Error {
+  match request_body_read_timeout_ms {
+    Some(request_body_read_timeout_ms) =>
+      match
+        @async.with_timeout_opt(request_body_read_timeout_ms, () => {
+          read_request_body_async(
+            request, body_reader, conn, max_request_body_bytes,
+          )
+        }) {
+        Some(outcome) => outcome
+        None => {
+          send_request_timeout_async(request, conn)
+          RequestRejected
+        }
+      }
+    None =>
+      read_request_body_async(
+        request, body_reader, conn, max_request_body_bytes,
+      )
+  }
+}
+
+///|
 async fn handle_request_async(
   app : Mocket,
   ws_runtime_id : String,
@@ -298,8 +337,13 @@ async fn handle_request_async(
   }
   let http_method_text = request_method_to_string(request.meth)
   let max_request_body_bytes = resolve_native_max_request_body_bytes(options)
+  let request_body_read_timeout_ms = resolve_native_request_body_read_timeout_ms(
+    options,
+  )
   let request_body = match
-    read_request_body_async(request, body_reader, conn, max_request_body_bytes) {
+    read_request_body_with_policy_async(
+      request, body_reader, conn, max_request_body_bytes, request_body_read_timeout_ms,
+    ) {
     Body(request_body) => request_body
     RequestRejected => return
   }
@@ -333,6 +377,7 @@ async fn run_native_server(
 ) -> Unit raise Error {
   let max_connections = resolve_native_max_connections(options)
   ignore(resolve_native_max_request_body_bytes(options))
+  ignore(resolve_native_request_body_read_timeout_ms(options))
   match max_connections {
     Some(max_connections) =>
       server.run_forever(max_connections~, (request, body_reader, conn) => {
@@ -368,6 +413,8 @@ pub async fn Mocket::serve_async_on(
 /// handled in parallel by the underlying `@http.Server`.
 /// `max_request_body_bytes`, if present, rejects oversized request bodies
 /// with `413 Request Entity Too Large`.
+/// `request_body_read_timeout_ms`, if present, rejects slow request bodies
+/// with `408 Request Timeout`.
 pub async fn Mocket::serve_async_on_with(
   self : Mocket,
   server : @http.Server,
@@ -400,6 +447,8 @@ pub async fn Mocket::serve_async_on_until(
 /// handled in parallel by the underlying `@http.Server`.
 /// `max_request_body_bytes`, if present, rejects oversized request bodies
 /// with `413 Request Entity Too Large`.
+/// `request_body_read_timeout_ms`, if present, rejects slow request bodies
+/// with `408 Request Timeout`.
 pub async fn Mocket::serve_async_on_until_with(
   self : Mocket,
   server : @http.Server,
@@ -428,6 +477,8 @@ pub async fn Mocket::serve_async(
 /// handled in parallel by the underlying `@http.Server`.
 /// `max_request_body_bytes`, if present, rejects oversized request bodies
 /// with `413 Request Entity Too Large`.
+/// `request_body_read_timeout_ms`, if present, rejects slow request bodies
+/// with `408 Request Timeout`.
 pub async fn Mocket::serve_async_with(
   self : Mocket,
   port~ : Int,
@@ -435,6 +486,7 @@ pub async fn Mocket::serve_async_with(
 ) -> Unit raise Error {
   ignore(resolve_native_max_connections(options))
   ignore(resolve_native_max_request_body_bytes(options))
+  ignore(resolve_native_request_body_read_timeout_ms(options))
   let addr = @socket.Addr::parse("0.0.0.0:\{port}")
   let server = @http.Server::new(addr, reuse_addr=true)
   self.serve_async_on_with(server, options)
@@ -462,6 +514,8 @@ pub async fn Mocket::serve_async_until(
 /// handled in parallel by the underlying `@http.Server`.
 /// `max_request_body_bytes`, if present, rejects oversized request bodies
 /// with `413 Request Entity Too Large`.
+/// `request_body_read_timeout_ms`, if present, rejects slow request bodies
+/// with `408 Request Timeout`.
 pub async fn Mocket::serve_async_until_with(
   self : Mocket,
   port~ : Int,
@@ -470,6 +524,7 @@ pub async fn Mocket::serve_async_until_with(
 ) -> Unit raise Error {
   ignore(resolve_native_max_connections(options))
   ignore(resolve_native_max_request_body_bytes(options))
+  ignore(resolve_native_request_body_read_timeout_ms(options))
   let addr = @socket.Addr::parse("0.0.0.0:\{port}")
   let server = @http.Server::new(addr, reuse_addr=true)
   self.serve_async_on_until_with(server, shutdown, options)
