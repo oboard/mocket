@@ -2711,6 +2711,61 @@ async test "serve_async rejects unsupported websocket versions and non-get upgra
 }
 
 ///|
+async test "serve_async closes the connection after rejected websocket upgrades" {
+  let opened : Ref[Int] = Ref::new(0)
+  let closed : Ref[Int] = Ref::new(0)
+  let app = new()
+  app.get("/healthy", _ => "ok")
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => opened.val += 1
+      Message(peer, Text(text)) => peer.text(text)
+      Close(_) => closed.val += 1
+      _ => ()
+    }
+  })
+  with_test_server(app, port => {
+    let addr = @socket.Addr::parse("127.0.0.1:\{port}") catch {
+      _ => fail("invalid raw request address")
+    }
+    let client = @socket.Tcp::connect(addr)
+    defer client.close()
+
+    client.write(
+      "POST /ws HTTP/1.1\r\nHost: localhost\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nContent-Length: 4\r\n\r\ndataGET /healthy HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+    )
+
+    let (rejected_headers, rejected_body) = read_raw_http_response(client)
+    assert_true(rejected_headers.has_prefix("HTTP/1.1 400 "))
+    assert_true(rejected_body.contains("must be GET"))
+    assert_eq(opened.val, 0)
+    assert_eq(closed.val, 0)
+
+    let followup_headers = client.read_until("\r\n\r\n").unwrap_or("")
+    assert_eq(followup_headers, "")
+
+    let fresh_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+    defer fresh_client.close()
+
+    fresh_client.send_text("ok")
+    inspect(fresh_client.recv().read_all().text(), content="ok")
+    fresh_client.send_close()
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
+    })
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
 async test "serve_async honors mixed-case static and websocket upgrade headers" {
   let log : Array[String] = []
   let app = new()

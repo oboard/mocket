@@ -426,10 +426,12 @@ async fn handle_websocket_route_async(
   overflow_policy : NativeWebSocketOverflowPolicy,
   read_timeout_ms : Int?,
 ) -> Unit raise Error {
-  let ws = try @websocket.from_http_server(
-    normalize_native_websocket_request(request),
-    conn,
-  ) catch {
+  let ws = try
+    @websocket.from_http_server(
+      normalize_native_websocket_request(request),
+      conn,
+    )
+  catch {
     @websocket.InvalidHandshake(_) => return
     err => raise err
   } noraise {
