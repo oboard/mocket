@@ -750,6 +750,125 @@ async test "serve_async keeps websocket protocol edge failures connection-local 
 }
 
 ///|
+async test "serve_async keeps websocket sequencing and control-size failures connection-local and stays healthy" {
+  let opened : Ref[Int] = Ref::new(0)
+  let closed : Ref[Int] = Ref::new(0)
+  let messages : Ref[Int] = Ref::new(0)
+  let healthy_hits : Ref[Int] = Ref::new(0)
+  let app = new()
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => opened.val += 1
+      Message(peer, Text(text)) => {
+        messages.val += 1
+        peer.text(text)
+      }
+      Message(peer, Binary(bytes)) => {
+        messages.val += 1
+        peer.binary(bytes)
+      }
+      Close(_) => closed.val += 1
+    }
+  })
+  app.get("/healthy", _ => {
+    healthy_hits.val += 1
+    "ok"
+  })
+  with_test_server(app, port => {
+    let too_long_control_len : UInt16 = 128
+    fn u16_to_bytes(len : UInt16) -> Bytes {
+      let result = FixedArray::make(2, b'\x00')
+      result.unsafe_write_uint16_be(0, len)
+      result.unsafe_reinterpret_as_bytes()
+    }
+
+    async fn expect_bad_ws_frames(
+      frames : Array[Bytes],
+      expected_code : @websocket.CloseCode,
+      expected_reason : String,
+    ) -> Unit {
+      let http_client = @http.Client::new("http://127.0.0.1:\{port}")
+      defer http_client.close()
+      let ws_client = @websocket.from_http_client(http_client, "/ws")
+      defer ws_client.close()
+      @async.with_task_group(group => {
+        group.spawn_bg(allow_failure=true, () => {
+          for frame in frames {
+            http_client.write(frame)
+          }
+        })
+        match
+          @async.with_timeout_opt(200, () => {
+            try? ws_client.recv().read_all().binary()
+          }) {
+          Some(Err(@websocket.ConnectionClosed(code, Some(reason)))) => {
+            assert_eq(code, expected_code)
+            inspect(reason, content=expected_reason)
+          }
+          Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+            fail(
+              "expected \{expected_code} / \{expected_reason}, got \{code} / \{reason}",
+            )
+          Some(Err(err)) =>
+            fail("expected websocket protocol close, got error: \{err}")
+          Some(Ok(bytes)) =>
+            fail(
+              "expected websocket protocol close, got \{bytes.length()} bytes",
+            )
+          None => fail("timed out waiting for websocket protocol close")
+        }
+      })
+    }
+
+    expect_bad_ws_frames(
+      [
+        Bytes::from_array([b'\x01', b'\x00']),
+        Bytes::from_array([b'\x81', b'\x00']),
+      ],
+      @websocket.CloseCode::ProtocolError,
+      "New message within a fragmented message",
+    )
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
+    })
+
+    expect_bad_ws_frames(
+      [
+        Bytes::from_array(
+          [b'\x89', 126, ..u16_to_bytes(too_long_control_len).to_array()],
+        ),
+      ],
+      @websocket.CloseCode::MessageTooBig,
+      "Control frame too long",
+    )
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 0)
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+    assert_eq(healthy_hits.val, 1)
+
+    let healthy_ws_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+    defer healthy_ws_client.close()
+    healthy_ws_client.send_text("ok")
+    inspect(healthy_ws_client.recv().read_all().text(), content="ok")
+    healthy_ws_client.send_close()
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 3 && closed.val == 3 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 1)
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
 async test "serve_async_on_with enforces max_connections" {
   let app = new()
   let gate = @async.Queue::new(kind=Unbounded)
