@@ -4,6 +4,7 @@ pub suberror NativeServeError {
   InvalidMaxRequestBodyBytes(Int)
   InvalidRequestBodyReadTimeoutMs(Int)
   InvalidWebSocketOutgoingQueueCapacity(Int)
+  InvalidWebSocketReadTimeoutMs(Int)
 } derive(Show, ToJson)
 
 ///|
@@ -19,6 +20,7 @@ pub struct NativeServeOptions {
   request_body_read_timeout_ms : Int?
   websocket_outgoing_queue_capacity : Int?
   websocket_overflow_policy : NativeWebSocketOverflowPolicy?
+  websocket_read_timeout_ms : Int?
 }
 
 ///|
@@ -31,12 +33,15 @@ pub struct NativeServeOptions {
 /// websocket messages per connection.
 /// `websocket_overflow_policy`, if present, chooses whether a full outbound
 /// websocket queue drops the oldest or latest message.
+/// `websocket_read_timeout_ms`, if present, closes websocket connections
+/// after that many milliseconds waiting for the next inbound message.
 pub fn NativeServeOptions::new(
   max_connections? : Int,
   max_request_body_bytes? : Int,
   request_body_read_timeout_ms? : Int,
   websocket_outgoing_queue_capacity? : Int,
   websocket_overflow_policy? : NativeWebSocketOverflowPolicy,
+  websocket_read_timeout_ms? : Int,
 ) -> NativeServeOptions {
   {
     max_connections,
@@ -44,6 +49,7 @@ pub fn NativeServeOptions::new(
     request_body_read_timeout_ms,
     websocket_outgoing_queue_capacity,
     websocket_overflow_policy,
+    websocket_read_timeout_ms,
   }
 }
 
@@ -126,5 +132,22 @@ fn resolve_native_websocket_overflow_policy(
           NativeWebSocketOverflowPolicy::DropLatest
       }
     None => NativeWebSocketOverflowPolicy::DropOldest
+  }
+}
+
+///|
+fn resolve_native_websocket_read_timeout_ms(
+  options : NativeServeOptions,
+) -> Int? raise Error {
+  match options.websocket_read_timeout_ms {
+    Some(websocket_read_timeout_ms) => {
+      guard websocket_read_timeout_ms > 0 else {
+        raise NativeServeError::InvalidWebSocketReadTimeoutMs(
+          websocket_read_timeout_ms,
+        )
+      }
+      Some(websocket_read_timeout_ms)
+    }
+    None => None
   }
 }

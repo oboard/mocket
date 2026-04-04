@@ -335,11 +335,14 @@ async fn handle_request_async(
     let websocket_overflow_policy = resolve_native_websocket_overflow_policy(
       options,
     )
+    let websocket_read_timeout_ms = resolve_native_websocket_read_timeout_ms(
+      options,
+    )
     match app.find_ws_route(request_path) {
       Some(ws_handler) => {
         handle_websocket_route_async(
           ws_runtime_id, request, conn, ws_handler, websocket_outgoing_queue_capacity,
-          websocket_overflow_policy,
+          websocket_overflow_policy, websocket_read_timeout_ms,
         )
         return
       }
@@ -391,6 +394,7 @@ async fn run_native_server(
   ignore(resolve_native_request_body_read_timeout_ms(options))
   ignore(resolve_native_websocket_outgoing_queue_capacity(options))
   ignore(resolve_native_websocket_overflow_policy(options))
+  ignore(resolve_native_websocket_read_timeout_ms(options))
   match max_connections {
     Some(max_connections) =>
       server.run_forever(max_connections~, (request, body_reader, conn) => {
@@ -432,6 +436,8 @@ pub async fn Mocket::serve_async_on(
 /// websocket messages per connection.
 /// `websocket_overflow_policy`, if present, chooses whether a full outbound
 /// websocket queue drops the oldest or latest message.
+/// `websocket_read_timeout_ms`, if present, closes websocket connections
+/// after that many milliseconds waiting for the next inbound message.
 pub async fn Mocket::serve_async_on_with(
   self : Mocket,
   server : @http.Server,
@@ -470,6 +476,8 @@ pub async fn Mocket::serve_async_on_until(
 /// websocket messages per connection.
 /// `websocket_overflow_policy`, if present, chooses whether a full outbound
 /// websocket queue drops the oldest or latest message.
+/// `websocket_read_timeout_ms`, if present, closes websocket connections
+/// after that many milliseconds waiting for the next inbound message.
 pub async fn Mocket::serve_async_on_until_with(
   self : Mocket,
   server : @http.Server,
@@ -504,6 +512,8 @@ pub async fn Mocket::serve_async(
 /// websocket messages per connection.
 /// `websocket_overflow_policy`, if present, chooses whether a full outbound
 /// websocket queue drops the oldest or latest message.
+/// `websocket_read_timeout_ms`, if present, closes websocket connections
+/// after that many milliseconds waiting for the next inbound message.
 pub async fn Mocket::serve_async_with(
   self : Mocket,
   port~ : Int,
@@ -514,6 +524,7 @@ pub async fn Mocket::serve_async_with(
   ignore(resolve_native_request_body_read_timeout_ms(options))
   ignore(resolve_native_websocket_outgoing_queue_capacity(options))
   ignore(resolve_native_websocket_overflow_policy(options))
+  ignore(resolve_native_websocket_read_timeout_ms(options))
   let addr = @socket.Addr::parse("0.0.0.0:\{port}")
   let server = @http.Server::new(addr, reuse_addr=true)
   self.serve_async_on_with(server, options)
@@ -547,6 +558,8 @@ pub async fn Mocket::serve_async_until(
 /// websocket messages per connection.
 /// `websocket_overflow_policy`, if present, chooses whether a full outbound
 /// websocket queue drops the oldest or latest message.
+/// `websocket_read_timeout_ms`, if present, closes websocket connections
+/// after that many milliseconds waiting for the next inbound message.
 pub async fn Mocket::serve_async_until_with(
   self : Mocket,
   port~ : Int,
@@ -558,6 +571,7 @@ pub async fn Mocket::serve_async_until_with(
   ignore(resolve_native_request_body_read_timeout_ms(options))
   ignore(resolve_native_websocket_outgoing_queue_capacity(options))
   ignore(resolve_native_websocket_overflow_policy(options))
+  ignore(resolve_native_websocket_read_timeout_ms(options))
   let addr = @socket.Addr::parse("0.0.0.0:\{port}")
   let server = @http.Server::new(addr, reuse_addr=true)
   self.serve_async_on_until_with(server, shutdown, options)

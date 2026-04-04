@@ -28,6 +28,9 @@ let native_ws_connection_hubs : Map[String, String] = Map::new()
 const DEFAULT_NATIVE_WS_OUTGOING_QUEUE_CAPACITY : Int = 256
 
 ///|
+const NATIVE_WS_READ_TIMEOUT_REASON : String = "websocket read timeout"
+
+///|
 fn ensure_native_ws_hub(runtime_id : String) -> NativeWebSocketHub {
   match native_ws_hubs.get(runtime_id) {
     Some(hub) => hub
@@ -263,6 +266,38 @@ async fn write_native_ws_outgoing(
 }
 
 ///|
+async fn recv_native_ws_message(
+  ws : @websocket.Conn,
+  read_timeout_ms : Int?,
+) -> @websocket.Message? raise Error {
+  match read_timeout_ms {
+    Some(read_timeout_ms) =>
+      match @async.with_timeout_opt(read_timeout_ms, () => try? ws.recv()) {
+        Some(Ok(message)) => Some(message)
+        Some(Err(@websocket.ConnectionClosed(_, _))) => None
+        Some(Err(err)) => raise err
+        None => {
+          ignore(
+            try? ws.send_close(
+              code=@websocket.CloseCode::GoingAway,
+              reason=NATIVE_WS_READ_TIMEOUT_REASON,
+            ),
+          )
+          None
+        }
+      }
+    None => {
+      let message_result : Result[@websocket.Message, Error] = try? ws.recv()
+      match message_result {
+        Ok(message) => Some(message)
+        Err(@websocket.ConnectionClosed(_, _)) => None
+        Err(err) => raise err
+      }
+    }
+  }
+}
+
+///|
 async fn handle_websocket_route_async(
   runtime_id : String,
   request : @http.Request,
@@ -270,6 +305,7 @@ async fn handle_websocket_route_async(
   handler : WebSocketHandler,
   outgoing_queue_capacity : Int,
   overflow_policy : NativeWebSocketOverflowPolicy,
+  read_timeout_ms : Int?,
 ) -> Unit raise Error {
   let ws = @websocket.from_http_server(request, conn)
   defer ws.close()
@@ -283,11 +319,9 @@ async fn handle_websocket_route_async(
     group.spawn_bg(() => write_native_ws_outgoing(ws, outgoing))
     handler(Open(snapshot_native_ws_peer(connection_id)))
     for ;; {
-      let message_result : Result[@websocket.Message, Error] = try? ws.recv()
-      let message = match message_result {
-        Ok(message) => message
-        Err(@websocket.ConnectionClosed(_, _)) => break
-        Err(err) => raise err
+      let message = match recv_native_ws_message(ws, read_timeout_ms) {
+        Some(message) => message
+        None => break
       }
       let peer = snapshot_native_ws_peer(connection_id)
       match message.kind {

@@ -955,6 +955,86 @@ async test "serve_async_until_with rejects non-positive websocket_outgoing_queue
 }
 
 ///|
+async test "serve_async_on_with rejects non-positive websocket_read_timeout_ms" {
+  let app = new()
+  let server = allocate_test_server()
+  defer server.close()
+  let result : Result[Unit, Error] = try? app.serve_async_on_with(
+    server,
+    NativeServeOptions::new(websocket_read_timeout_ms=0),
+  )
+  match result {
+    Err(NativeServeError::InvalidWebSocketReadTimeoutMs(0)) => ()
+    Err(err) =>
+      fail("unexpected invalid websocket_read_timeout_ms error: \{err}")
+    Ok(_) =>
+      fail("expected serve_async_on_with to reject websocket_read_timeout_ms=0")
+  }
+}
+
+///|
+async test "serve_async_on_until_with rejects non-positive websocket_read_timeout_ms" {
+  let app = new()
+  let server = allocate_test_server()
+  defer server.close()
+  let shutdown = @async.Queue::new(kind=Unbounded)
+  let result : Result[Unit, Error] = try? app.serve_async_on_until_with(
+    server,
+    shutdown,
+    NativeServeOptions::new(websocket_read_timeout_ms=0),
+  )
+  match result {
+    Err(NativeServeError::InvalidWebSocketReadTimeoutMs(0)) => ()
+    Err(err) =>
+      fail(
+        "unexpected serve_async_on_until_with websocket_read_timeout_ms error: \{err}",
+      )
+    Ok(_) =>
+      fail(
+        "expected serve_async_on_until_with to reject websocket_read_timeout_ms=0",
+      )
+  }
+}
+
+///|
+async test "serve_async_with rejects non-positive websocket_read_timeout_ms" {
+  let app = new()
+  let result : Result[Unit, Error] = try? app.serve_async_with(
+    port=0,
+    NativeServeOptions::new(websocket_read_timeout_ms=0),
+  )
+  match result {
+    Err(NativeServeError::InvalidWebSocketReadTimeoutMs(0)) => ()
+    Err(err) =>
+      fail("unexpected invalid websocket_read_timeout_ms error: \{err}")
+    Ok(_) =>
+      fail("expected serve_async_with to reject websocket_read_timeout_ms=0")
+  }
+}
+
+///|
+async test "serve_async_until_with rejects non-positive websocket_read_timeout_ms" {
+  let app = new()
+  let shutdown = @async.Queue::new(kind=Unbounded)
+  let result : Result[Unit, Error] = try? app.serve_async_until_with(
+    port=0,
+    shutdown,
+    NativeServeOptions::new(websocket_read_timeout_ms=0),
+  )
+  match result {
+    Err(NativeServeError::InvalidWebSocketReadTimeoutMs(0)) => ()
+    Err(err) =>
+      fail(
+        "unexpected serve_async_until_with websocket_read_timeout_ms error: \{err}",
+      )
+    Ok(_) =>
+      fail(
+        "expected serve_async_until_with to reject websocket_read_timeout_ms=0",
+      )
+  }
+}
+
+///|
 async test "serve_async_on_with times out slow request bodies" {
   let app = new()
   let handled : Ref[Int] = Ref::new(0)
@@ -1888,6 +1968,68 @@ async test "serve_async drops latest buffered websocket messages on overflow whe
       )
 
       client.send_close()
+    },
+  ) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async closes websocket clients after read timeout between messages" {
+  let log : Array[String] = []
+  let app = new()
+  app.get("/healthy", _ => "ok")
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => log.push("open")
+      Message(peer, Text(text)) => peer.text("echo:\{text}")
+      Close(_) => log.push("close")
+      _ => ()
+    }
+  })
+  with_test_server_options(
+    app,
+    NativeServeOptions::new(websocket_read_timeout_ms=50),
+    port => {
+      let client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+      defer client.close()
+
+      client.send_text("ping")
+      inspect(client.recv().read_all().text(), content="echo:ping")
+
+      match
+        @async.with_timeout_opt(250, () => try? client.recv().read_all().text()) {
+        Some(
+          Err(
+            @websocket.ConnectionClosed(
+              @websocket.CloseCode::GoingAway,
+              Some(reason)
+            )
+          )
+        ) => inspect(reason, content="websocket read timeout")
+        Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+          fail(
+            "expected websocket read timeout close code, got \{code} / \{reason}",
+          )
+        Some(Err(err)) =>
+          fail("expected websocket read timeout closure, got error: \{err}")
+        Some(Ok(text)) =>
+          fail("expected websocket read timeout closure, got text: \{text}")
+        None => fail("timed out waiting for websocket read timeout closure")
+      }
+
+      @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+        guard log.contains("open") && log.contains("close") else {
+          raise ServerNotReady
+        }
+      })
+
+      let (healthy_response, healthy_body) = @http.get(
+        localhost_url(port, "/healthy"),
+      )
+      assert_eq(healthy_response.code, 200)
+      inspect(healthy_body.text(), content="ok")
     },
   ) catch {
     SocketBindUnavailable => return

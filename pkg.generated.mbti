@@ -54,6 +54,7 @@ pub suberror NativeServeError {
   InvalidMaxRequestBodyBytes(Int)
   InvalidRequestBodyReadTimeoutMs(Int)
   InvalidWebSocketOutgoingQueueCapacity(Int)
+  InvalidWebSocketReadTimeoutMs(Int)
 } derive(Show, ToJson)
 
 pub suberror NetworkError derive(Show)
@@ -185,8 +186,9 @@ pub struct NativeServeOptions {
   request_body_read_timeout_ms : Int?
   websocket_outgoing_queue_capacity : Int?
   websocket_overflow_policy : NativeWebSocketOverflowPolicy?
+  websocket_read_timeout_ms : Int?
 }
-pub fn NativeServeOptions::new(max_connections? : Int, max_request_body_bytes? : Int, request_body_read_timeout_ms? : Int, websocket_outgoing_queue_capacity? : Int, websocket_overflow_policy? : NativeWebSocketOverflowPolicy) -> Self
+pub fn NativeServeOptions::new(max_connections? : Int, max_request_body_bytes? : Int, request_body_read_timeout_ms? : Int, websocket_outgoing_queue_capacity? : Int, websocket_overflow_policy? : NativeWebSocketOverflowPolicy, websocket_read_timeout_ms? : Int) -> Self
 
 pub(all) enum NativeWebSocketOverflowPolicy {
   DropOldest
