@@ -44,6 +44,15 @@ fn response_headers_to_async(
 }
 
 ///|
+let ws_serve_runtime_counter : Ref[Int] = Ref::new(0)
+
+///|
+fn next_ws_serve_runtime_id(app : Mocket) -> String {
+  ws_serve_runtime_counter.val += 1
+  "\{app.ws_runtime_id}/serve-\{ws_serve_runtime_counter.val}"
+}
+
+///|
 fn append_cookie_headers(
   headers : Map[String, String],
   cookies : Map[String, CookieItem],
@@ -196,6 +205,7 @@ async fn send_response_async(
 ///|
 async fn handle_request_async(
   app : Mocket,
+  ws_runtime_id : String,
   request : @http.Request,
   body_reader : &@io.Reader,
   conn : @http.ServerConnection,
@@ -204,7 +214,7 @@ async fn handle_request_async(
   if is_websocket_upgrade_request(request) {
     match app.find_ws_route(request_path) {
       Some(ws_handler) => {
-        handle_websocket_route_async(app, request, conn, ws_handler)
+        handle_websocket_route_async(ws_runtime_id, request, conn, ws_handler)
         return
       }
       None => ()
@@ -238,8 +248,10 @@ pub async fn Mocket::serve_async_on(
   self : Mocket,
   server : @http.Server,
 ) -> Unit raise Error {
+  let ws_runtime_id = next_ws_serve_runtime_id(self)
+  defer cleanup_native_ws_runtime(ws_runtime_id)
   server.run_forever((request, body_reader, conn) => {
-    handle_request_async(self, request, body_reader, conn)
+    handle_request_async(self, ws_runtime_id, request, body_reader, conn)
   })
 }
 

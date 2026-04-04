@@ -238,19 +238,19 @@ async fn write_native_ws_outgoing(
 
 ///|
 async fn handle_websocket_route_async(
-  app : Mocket,
+  runtime_id : String,
   request : @http.Request,
   conn : @http.ServerConnection,
   handler : WebSocketHandler,
 ) -> Unit raise Error {
   let ws = @websocket.from_http_server(request, conn)
   defer ws.close()
-  let hub = ensure_native_ws_hub(app.ws_runtime_id)
-  let connection_id = next_native_ws_connection_id(app.ws_runtime_id, hub)
+  let hub = ensure_native_ws_hub(runtime_id)
+  let connection_id = next_native_ws_connection_id(runtime_id, hub)
   let outgoing = @async.Queue::new(
     kind=DiscardOldest(NATIVE_WS_OUTGOING_QUEUE_CAPACITY),
   )
-  register_native_ws_connection(app.ws_runtime_id, connection_id, outgoing)
+  register_native_ws_connection(runtime_id, connection_id, outgoing)
   @async.with_task_group(group => {
     group.spawn_bg(() => write_native_ws_outgoing(ws, outgoing))
     handler(Open(snapshot_native_ws_peer(connection_id)))
@@ -277,4 +277,21 @@ async fn handle_websocket_route_async(
   }
   handler(Close(snapshot_native_ws_peer(connection_id)))
   unregister_native_ws_connection(connection_id)
+}
+
+///|
+fn cleanup_native_ws_runtime(runtime_id : String) -> Unit {
+  match native_ws_hubs.get(runtime_id) {
+    Some(hub) => {
+      let connection_ids : Array[String] = []
+      hub.connections.each((connection_id, _) => {
+        connection_ids.push(connection_id)
+      })
+      for connection_id in connection_ids {
+        unregister_native_ws_connection(connection_id)
+      }
+      ignore(native_ws_hubs.remove(runtime_id))
+    }
+    None => ()
+  }
 }

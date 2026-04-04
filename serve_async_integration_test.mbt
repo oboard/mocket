@@ -869,3 +869,94 @@ async test "serve_async isolates websocket channels per app" {
     err => raise err
   }
 }
+
+///|
+async test "serve_async isolates websocket channels per server invocation when reusing one app" {
+  let app = new()
+  app.ws("/hub", event => {
+    match event {
+      Open(peer) => peer.subscribe("room")
+      Message(peer, Text("publish")) => peer.publish("room", "fanout")
+      _ => ()
+    }
+  })
+  with_two_test_servers(app, app, (port1, port2) => {
+    let client1 = @websocket.connect("ws://127.0.0.1:\{port1}/hub")
+    defer client1.close()
+    let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
+    defer client2.close()
+
+    client1.send_text("publish")
+    inspect(client1.recv().read_all().text(), content="fanout")
+    inspect(
+      @async.with_timeout_opt(100, () => client2.recv().read_all().text()),
+      content="None",
+    )
+
+    client2.send_text("publish")
+    inspect(client2.recv().read_all().text(), content="fanout")
+    inspect(
+      @async.with_timeout_opt(100, () => client1.recv().read_all().text()),
+      content="None",
+    )
+
+    client1.send_close()
+    client2.send_close()
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async keeps other reused-app servers alive when one server is cancelled" {
+  let app = new()
+  app.get("/__mocket_ready", _ => "ready")
+  app.ws("/hub", event => {
+    match event {
+      Open(peer) => peer.subscribe("room")
+      Message(peer, Text("publish")) => peer.publish("room", "fanout")
+      _ => ()
+    }
+  })
+  @async.with_task_group(group => {
+    let server1 = allocate_test_server()
+    let server2 = allocate_test_server()
+    let port1 = server1.addr.port()
+    let port2 = server2.addr.port()
+    let task1 = group.spawn(no_wait=true, () => app.serve_async_on(server1))
+    group.spawn_bg(no_wait=true, () => app.serve_async_on(server2))
+    wait_until_ready(port1)
+    wait_until_ready(port2)
+
+    let client1 = @websocket.connect("ws://127.0.0.1:\{port1}/hub")
+    defer client1.close()
+    let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
+    defer client2.close()
+
+    client1.send_text("publish")
+    inspect(client1.recv().read_all().text(), content="fanout")
+    inspect(
+      @async.with_timeout_opt(100, () => client2.recv().read_all().text()),
+      content="None",
+    )
+
+    task1.cancel()
+    assert_eq(
+      @async.with_timeout_opt(200, () => ignore(try? task1.wait())),
+      Some(()),
+    )
+    match
+      @async.with_timeout_opt(200, () => try? client1.recv().read_all().text()) {
+      Some(_) => ()
+      None =>
+        fail("expected cancelled server websocket client to observe shutdown")
+    }
+
+    client2.send_text("publish")
+    inspect(client2.recv().read_all().text(), content="fanout")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
