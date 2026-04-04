@@ -58,11 +58,38 @@ fn append_cookie_headers(
 }
 
 ///|
-fn is_websocket_upgrade_request(request : @http.Request) -> Bool {
-  match get_header_case_insensitive(request.headers, "upgrade") {
-    Some(value) => value.to_lower() == "websocket"
+fn header_contains_token_case_insensitive(
+  headers : Map[String, String],
+  header_name : String,
+  token_name : String,
+) -> Bool {
+  let normalized_token_name = token_name.to_lower()
+  match get_header_case_insensitive(headers, header_name) {
+    Some(value) => {
+      for token in value.split(",") {
+        if token.trim().to_lower() == normalized_token_name {
+          return true
+        }
+      }
+      false
+    }
     None => false
   }
+}
+
+///|
+fn is_websocket_upgrade_request(request : @http.Request) -> Bool {
+  let has_connection_upgrade = header_contains_token_case_insensitive(
+    request.headers,
+    "connection",
+    "upgrade",
+  )
+  let has_websocket_upgrade = match
+    get_header_case_insensitive(request.headers, "upgrade") {
+    Some(value) => value.trim().to_lower() == "websocket"
+    None => false
+  }
+  has_connection_upgrade && has_websocket_upgrade
 }
 
 ///|
@@ -239,6 +266,16 @@ async fn send_request_timeout_async(
 }
 
 ///|
+async fn send_not_found_async(
+  request : @http.Request,
+  conn : @http.ServerConnection,
+) -> Unit raise Error {
+  let response = HttpResponse::new(NotFound).body("Not Found")
+  response.headers.set("Content-Type", "text/plain; charset=utf-8")
+  send_response_and_close_async(request, conn, response)
+}
+
+///|
 fn request_content_length(request : @http.Request) -> Int? {
   match get_header_case_insensitive(request.headers, "content-length") {
     Some(value) => Some(@string.parse_int(value) catch { _ => return None })
@@ -368,7 +405,10 @@ async fn handle_request_async(
         )
         return
       }
-      None => ()
+      None => {
+        send_not_found_async(request, conn)
+        return
+      }
     }
   }
   let http_method_text = request_method_to_string(request.meth)

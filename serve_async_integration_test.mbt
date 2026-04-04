@@ -696,7 +696,9 @@ async test "serve_async_on_with treats max_request_body_bytes=0 as empty-body on
       port, "POST /body HTTP/1.1\r\nHost: localhost\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n1\r\nx\r\n0\r\n\r\n",
     )
     inspect(
-      chunked_headers.has_prefix("HTTP/1.1 413 RequestEntityTooLarge").to_string(),
+      chunked_headers
+      .has_prefix("HTTP/1.1 413 RequestEntityTooLarge")
+      .to_string(),
       content="true",
     )
     inspect(chunked_body.trim(chars="\r\n"), content="Request Entity Too Large")
@@ -2368,10 +2370,9 @@ async test "serve_async treats websocket_max_message_bytes=0 as empty-message on
 
       oversized_client.send_text("x")
       match
-        @async.with_timeout_opt(
-          300,
-          () => try? oversized_client.recv().read_all().text(),
-        ) {
+        @async.with_timeout_opt(300, () => {
+          try? oversized_client.recv().read_all().text()
+        }) {
         Some(
           Err(
             @websocket.ConnectionClosed(
@@ -2391,15 +2392,16 @@ async test "serve_async treats websocket_max_message_bytes=0 as empty-message on
         None => fail("timed out waiting for zero-limit websocket closure")
       }
 
-      let oversized_binary_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+      let oversized_binary_client = @websocket.connect(
+        "ws://127.0.0.1:\{port}/ws",
+      )
       defer oversized_binary_client.close()
 
       oversized_binary_client.send_binary([0])
       match
-        @async.with_timeout_opt(
-          300,
-          () => try? oversized_binary_client.recv().read_all().text(),
-        ) {
+        @async.with_timeout_opt(300, () => {
+          try? oversized_binary_client.recv().read_all().text()
+        }) {
         Some(
           Err(
             @websocket.ConnectionClosed(
@@ -2413,10 +2415,15 @@ async test "serve_async treats websocket_max_message_bytes=0 as empty-message on
             "expected zero-limit websocket binary close code, got \{code} / \{reason}",
           )
         Some(Err(err)) =>
-          fail("expected zero-limit websocket binary closure, got error: \{err}")
+          fail(
+            "expected zero-limit websocket binary closure, got error: \{err}",
+          )
         Some(Ok(text)) =>
-          fail("expected zero-limit websocket binary closure, got text: \{text}")
-        None => fail("timed out waiting for zero-limit websocket binary closure")
+          fail(
+            "expected zero-limit websocket binary closure, got text: \{text}",
+          )
+        None =>
+          fail("timed out waiting for zero-limit websocket binary closure")
       }
 
       let healthy_ws_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
@@ -2427,7 +2434,8 @@ async test "serve_async treats websocket_max_message_bytes=0 as empty-message on
       healthy_ws_client.send_close()
 
       @async.retry(@async.FixedDelay(20), max_retry=50, () => {
-        guard log.contains("text:0") && log.contains("binary:0") &&
+        guard log.contains("text:0") &&
+          log.contains("binary:0") &&
           log.contains("close") else {
           raise ServerNotReady
         }
@@ -2514,6 +2522,66 @@ async test "serve_async enforces websocket_max_message_bytes across multiple rea
       exact_limit_client.send_close()
     },
   ) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async rejects websocket upgrades for http-only routes" {
+  let handled : Ref[Int] = Ref::new(0)
+  let app = new()
+  app.get("/ws", _ => {
+    handled.val += 1
+    "http route"
+  })
+  app.get("/healthy", _ => "ok")
+  with_test_server(app, port => {
+    let (upgrade_headers, upgrade_body) = issue_raw_request_response(
+      port, "GET /ws HTTP/1.1\r\nHost: localhost\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n",
+    )
+    assert_true(upgrade_headers.has_prefix("HTTP/1.1 404 "))
+    assert_eq(
+      raw_header_value(upgrade_headers, "content-type"),
+      Some("text/plain; charset=utf-8"),
+    )
+    assert_eq(raw_header_value(upgrade_headers, "connection"), Some("close"))
+    inspect(upgrade_body, content="Not Found")
+    assert_eq(handled.val, 0)
+
+    let (tabbed_upgrade_headers, tabbed_upgrade_body) = issue_raw_request_response(
+      port, "GET /ws HTTP/1.1\r\nHost: localhost\r\nConnection: keep-alive,\tUpgrade\t\r\nUpgrade: \tWebSocket\t\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n",
+    )
+    assert_true(tabbed_upgrade_headers.has_prefix("HTTP/1.1 404 "))
+    inspect(tabbed_upgrade_body, content="Not Found")
+    assert_eq(handled.val, 0)
+
+    let (header_only_response, header_only_body) = issue_request(
+      port,
+      Get,
+      "/ws",
+      headers={ "Upgrade": "websocket" },
+    )
+    assert_eq(header_only_response.code, 200)
+    inspect(
+      @utf8.decode(header_only_body) catch {
+        _ => ""
+      },
+      content="http route",
+    )
+    assert_eq(handled.val, 1)
+
+    let (http_response, http_body) = @http.get(localhost_url(port, "/ws"))
+    assert_eq(http_response.code, 200)
+    inspect(http_body.text(), content="http route")
+    assert_eq(handled.val, 2)
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+  }) catch {
     SocketBindUnavailable => return
     err => raise err
   }
