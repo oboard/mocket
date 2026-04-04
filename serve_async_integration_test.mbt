@@ -429,6 +429,160 @@ async test "serve_async matches middleware base paths by segment boundary" {
 }
 
 ///|
+async test "serve_async_on_until stops on shutdown signal" {
+  let app = new()
+  app.get("/__mocket_ready", _ => "ready")
+  @async.with_task_group(group => {
+    let server = allocate_test_server()
+    let port = server.addr.port()
+    let shutdown = @async.Queue::new(kind=Unbounded)
+    let task = group.spawn(no_wait=true, () => {
+      try? app.serve_async_on_until(server, shutdown)
+    })
+    wait_until_ready(port)
+
+    let (response, body) = @http.get(localhost_url(port, "/__mocket_ready"))
+    assert_eq(response.code, 200)
+    inspect(body.text(), content="ready")
+
+    shutdown.put(())
+
+    match @async.with_timeout_opt(200, () => task.wait()) {
+      Some(result) =>
+        match result {
+          Ok(_) => ()
+          Err(err) =>
+            fail(
+              "expected shutdown-signal stop without runtime failure: \{err}",
+            )
+        }
+      None =>
+        fail(
+          "timed out waiting for serve_async_on_until to stop after shutdown signal",
+        )
+    }
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async_on_until broadcasts shutdown when the queue is closed" {
+  let app1 = new()
+  let app2 = new()
+  app1.get("/__mocket_ready", _ => "ready")
+  app2.get("/__mocket_ready", _ => "ready")
+  @async.with_task_group(group => {
+    let server1 = allocate_test_server()
+    let server2 = allocate_test_server()
+    let port1 = server1.addr.port()
+    let port2 = server2.addr.port()
+    let shutdown = @async.Queue::new(kind=Unbounded)
+    let task1 = group.spawn(no_wait=true, () => {
+      try? app1.serve_async_on_until(server1, shutdown)
+    })
+    let task2 = group.spawn(no_wait=true, () => {
+      try? app2.serve_async_on_until(server2, shutdown)
+    })
+    wait_until_ready(port1)
+    wait_until_ready(port2)
+
+    shutdown.close()
+
+    match @async.with_timeout_opt(200, () => task1.wait()) {
+      Some(result) =>
+        match result {
+          Ok(_) => ()
+          Err(err) =>
+            fail(
+              "expected queue close to stop the first server cleanly: \{err}",
+            )
+        }
+      None =>
+        fail("timed out waiting for the first server to stop after queue close")
+    }
+    match @async.with_timeout_opt(200, () => task2.wait()) {
+      Some(result) =>
+        match result {
+          Ok(_) => ()
+          Err(err) =>
+            fail(
+              "expected queue close to stop the second server cleanly: \{err}",
+            )
+        }
+      None =>
+        fail(
+          "timed out waiting for the second server to stop after queue close",
+        )
+    }
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async_until binds by port and stops on shutdown signal" {
+  let app = new()
+  app.get("/__mocket_ready", _ => "ready")
+  let start_offset = @async.now().to_int() % 20_000
+  for attempt = 0; attempt < 2_048; attempt = attempt + 1 {
+    let port = 40_000 + (start_offset + attempt) % 20_000
+    let attempt_result : Result[Bool, Error] = try? @async.with_task_group(group => {
+      let shutdown = @async.Queue::new(kind=Unbounded)
+      let task = group.spawn(no_wait=true, () => {
+        try? app.serve_async_until(port~, shutdown)
+      })
+      match @async.with_timeout_opt(50, () => task.wait()) {
+        Some(result) =>
+          match result {
+            Ok(_) => fail("serve_async_until exited before shutdown signal")
+            Err(@os_error.OSError(errno, ..)) if errno == 1 =>
+              raise SocketBindUnavailable
+            Err(@os_error.OSError(_) as err) if err.is_EACCES() =>
+              raise SocketBindUnavailable
+            Err(@os_error.OSError(errno, ..)) if errno == 48 ||
+              errno == 98 ||
+              errno == 10048 => false
+            Err(err) => raise err
+          }
+        None => {
+          wait_until_ready(port)
+          let (response, body) = @http.get(
+            localhost_url(port, "/__mocket_ready"),
+          )
+          assert_eq(response.code, 200)
+          inspect(body.text(), content="ready")
+          shutdown.put(())
+          match @async.with_timeout_opt(200, () => task.wait()) {
+            Some(result) =>
+              match result {
+                Ok(_) => true
+                Err(err) =>
+                  fail(
+                    "expected serve_async_until to stop without runtime failure: \{err}",
+                  )
+              }
+            None =>
+              fail(
+                "timed out waiting for serve_async_until to stop after shutdown signal",
+              )
+          }
+        }
+      }
+    })
+    match attempt_result {
+      Ok(true) => return
+      Ok(false) => ()
+      Err(SocketBindUnavailable) => return
+      Err(err) => raise err
+    }
+  }
+  return
+}
+
+///|
 async test "serve_async mounts static assets by prefix" {
   let app = new()
   app.static_assets("/assets", TestStaticProvider::{  })

@@ -230,15 +230,47 @@ async fn handle_request_async(
 }
 
 ///|
+async fn run_native_server(
+  app : Mocket,
+  ws_runtime_id : String,
+  server : @http.Server,
+) -> Unit raise Error {
+  server.run_forever((request, body_reader, conn) => {
+    handle_request_async(app, ws_runtime_id, request, body_reader, conn)
+  })
+}
+
+///|
+async fn wait_for_shutdown_signal(shutdown : @async.Queue[Unit]) -> Unit {
+  ignore(try? shutdown.get())
+}
+
+///|
 pub async fn Mocket::serve_async_on(
   self : Mocket,
   server : @http.Server,
 ) -> Unit raise Error {
   let ws_runtime_id = next_ws_serve_runtime_id(self)
   defer cleanup_native_ws_runtime(ws_runtime_id)
-  server.run_forever((request, body_reader, conn) => {
-    handle_request_async(self, ws_runtime_id, request, body_reader, conn)
-  })
+  run_native_server(self, ws_runtime_id, server)
+}
+
+///|
+/// Stop serving when `shutdown` receives a unit or is closed.
+/// `shutdown.put(())` wakes one waiter; `shutdown.close()` broadcasts to all waiters.
+/// Shutdown is cancellation-based: active requests and websocket sessions
+/// are aborted rather than drained to completion.
+pub async fn Mocket::serve_async_on_until(
+  self : Mocket,
+  server : @http.Server,
+  shutdown : @async.Queue[Unit],
+) -> Unit raise Error {
+  let ws_runtime_id = next_ws_serve_runtime_id(self)
+  defer cleanup_native_ws_runtime(ws_runtime_id)
+  @async.any([
+    () => run_native_server(self, ws_runtime_id, server),
+    () => wait_for_shutdown_signal(shutdown),
+  ])
 }
 
 ///|
@@ -249,4 +281,19 @@ pub async fn Mocket::serve_async(
   let addr = @socket.Addr::parse("0.0.0.0:\{port}")
   let server = @http.Server::new(addr, reuse_addr=true)
   self.serve_async_on(server)
+}
+
+///|
+/// Stop serving when `shutdown` receives a unit or is closed.
+/// `shutdown.put(())` wakes one waiter; `shutdown.close()` broadcasts to all waiters.
+/// Shutdown is cancellation-based: active requests and websocket sessions
+/// are aborted rather than drained to completion.
+pub async fn Mocket::serve_async_until(
+  self : Mocket,
+  port~ : Int,
+  shutdown : @async.Queue[Unit],
+) -> Unit raise Error {
+  let addr = @socket.Addr::parse("0.0.0.0:\{port}")
+  let server = @http.Server::new(addr, reuse_addr=true)
+  self.serve_async_on_until(server, shutdown)
 }

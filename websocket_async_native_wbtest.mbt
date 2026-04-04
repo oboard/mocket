@@ -103,3 +103,68 @@ async test "serve_async_on clears websocket runtime state on cancellation" {
     err => raise err
   }
 }
+
+///|
+async test "serve_async_on_until clears websocket runtime state on shutdown signal" {
+  let initial_hub_count = native_ws_hub_count()
+  let initial_connection_hub_count = native_ws_connection_hub_count()
+
+  let app = new()
+  app.get("/__ws_lifecycle_ready", _ => "ready")
+  app.ws("/hub", event => {
+    match event {
+      Open(peer) => peer.subscribe("room")
+      Message(peer, Text("publish")) => peer.publish("room", "fanout")
+      _ => ()
+    }
+  })
+
+  @async.with_task_group(group => {
+    let server = allocate_websocket_lifecycle_server()
+    let port = server.addr.port()
+    let shutdown = @async.Queue::new(kind=Unbounded)
+    let task = group.spawn(no_wait=true, () => {
+      try? app.serve_async_on_until(server, shutdown)
+    })
+    wait_until_websocket_lifecycle_ready(port)
+
+    let client = @websocket.connect("ws://127.0.0.1:\{port}/hub")
+    defer client.close()
+
+    client.send_text("publish")
+    inspect(client.recv().read_all().text(), content="fanout")
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard native_ws_hub_count() > initial_hub_count &&
+        native_ws_connection_hub_count() > initial_connection_hub_count else {
+        raise WebSocketLifecycleServerNotReady
+      }
+    })
+
+    shutdown.put(())
+    match @async.with_timeout_opt(200, () => task.wait()) {
+      Some(result) =>
+        match result {
+          Ok(_) => ()
+          Err(err) =>
+            fail(
+              "expected websocket shutdown signal to stop without runtime failure: \{err}",
+            )
+        }
+      None =>
+        fail(
+          "timed out waiting for websocket runtime to stop after shutdown signal",
+        )
+    }
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard native_ws_hub_count() == initial_hub_count &&
+        native_ws_connection_hub_count() == initial_connection_hub_count else {
+        raise WebSocketLifecycleServerNotReady
+      }
+    })
+  }) catch {
+    WebSocketLifecycleSocketBindUnavailable => return
+    err => raise err
+  }
+}
