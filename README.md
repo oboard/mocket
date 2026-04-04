@@ -16,17 +16,8 @@ fn main {
 }
 ```
 
-Mocket supports both `js` and `native` backends.
-
-### JavaScript Backend
-
-Set the backend of MoonBit to `js` in `Visual Studio Code`
-
-Command: `MoonBit: Select Backend` -> `js`
-
-```bash
-moon run src/example --target js
-```
+Mocket is being refactored toward a native-first runtime built on
+`moonbitlang/async`.
 
 ### Native Backend
 
@@ -39,6 +30,25 @@ moon run src/example --target native
 ```
 
 Then visit http://localhost:4000
+
+### Async Native Runtime
+
+The preferred native runtime entry point is now `serve_async`, which runs on
+top of `moonbitlang/async/http`.
+
+Native `fetch` also runs on `moonbitlang/async/http`, so the framework no
+longer depends on the old C-based transport bridge.
+
+```moonbit
+async fn main {
+  let app = @mocket.new()
+  app.get("/", _ => "Hello, async Mocket!")
+  app.serve_async(port=4000)
+}
+```
+
+On native, `serve` is now a synchronous compatibility wrapper over the async
+runtime.
 
 ## Usage
 

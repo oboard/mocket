@@ -1,78 +1,148 @@
 ///|
-#owned(url, http_method_c, body, headers, timeout_ms)
-extern "c" fn fetch_ffi(
-  url : @native.CStr,
-  http_method_c : @native.CStr,
-  body : @native.CStr,
-  headers : @native.CStr,
-  timeout_ms : Int,
-) -> Int = "mocket_fetch"
-
-///|
-extern "c" fn fetch_status_ffi() -> Int = "mocket_fetch_status"
-
-///|
-extern "c" fn fetch_headers_ffi() -> @native.CStr = "mocket_fetch_headers"
-
-///|
-extern "c" fn fetch_error_ffi() -> @native.CStr = "mocket_fetch_error"
-
-///|
-extern "c" fn fetch_body_len_ffi() -> Int = "mocket_fetch_body_len"
-
-///|
-#owned(dst, max_len)
-extern "c" fn fetch_body_copy_ffi(dst : Bytes, max_len : Int) -> Int = "mocket_fetch_body_copy"
-
-///|
-fn headers_to_lines(headers : Map[String, String]) -> String {
-  let buf = @buffer.new()
-  headers.each(fn(k, v) {
-    buf.write_string(k)
-    buf.write_string(": ")
-    buf.write_string(v)
-    buf.write_string("\r\n")
-  })
-  buf.to_string()
+priv enum FetchProtocol {
+  Http
+  Https
 }
 
 ///|
-fn parse_headers_native(headers_text : String) -> Map[StringView, StringView] {
-  let headers : Map[StringView, StringView] = {}
-  headers_text
-  .split("\n")
-  .each(line => {
-    let line = line.trim()
-    if line != "" {
-      if line.find(":") is Some(idx) {
-        let key = line[:idx].trim()
-        let value = line[idx + 1:].trim()
-        if key != "" {
-          headers.set(key, value)
-        }
-      }
-    }
-  })
-  headers
-}
-
-///|
-fn fetch_body_native() -> Bytes {
-  let body_len = fetch_body_len_ffi()
-  if body_len <= 0 {
-    return b""
+fn FetchProtocol::default_port(self : FetchProtocol) -> Int {
+  match self {
+    Http => 80
+    Https => 443
   }
-  let arr = Array::make(body_len, b'\x00')
-  let buf = Bytes::from_array(arr)
-  let copied_len = fetch_body_copy_ffi(buf, body_len)
-  buf[:copied_len].to_bytes()
 }
 
 ///|
-priv struct NativeFetchResult {
-  status_code : Int
-  headers : Map[StringView, StringView]
-  body : Bytes
+fn FetchProtocol::scheme(self : FetchProtocol) -> String {
+  match self {
+    Http => "http"
+    Https => "https"
+  }
+}
+
+///|
+fn request_method_to_async(http_method : HttpMethod) -> @http.RequestMethod {
+  match http_method {
+    GET => @http.Get
+    POST => @http.Post
+    PUT => @http.Put
+    PATCH => @http.Patch
+    DELETE => @http.Delete
+    HEAD => @http.Head
+    OPTIONS => @http.Options
+    TRACE => @http.Trace
+    CONNECT => @http.Connect
+  }
+}
+
+///|
+fn response_headers_from_async(
+  headers : Map[String, String],
+) -> Map[StringView, StringView] {
+  let copied : Map[StringView, StringView] = {}
+  headers.each((key, value) => copied.set(key, value))
+  copied
+}
+
+///|
+fn resolve_fetch_url(
+  url : String,
+) -> (FetchProtocol, String, Int, String) raise Error {
+  guard url.find("://") is Some(protocol_len) else {
+    raise FetchError::RequestFailed("invalid URL: \{url}")
+  }
+  let protocol = match url[:protocol_len] {
+    "http" => Http
+    "https" => Https
+    other => raise FetchError::RequestFailed("unsupported protocol: \{other}")
+  }
+  let remainder = url[protocol_len + 3:]
+  let mut authority_end = remainder.length()
+  match remainder.find("/") {
+    Some(index) => if index < authority_end { authority_end = index }
+    None => ()
+  }
+  match remainder.find("?") {
+    Some(index) => if index < authority_end { authority_end = index }
+    None => ()
+  }
+  match remainder.find("#") {
+    Some(index) => if index < authority_end { authority_end = index }
+    None => ()
+  }
+  let authority = remainder[:authority_end].to_string()
+  let raw_path = if authority_end < remainder.length() {
+    remainder[authority_end:].to_string()
+  } else {
+    "/"
+  }
+  guard authority != "" else {
+    raise FetchError::RequestFailed("invalid URL: \{url}")
+  }
+  let (host, port) = if authority lexmatch? (host, ":" ("[0-9]+" as port_text)) {
+    let parsed_port = @string.parse_int(port_text) catch {
+      _ => raise FetchError::RequestFailed("invalid URL: \{url}")
+    }
+    guard parsed_port is (1..<65536) else {
+      raise FetchError::RequestFailed("invalid URL: \{url}")
+    }
+    (host.to_string(), parsed_port)
+  } else {
+    (authority, protocol.default_port())
+  }
+  guard host != "" else {
+    raise FetchError::RequestFailed("invalid URL: \{url}")
+  }
+  let normalized_path = match raw_path.find("#") {
+    Some(index) => if index == 0 { "/" } else { raw_path[:index].to_string() }
+    None =>
+      if raw_path == "" {
+        "/"
+      } else if raw_path.has_prefix("?") {
+        "/" + raw_path
+      } else {
+        raw_path
+      }
+  }
+  (protocol, host, port, normalized_path)
+}
+
+///|
+fn fetch_origin(protocol : FetchProtocol, host : String, port : Int) -> String {
+  if port == protocol.default_port() {
+    "\{protocol.scheme()}://\{host}"
+  } else {
+    "\{protocol.scheme()}://\{host}:\{port}"
+  }
+}
+
+///|
+fn prepare_fetch_payload_bytes(
+  body : String?,
+  data : &Responder?,
+  headers : Map[String, String]?,
+) -> (Bytes?, Map[String, String]) {
+  let req_headers = copy_headers(headers.unwrap_or({}))
+  let req_body = match body {
+    Some(raw_body) => Some(@utf8.encode(raw_body))
+    None =>
+      match data {
+        Some(responder_data) => {
+          let res = HttpResponse::new(OK)
+          responder_data.options(res)
+          res.headers.each((key, value) => {
+            if req_headers.get(key.to_string()) is None {
+              req_headers.set(key.to_string(), value.to_string())
+            }
+          })
+          let body_buf = @buffer.new()
+          responder_data.output(body_buf)
+          Some(body_buf.to_bytes())
+        }
+        None => None
+      }
+  }
+  (req_body, req_headers)
 }
 
 ///|
@@ -87,31 +157,32 @@ pub async fn fetch(
 ) -> HttpResponse raise Error {
   ignore(credentials)
   ignore(mode)
-  let (req_body, req_headers) = prepare_fetch_payload(body, data, headers)
-  let method_str = http_method.to_string()
-  let body_str = req_body.unwrap_or("")
-  let headers_str = headers_to_lines(req_headers)
-  let result : NativeFetchResult = suspend(fn(ok_cb, reject) {
-    let ret = fetch_ffi(
-      to_cstr(url),
-      to_cstr(method_str),
-      to_cstr(body_str),
-      to_cstr(headers_str),
-      30000,
+  let (req_body, req_headers) = prepare_fetch_payload_bytes(body, data, headers)
+  let (protocol, host, port, path) = resolve_fetch_url(url)
+  let client = @http.Client::new(fetch_origin(protocol, host, port)) catch {
+    err => raise FetchError::RequestFailed("\{err}")
+  }
+  defer client.close()
+  let response = try {
+    client.request(
+      request_method_to_async(http_method),
+      path,
+      extra_headers=req_headers,
     )
-    if ret != 0 {
-      reject(FetchError::RequestFailed(from_cstr(fetch_error_ffi())))
-      return
+    match req_body {
+      Some(body_bytes) => client.write(body_bytes)
+      None => ()
     }
-    ok_cb({
-      status_code: fetch_status_ffi(),
-      headers: parse_headers_native(from_cstr(fetch_headers_ffi())),
-      body: fetch_body_native(),
-    })
-  })
+    client.end_request()
+  } catch {
+    err => raise FetchError::RequestFailed("\{err}")
+  }
+  let response_body = client.read_all().binary() catch {
+      err => raise FetchError::RequestFailed("\{err}")
+    }
   HttpResponse::new(
-    StatusCode::from_int(result.status_code),
-    headers=result.headers,
-    raw_body=result.body,
+    StatusCode::from_int(response.code),
+    headers=response_headers_from_async(response.headers),
+    raw_body=response_body,
   )
 }

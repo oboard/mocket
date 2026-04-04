@@ -249,6 +249,8 @@ pub fn Mocket::group(
       self.dynamic_routes.set(event, routes)
     }
   })
+  group.ws_static_routes.iter().each(i => self.ws_static_routes.set(i.0, i.1))
+  self.ws_dynamic_routes.append(group.ws_dynamic_routes)
   // 合并中间件
   self.middlewares.append(group.middlewares)
 }

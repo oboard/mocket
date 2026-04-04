@@ -37,146 +37,219 @@ pub(open) trait ServeStaticProvider {
 }
 
 ///|
+fn normalize_mount_path(path : String) -> String {
+  if path == "" {
+    "/"
+  } else if path.length() > 1 && path[path.length() - 1:] == "/" {
+    path[:path.length() - 1].to_string()
+  } else {
+    path
+  }
+}
+
+///|
+fn mounted_path_matches(mount_path : String, request_path : String) -> Bool {
+  if mount_path == "/" {
+    true
+  } else if !request_path.has_prefix(mount_path) {
+    false
+  } else if request_path.length() == mount_path.length() {
+    true
+  } else {
+    request_path[mount_path.length()] == '/'
+  }
+}
+
+///|
+fn mounted_asset_id(mount_path : String, request_path : String) -> String {
+  if mount_path == "/" {
+    if request_path == "/" {
+      ""
+    } else {
+      request_path[1:].to_string()
+    }
+  } else if request_path.length() == mount_path.length() {
+    ""
+  } else {
+    request_path[mount_path.length() + 1:].to_string()
+  }
+}
+
+///|
+fn get_request_header(
+  headers : Map[StringView, StringView],
+  lower_name : String,
+  title_name : String,
+) -> StringView? {
+  match headers.get(lower_name) {
+    Some(value) => Some(value)
+    None => headers.get(title_name)
+  }
+}
+
+///|
+fn parse_accept_encoding_token(token : StringView) -> String {
+  match token.find(";") {
+    Some(index) => token[:index].trim(chars=" ").to_string().to_lower()
+    None => token.trim(chars=" ").to_string().to_lower()
+  }
+}
+
+///|
 pub fn Mocket::static_assets(
   self : Mocket,
   path : String,
   provider : &ServeStaticProvider,
 ) -> Unit {
-  self.use_middleware(async fn(event, next) noraise {
-    if !(match_path(path, event.req.url) is None) {
-      return next()
-    }
-
-    // Method check
-    if event.req.http_method != "GET" && event.req.http_method != "HEAD" {
-      if provider.get_fallthrough() {
+  let mount_path = normalize_mount_path(self.base_path + path)
+  self.use_middleware(
+    async fn(event, next) noraise {
+      if !mounted_path_matches(mount_path, event.req.url) {
         return next()
       }
-      event.res.headers.set("Allow", "GET, HEAD")
-      return HttpResponse::new(MethodNotAllowed)
-    }
-    let original_id = event.req.url[path.length():].to_string()
 
-    // Parse Accept-Encoding
-    // Headers are Map[StringView, StringView]
-    let accept_encoding = event.req.headers.get("Accept-Encoding").unwrap_or("")
-    let encodings = provider.get_encodings()
-    let matched_encodings = []
-    if accept_encoding != "" {
-      // split requires `chars` label
-      for pair in accept_encoding.split(",") {
-        let encoding = pair.trim(chars=" ").to_string()
-        match encodings.get(encoding) {
-          Some(mapped) => matched_encodings.push(mapped)
-          None => ()
-        }
-      }
-    }
-    if matched_encodings.length() > 1 {
-      event.res.headers.set("Vary", "Accept-Encoding")
-    }
-
-    // Search paths
-    let mut id = original_id
-    let mut meta : StaticAssetMeta? = None
-    let index_names = provider.get_index_names()
-    if index_names.length() == 0 {
-      ignore(index_names.push("/index.html"))
-    }
-
-    // Search logic: suffix -> encoding
-    let mut found = false
-    let suffixes = [""]
-    suffixes.append(index_names)
-    let try_encodings = matched_encodings.copy()
-    try_encodings.push("") // Add empty encoding (identity)
-    for suffix in suffixes {
-      if found {
-        break
-      }
-      for encoding in try_encodings {
-        let try_id = id + suffix + encoding
-        match provider.get_meta(try_id) {
-          Some(m) => {
-            meta = Some(m)
-            id = try_id
-            found = true
-            break
-          }
-          None => ()
-        }
-      }
-    }
-    match meta {
-      None => {
+      // Method check
+      if event.req.http_method != "GET" && event.req.http_method != "HEAD" {
         if provider.get_fallthrough() {
           return next()
         }
-        return HttpResponse::new(NotFound)
+        event.res.headers.set("Allow", "GET, HEAD")
+        return HttpResponse::new(MethodNotAllowed)
       }
-      Some(meta) => {
-        // Handle caching
-        match meta.mtime {
-          Some(_mtime) =>
-            // TODO: Date parsing/comparison is tricky without a library. 
-            // For now, we just set Last-Modified.
-            // event.res.headers.set("Last-Modified", ... )
-            ()
-          None => ()
-        }
-        match meta.etag {
-          Some(etag) => {
-            if !event.res.headers.contains("ETag") {
-              event.res.headers.set("ETag", etag)
-            }
-            if event.req.headers.get("If-None-Match") == Some(etag) {
-              return HttpResponse::new(NotModified)
-            }
-          }
-          None => ()
-        }
+      let original_id = mounted_asset_id(mount_path, event.req.url)
 
-        // Content-Type
-        if !event.res.headers.contains("Content-Type") {
-          match meta.asset_type {
-            Some(t) => event.res.headers.set("Content-Type", t)
-            None => {
-              // Simple extension extraction
-              let parts = id.split(".").collect()
-              if parts.length() > 1 {
-                match provider.get_type(parts[parts.length() - 1].to_string()) {
-                  Some(t) => event.res.headers.set("Content-Type", t)
-                  None => ()
+      // Parse Accept-Encoding
+      // Headers are Map[StringView, StringView]
+      let accept_encoding = get_request_header(
+        event.req.headers,
+        "accept-encoding",
+        "Accept-Encoding",
+      ).unwrap_or("")
+      let encodings = provider.get_encodings()
+      let matched_encodings = []
+      if !encodings.is_empty() {
+        event.res.headers.set("Vary", "Accept-Encoding")
+      }
+      if accept_encoding != "" {
+        // split requires `chars` label
+        for pair in accept_encoding.split(",") {
+          let encoding = parse_accept_encoding_token(pair)
+          match encodings.get(encoding) {
+            Some(mapped) => matched_encodings.push(mapped)
+            None => ()
+          }
+        }
+      }
+
+      // Search paths
+      let mut id = original_id
+      let mut meta : StaticAssetMeta? = None
+      let index_names = provider.get_index_names()
+      if index_names.length() == 0 {
+        ignore(index_names.push("/index.html"))
+      }
+
+      // Search logic: suffix -> encoding
+      let mut found = false
+      let suffixes = [""]
+      suffixes.append(index_names)
+      let try_encodings = matched_encodings.copy()
+      try_encodings.push("") // Add empty encoding (identity)
+      for suffix in suffixes {
+        if found {
+          break
+        }
+        for encoding in try_encodings {
+          let try_id = id + suffix + encoding
+          match provider.get_meta(try_id) {
+            Some(m) => {
+              meta = Some(m)
+              id = try_id
+              found = true
+              break
+            }
+            None => ()
+          }
+        }
+      }
+      match meta {
+        None => {
+          if provider.get_fallthrough() {
+            return next()
+          }
+          return HttpResponse::new(NotFound).body("Not Found")
+        }
+        Some(meta) => {
+          // Handle caching
+          match meta.mtime {
+            Some(_mtime) =>
+              // TODO: Date parsing/comparison is tricky without a library.
+              // For now, we just set Last-Modified.
+              // event.res.headers.set("Last-Modified", ... )
+              ()
+            None => ()
+          }
+          match meta.etag {
+            Some(etag) => {
+              if !event.res.headers.contains("ETag") {
+                event.res.headers.set("ETag", etag)
+              }
+              if get_request_header(
+                  event.req.headers,
+                  "if-none-match",
+                  "If-None-Match",
+                ) ==
+                Some(etag) {
+                return HttpResponse::new(NotModified)
+              }
+            }
+            None => ()
+          }
+
+          // Content-Type
+          if !event.res.headers.contains("Content-Type") {
+            match meta.asset_type {
+              Some(t) => event.res.headers.set("Content-Type", t)
+              None => {
+                // Simple extension extraction
+                let parts = id.split(".").collect()
+                if parts.length() > 1 {
+                  match
+                    provider.get_type(parts[parts.length() - 1].to_string()) {
+                    Some(t) => event.res.headers.set("Content-Type", t)
+                    None => ()
+                  }
                 }
               }
             }
           }
-        }
 
-        // Content-Encoding
-        match meta.encoding {
-          Some(enc) =>
-            if !event.res.headers.contains("Content-Encoding") {
-              event.res.headers.set("Content-Encoding", enc)
-            }
-          None => ()
-        }
+          // Content-Encoding
+          match meta.encoding {
+            Some(enc) =>
+              if !event.res.headers.contains("Content-Encoding") {
+                event.res.headers.set("Content-Encoding", enc)
+              }
+            None => ()
+          }
 
-        // Content-Length
-        match meta.size {
-          Some(size) =>
-            if size > 0L && !event.res.headers.contains("Content-Length") {
-              event.res.headers.set("Content-Length", size.to_string())
-            }
-          None => ()
+          // Content-Length
+          match meta.size {
+            Some(size) =>
+              if !event.res.headers.contains("Content-Length") {
+                event.res.headers.set("Content-Length", size.to_string())
+              }
+            None => ()
+          }
+          if event.req.http_method == "HEAD" {
+            return HttpResponse::new(OK)
+          }
+          let contents = provider.get_contents(id)
+          event.res.status_code = OK
+          contents
         }
-        if event.req.http_method == "HEAD" {
-          return HttpResponse::new(OK)
-        }
-        let contents = provider.get_contents(id)
-        event.res.status_code = OK
-        contents
       }
-    }
-  })
+    },
+    base_path=mount_path,
+  )
 }

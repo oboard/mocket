@@ -34,7 +34,20 @@ fn match_path_segments(
   // 路径结束但模板还有
   if path_idx >= path_parts.length() {
     let template_part = template_parts[template_idx]
-    return if template_part == "**" { Some(params) } else { None }
+    return if template_part == "**" {
+      let trial_params : Map[String, StringView] = {}
+      params.each((key, value) => trial_params.set(key, value))
+      trial_params.set("_", "")
+      match_path_segments(
+        template_parts,
+        path_parts,
+        template_idx + 1,
+        path_idx,
+        trial_params,
+      )
+    } else {
+      None
+    }
   }
 
   // 都有内容，继续匹配
@@ -63,15 +76,32 @@ fn match_path_segments(
       params,
     )
   } else if template_part == "**" {
-    // 多级通配符 - 贪婪匹配剩余所有
-    let remaining_path = []
-    let mut i = path_idx
-    while i < path_parts.length() {
-      remaining_path.push(path_parts[i])
-      i = i + 1
+    // 多级通配符 - 可以匹配零个或多个路径段
+    let mut end_idx = path_idx
+    while end_idx <= path_parts.length() {
+      let matched_segments : Array[StringView] = []
+      let mut i = path_idx
+      while i < end_idx {
+        matched_segments.push(path_parts[i])
+        i = i + 1
+      }
+      let trial_params : Map[String, StringView] = {}
+      params.each((key, value) => trial_params.set(key, value))
+      trial_params.set("_", matched_segments.join("/"))
+      match
+        match_path_segments(
+          template_parts,
+          path_parts,
+          template_idx + 1,
+          end_idx,
+          trial_params,
+        ) {
+        Some(result) => return Some(result)
+        None => ()
+      }
+      end_idx = end_idx + 1
     }
-    params.set("_", remaining_path.join("/"))
-    Some(params)
+    None
   } else if template_part == path_part {
     // 静态段匹配
     match_path_segments(
@@ -88,27 +118,12 @@ fn match_path_segments(
 }
 
 ///|
-// 查找匹配的路由和参数
-fn Mocket::find_route(
+fn Mocket::find_route_for_method(
   self : Mocket,
   http_method : String,
   path : String,
 ) -> (HttpHandler, Map[String, StringView])? {
-  // 优化：首先尝试静态路由缓存
   match self.static_routes.get(http_method) {
-    Some(http_methodroutes) => {
-      let routes = []
-      http_methodroutes.iter().each(fn(item) { routes.push(item.0) })
-      match http_methodroutes.get(path) {
-        Some(handler) => return Some((handler, {}))
-        None => ignore(())
-      }
-    }
-    None => ignore(())
-  }
-
-  // 检查通配符方法的静态路由
-  match self.static_routes.get("*") {
     Some(http_methodroutes) =>
       match http_methodroutes.get(path) {
         Some(handler) => return Some((handler, {}))
@@ -117,7 +132,6 @@ fn Mocket::find_route(
     None => ignore(())
   }
 
-  // 然后尝试动态路由
   if self.dynamic_routes.get(http_method) is Some(routes) {
     let mut i = 0
     while i < routes.length() {
@@ -130,8 +144,70 @@ fn Mocket::find_route(
       i = i + 1
     }
   }
+  None
+}
 
-  // 最后检查通配符方法的动态路由
+///|
+fn Mocket::has_route_for_method(
+  self : Mocket,
+  http_method : String,
+  path : String,
+) -> Bool {
+  self.find_route_for_method(http_method, path) is Some(_)
+}
+
+///|
+fn Mocket::allowed_methods(
+  self : Mocket,
+  path : String,
+  include_implicit_options : Bool,
+) -> Array[String] {
+  let allowed : Array[String] = []
+  let supports_get = self.has_route_for_method("GET", path)
+  let supports_head = self.has_route_for_method("HEAD", path)
+  if supports_get {
+    allowed.push("GET")
+  }
+  if supports_head || supports_get {
+    allowed.push("HEAD")
+  }
+  for http_method in ["POST", "PUT", "PATCH", "DELETE"] {
+    if self.has_route_for_method(http_method, path) {
+      allowed.push(http_method)
+    }
+  }
+  let supports_options = self.has_route_for_method("OPTIONS", path)
+  if supports_options || (include_implicit_options && !allowed.is_empty()) {
+    allowed.push("OPTIONS")
+  }
+  for http_method in ["TRACE", "CONNECT"] {
+    if self.has_route_for_method(http_method, path) {
+      allowed.push(http_method)
+    }
+  }
+  allowed
+}
+
+///|
+// 查找匹配的路由和参数
+fn Mocket::find_route(
+  self : Mocket,
+  http_method : String,
+  path : String,
+) -> (HttpHandler, Map[String, StringView])? {
+  match self.find_route_for_method(http_method, path) {
+    Some(route) => return Some(route)
+    None => ()
+  }
+  match self.static_routes.get("*") {
+    Some(http_methodroutes) =>
+      match http_methodroutes.get(path) {
+        Some(handler) => return Some((handler, {}))
+        None => ()
+      }
+    None => ()
+  }
+
   if self.dynamic_routes.get("*") is Some(routes) {
     let mut i = 0
     while i < routes.length() {
@@ -143,6 +219,25 @@ fn Mocket::find_route(
       }
       i = i + 1
     }
+  }
+  None
+}
+
+///|
+fn Mocket::find_ws_route(self : Mocket, path : String) -> WebSocketHandler? {
+  match self.ws_static_routes.get(path) {
+    Some(handler) => return Some(handler)
+    None => ()
+  }
+  let mut i = 0
+  while i < self.ws_dynamic_routes.length() {
+    let route_item = self.ws_dynamic_routes[i]
+    let route_path = route_item.0
+    let handler = route_item.1
+    if match_path(route_path, path) is Some(_) {
+      return Some(handler)
+    }
+    i = i + 1
   }
   None
 }
@@ -191,6 +286,12 @@ test "多级通配符匹配" {
     Some({ "_": "readme.md" }),
   )
   assert_eq(match_path("/api/v1/**", "/api/v1/"), Some({ "_": "" }))
+  assert_eq(
+    match_path("/files/**/meta", "/files/a/b/meta"),
+    Some({ "_": "a/b" }),
+  )
+  assert_eq(match_path("/files/**/meta", "/files/a/b/raw"), None)
+  assert_eq(match_path("/files/**/meta", "/files"), None)
 }
 
 ///|

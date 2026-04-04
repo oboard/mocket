@@ -14,11 +14,55 @@ pub fn new(path : String) -> StaticFileProvider {
 }
 
 ///|
+fn is_safe_static_id(id : String) -> Bool {
+  if id.find("\\") is Some(_) {
+    return false
+  }
+  for segment in id.split("/") {
+    if segment == ".." {
+      return false
+    }
+  }
+  true
+}
+
+///|
+fn StaticFileProvider::full_path(
+  self : StaticFileProvider,
+  id : String,
+) -> String? {
+  if is_safe_static_id(id) {
+    Some(self.path + "/" + id)
+  } else {
+    None
+  }
+}
+
+///|
+fn is_static_asset_file(path : String) -> Bool {
+  if !@fs.path_exists(path) {
+    false
+  } else {
+    @fs.is_file(path) catch {
+      _ => false
+    }
+  }
+}
+
+///|
 pub impl ServeStaticProvider for StaticFileProvider with get_meta(
   self,
   id : String,
 ) -> @mocket.StaticAssetMeta? {
-  Some(@mocket.StaticAssetMeta::new(path=self.path + "/" + id))
+  match self.full_path(id) {
+    Some(path) =>
+      if is_static_asset_file(path) {
+        Some(@mocket.StaticAssetMeta::new(path~))
+      } else {
+        None
+      }
+    None => None
+  }
 }
 
 ///|
@@ -26,12 +70,17 @@ pub impl ServeStaticProvider for StaticFileProvider with get_contents(
   self,
   id : String,
 ) -> &Responder {
-  let res : &Responder = @mocket.HttpResponse::new(OK).body(
-    @fs.read_file_to_bytes(self.path + "/" + id),
-  ) catch {
-    _ => @mocket.HttpResponse::new(NotFound).body("Not Found")
+  match self.full_path(id) {
+    Some(path) => {
+      let res : &Responder = @mocket.HttpResponse::new(OK).body(
+        @fs.read_file_to_bytes(path),
+      ) catch {
+        _ => @mocket.HttpResponse::new(NotFound).body("Not Found")
+      }
+      res
+    }
+    None => @mocket.HttpResponse::new(NotFound).body("Not Found")
   }
-  res
 }
 
 ///|

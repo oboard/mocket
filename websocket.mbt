@@ -26,8 +26,8 @@ pub fn WebSocketPeer::pong(self : WebSocketPeer) -> Unit {
 pub fn WebSocketPeer::subscribe(self : WebSocketPeer, channel : String) -> Unit {
   if !self.subscribed_channels.contains(channel) {
     self.subscribed_channels.push(channel)
-    ws_subscribe(self.connection_id, channel)
   }
+  ws_subscribe(self.connection_id, channel)
 }
 
 ///|
@@ -43,12 +43,10 @@ pub fn WebSocketPeer::unsubscribe(
     }
   }
   match index {
-    Some(i) => {
-      ignore(self.subscribed_channels.remove(i))
-      ws_unsubscribe(self.connection_id, channel)
-    }
+    Some(i) => ignore(self.subscribed_channels.remove(i))
     None => ()
   }
+  ws_unsubscribe(self.connection_id, channel)
 }
 
 ///|

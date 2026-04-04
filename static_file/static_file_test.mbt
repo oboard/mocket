@@ -1,0 +1,111 @@
+///|
+suberror ServerNotReady
+
+///|
+suberror SocketBindUnavailable
+
+///|
+async fn allocate_test_server() -> @http.Server {
+  let addr = @socket.Addr::parse("127.0.0.1:0") catch {
+    _ => raise SocketBindUnavailable
+  }
+  let bind_check : Result[@http.Server, Error] = try? @http.Server::new(
+    addr,
+    reuse_addr=true,
+  )
+  match bind_check {
+    Ok(server) => server
+    Err(@os_error.OSError(errno, ..)) if errno == 1 =>
+      raise SocketBindUnavailable
+    Err(@os_error.OSError(_) as err) if err.is_EACCES() =>
+      raise SocketBindUnavailable
+    Err(err) => fail("unexpected bind check failure: \{err}")
+  }
+}
+
+///|
+fn localhost_url(port : Int, path : String) -> String {
+  "http://127.0.0.1:\{port}\{path}"
+}
+
+///|
+async fn wait_until_ready(port : Int) -> Unit {
+  @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    let (response, _body) = @http.get(localhost_url(port, "/__mocket_ready"))
+    guard response.code == 200 else { raise ServerNotReady }
+  })
+}
+
+///|
+async fn with_test_server(
+  app : @mocket.Mocket,
+  run_test : async (Int) -> Unit,
+) -> Unit {
+  let server = allocate_test_server()
+  let port = server.addr.port()
+  app.get("/__mocket_ready", _ => "ready")
+  @async.with_task_group(group => {
+    group.spawn_bg(no_wait=true, () => app.serve_async_on(server))
+    wait_until_ready(port)
+    run_test(port)
+  })
+}
+
+///|
+async test "static_file serves files and directory index" {
+  let app = @mocket.new()
+  app.static_assets("/assets", new("static_file/testdata"))
+  with_test_server(app, port => {
+    let (file_response, file_body) = @http.get(
+      localhost_url(port, "/assets/hello.txt"),
+    )
+    assert_eq(file_response.code, 200)
+    assert_eq(
+      file_body.binary(),
+      @fs.read_file_to_bytes("static_file/testdata/hello.txt"),
+    )
+
+    let (index_response, index_body) = @http.get(localhost_url(port, "/assets"))
+    assert_eq(index_response.code, 200)
+    assert_eq(
+      index_body.binary(),
+      @fs.read_file_to_bytes("static_file/testdata/index.html"),
+    )
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "static_file respects grouped mounts and blocks traversal" {
+  let app = @mocket.new()
+  app.group("/api", group => {
+    group.static_assets("/assets", new("static_file/testdata"))
+  })
+  with_test_server(app, port => {
+    let (file_response, file_body) = @http.get(
+      localhost_url(port, "/api/assets/hello.txt"),
+    )
+    assert_eq(file_response.code, 200)
+    assert_eq(
+      file_body.binary(),
+      @fs.read_file_to_bytes("static_file/testdata/hello.txt"),
+    )
+
+    let (missing_response, missing_body) = @http.get(
+      localhost_url(port, "/api/assets/missing.txt"),
+    )
+    assert_eq(missing_response.code, 404)
+    assert_eq(missing_body.text().trim(chars="\r\n"), "Not Found")
+
+    let (traversal_response, traversal_body) = @http.get(
+      localhost_url(port, "/api/assets/../README.md"),
+    )
+    assert_eq(traversal_response.code, 404)
+    assert_eq(traversal_body.text().trim(chars="\r\n"), "Not Found")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
