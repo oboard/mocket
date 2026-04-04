@@ -38,8 +38,8 @@ fn request_method_to_async(http_method : HttpMethod) -> @http.RequestMethod {
 ///|
 fn response_headers_from_async(
   headers : Map[String, String],
-) -> Map[StringView, StringView] {
-  let copied : Map[StringView, StringView] = {}
+) -> Map[String, String] {
+  let copied : Map[String, String] = {}
   headers.each((key, value) => copied.set(key, value))
   copied
 }

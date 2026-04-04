@@ -17,12 +17,6 @@ pub fn WebSocketPeer::binary(self : WebSocketPeer, message : Bytes) -> Unit {
 }
 
 ///|
-pub fn WebSocketPeer::pong(self : WebSocketPeer) -> Unit {
-  // 真正发送到后端连接
-  ws_pong(self.connection_id)
-}
-
-///|
 pub fn WebSocketPeer::subscribe(self : WebSocketPeer, channel : String) -> Unit {
   if !self.subscribed_channels.contains(channel) {
     self.subscribed_channels.push(channel)
@@ -70,7 +64,6 @@ pub enum WebSocketEvent {
 pub enum WebSocketAggregatedMessage {
   Text(String)
   Binary(Bytes)
-  Ping
 }
 
 ///|

@@ -1,7 +1,7 @@
 ///|
 pub(all) struct HttpResponse {
   mut status_code : StatusCode
-  headers : Map[StringView, StringView]
+  headers : Map[String, String]
   cookies : Map[String, CookieItem]
   mut raw_body : Bytes
 }
@@ -19,7 +19,7 @@ pub fn[T : BodyReader] HttpResponse::read_body(self : HttpResponse) -> T raise {
 ///|
 pub fn HttpResponse::new(
   status_code : StatusCode,
-  headers? : Map[StringView, StringView],
+  headers? : Map[String, String],
   cookies? : Map[String, CookieItem],
   raw_body? : Bytes,
 ) -> HttpResponse {

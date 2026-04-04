@@ -2,6 +2,9 @@
 struct TestStaticProvider {}
 
 ///|
+struct EncodedStaticProvider {}
+
+///|
 suberror ServerNotReady
 
 ///|
@@ -70,6 +73,54 @@ impl ServeStaticProvider for TestStaticProvider with get_index_names(_) -> Array
 
 ///|
 impl ServeStaticProvider for TestStaticProvider with get_fallthrough(_) -> Bool {
+  false
+}
+
+///|
+impl ServeStaticProvider for EncodedStaticProvider with get_meta(_, id) {
+  match id {
+    "hello.txt.gz" =>
+      Some(
+        StaticAssetMeta::new(
+          asset_type="text/plain; charset=utf-8",
+          encoding="gzip",
+          size=7L,
+        ),
+      )
+    _ => None
+  }
+}
+
+///|
+impl ServeStaticProvider for EncodedStaticProvider with get_contents(_, id) {
+  match id {
+    "hello.txt.gz" => HttpResponse::new(OK).body(b"encoded")
+    _ => HttpResponse::new(NotFound).body("Not Found")
+  }
+}
+
+///|
+impl ServeStaticProvider for EncodedStaticProvider with get_type(_, _ext) -> String? {
+  None
+}
+
+///|
+impl ServeStaticProvider for EncodedStaticProvider with get_encodings(_) -> Map[
+  String,
+  String,
+] {
+  { "gzip": ".gz" }
+}
+
+///|
+impl ServeStaticProvider for EncodedStaticProvider with get_index_names(_) -> Array[
+  String,
+] {
+  ["index.html"]
+}
+
+///|
+impl ServeStaticProvider for EncodedStaticProvider with get_fallthrough(_) -> Bool {
   false
 }
 
@@ -210,6 +261,37 @@ async test "serve_async mounts static assets by prefix" {
       "",
     )
     assert_eq(response3.code, 405)
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async preserves content-encoding for encoded static assets" {
+  let app = new()
+  app.static_assets("/assets", EncodedStaticProvider::{  })
+  with_test_server(app, port => {
+    let (get_response, get_body) = issue_request(
+      port,
+      @http.Get,
+      "/assets/hello.txt",
+      headers={ "Accept-Encoding": "gzip" },
+    )
+    assert_eq(get_response.code, 200)
+    assert_eq(get_response.headers.get("content-encoding"), Some("gzip"))
+    assert_eq(get_body, b"encoded")
+
+    let (head_response, head_body) = issue_request(
+      port,
+      @http.Head,
+      "/assets/hello.txt",
+      headers={ "Accept-Encoding": "gzip" },
+    )
+    assert_eq(head_response.code, 200)
+    assert_eq(head_response.headers.get("content-encoding"), Some("gzip"))
+    assert_eq(head_response.headers.get("content-length"), Some("7"))
+    assert_eq(head_body, b"")
   }) catch {
     SocketBindUnavailable => return
     err => raise err
@@ -417,7 +499,6 @@ async test "serve_async handles websocket text and binary messages" {
         match msg {
           Text(text) => peer.text("echo:\{text}")
           Binary(bytes) => peer.binary(bytes)
-          Ping => log.push("ping")
         }
       Close(_) => log.push("close")
     }

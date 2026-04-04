@@ -52,6 +52,36 @@ async fn with_test_server(
 }
 
 ///|
+async fn issue_request(
+  port : Int,
+  meth : @http.RequestMethod,
+  path : String,
+  headers? : Map[String, String],
+) -> (@http.Response, Bytes) {
+  let client = @http.Client::new("http://127.0.0.1:\{port}")
+  defer client.close()
+  client.request(meth, path, extra_headers=headers.unwrap_or({}))
+  let response = client.end_request()
+  let response_body = client.read_all().binary()
+  (response, response_body)
+}
+
+///|
+async test "static_file provider exposes file metadata" {
+  let provider = new("static_file/testdata")
+  match provider.get_meta("hello.txt") {
+    Some(meta) => {
+      assert_eq(meta.size, Some(16L))
+      assert_eq(meta.path, Some("static_file/testdata/hello.txt"))
+      guard meta.etag is Some(_) else {
+        fail("expected filesystem provider to emit an ETag")
+      }
+    }
+    None => fail("expected filesystem provider metadata")
+  }
+}
+
+///|
 async test "static_file serves files and directory index" {
   let app = @mocket.new()
   app.static_assets("/assets", new("static_file/testdata"))
@@ -62,15 +92,77 @@ async test "static_file serves files and directory index" {
     assert_eq(file_response.code, 200)
     assert_eq(
       file_body.binary(),
-      @fs.read_file_to_bytes("static_file/testdata/hello.txt"),
+      @fs.read_file("static_file/testdata/hello.txt").binary(),
     )
 
     let (index_response, index_body) = @http.get(localhost_url(port, "/assets"))
     assert_eq(index_response.code, 200)
     assert_eq(
       index_body.binary(),
-      @fs.read_file_to_bytes("static_file/testdata/index.html"),
+      @fs.read_file("static_file/testdata/index.html").binary(),
     )
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "static_file serves head and validates etags" {
+  let app = @mocket.new()
+  app.static_assets("/assets", new("static_file/testdata"))
+  with_test_server(app, port => {
+    let (get_response, get_body) = @http.get(
+      localhost_url(port, "/assets/hello.txt"),
+    )
+    assert_eq(get_response.code, 200)
+    assert_eq(
+      get_body.binary(),
+      @fs.read_file("static_file/testdata/hello.txt").binary(),
+    )
+    let etag = get_response.headers.get("etag").unwrap_or("")
+    guard etag != "" else {
+      fail("expected filesystem provider to emit an ETag")
+    }
+
+    let (head_response, head_body) = issue_request(
+      port,
+      @http.Head,
+      "/assets/hello.txt",
+    )
+    assert_eq(head_response.code, 200)
+    assert_eq(head_body, b"")
+    assert_eq(head_response.headers.get("etag"), Some(etag))
+    assert_eq(head_response.headers.get("content-length"), Some("16"))
+
+    let (cached_response, cached_body) = issue_request(
+      port,
+      @http.Get,
+      "/assets/hello.txt",
+      headers={ "If-None-Match": etag },
+    )
+    assert_eq(cached_response.code, 304)
+    assert_eq(cached_body, b"")
+    assert_eq(cached_response.headers.get("etag"), Some(etag))
+
+    let weak_etag = "W/\{etag}"
+    let (weak_response, weak_body) = issue_request(
+      port,
+      @http.Get,
+      "/assets/hello.txt",
+      headers={ "If-None-Match": weak_etag },
+    )
+    assert_eq(weak_response.code, 304)
+    assert_eq(weak_body, b"")
+
+    let (multi_response, multi_body) = issue_request(
+      port,
+      @http.Get,
+      "/assets/hello.txt",
+      headers={ "If-None-Match": "\"miss\", \{etag}" },
+    )
+    assert_eq(multi_response.code, 304)
+    assert_eq(multi_body, b"")
   }) catch {
     SocketBindUnavailable => return
     err => raise err
@@ -90,7 +182,7 @@ async test "static_file respects grouped mounts and blocks traversal" {
     assert_eq(file_response.code, 200)
     assert_eq(
       file_body.binary(),
-      @fs.read_file_to_bytes("static_file/testdata/hello.txt"),
+      @fs.read_file("static_file/testdata/hello.txt").binary(),
     )
 
     let (missing_response, missing_body) = @http.get(

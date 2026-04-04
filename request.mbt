@@ -2,7 +2,7 @@
 pub(all) struct HttpRequest {
   http_method : String
   url : String
-  headers : Map[StringView, StringView]
+  headers : Map[String, String]
   mut raw_body : Bytes
 }
 

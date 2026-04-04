@@ -23,17 +23,17 @@ pub fn StaticAssetMeta::new(
 ///|
 pub(open) trait ServeStaticProvider {
   // This function should resolve asset meta
-  get_meta(Self, id : String) -> StaticAssetMeta?
+  async get_meta(Self, id : String) -> StaticAssetMeta? noraise
   // This function should resolve asset content
-  get_contents(Self, id : String) -> &Responder
+  async get_contents(Self, id : String) -> &Responder noraise
   // Custom MIME type resolver function
-  get_type(Self, ext : String) -> String?
+  get_type(Self, ext : String) -> String? noraise
   // Encodings map
-  get_encodings(Self) -> Map[String, String]
+  get_encodings(Self) -> Map[String, String] noraise
   // Index names
-  get_index_names(Self) -> Array[String]
+  get_index_names(Self) -> Array[String] noraise
   // Fallthrough
-  get_fallthrough(Self) -> Bool
+  get_fallthrough(Self) -> Bool noraise
 }
 
 ///|
@@ -77,10 +77,10 @@ fn mounted_asset_id(mount_path : String, request_path : String) -> String {
 
 ///|
 fn get_request_header(
-  headers : Map[StringView, StringView],
+  headers : Map[String, String],
   lower_name : String,
   title_name : String,
-) -> StringView? {
+) -> String? {
   match headers.get(lower_name) {
     Some(value) => Some(value)
     None => headers.get(title_name)
@@ -93,6 +93,85 @@ fn parse_accept_encoding_token(token : StringView) -> String {
     Some(index) => token[:index].trim(chars=" ").to_string().to_lower()
     None => token.trim(chars=" ").to_string().to_lower()
   }
+}
+
+///|
+fn normalize_etag_token(token : StringView) -> String {
+  let trimmed = token.trim(chars=" ")
+  if trimmed.length() >= 2 &&
+    (trimmed.has_prefix("W/") || trimmed.has_prefix("w/")) {
+    trimmed[2:].trim(chars=" ").to_string()
+  } else {
+    trimmed.to_string()
+  }
+}
+
+///|
+fn if_none_match_matches(header_value : String, etag : String) -> Bool {
+  for token in header_value.split(",") {
+    let normalized = normalize_etag_token(token)
+    if normalized == "*" || normalized == etag {
+      return true
+    }
+  }
+  false
+}
+
+///|
+struct StaticResolvedResponder {
+  inner : &Responder
+  asset_headers : Map[String, String]
+}
+
+///|
+pub impl Responder for StaticResolvedResponder with options(self, res) -> Unit {
+  self.inner.options(res)
+  if res.status_code == OK {
+    self.asset_headers.each((key, value) => {
+      if !res.headers.contains(key) {
+        res.headers.set(key, value)
+      }
+    })
+  }
+}
+
+///|
+pub impl Responder for StaticResolvedResponder with output(self, buf) -> Unit {
+  self.inner.output(buf)
+}
+
+///|
+fn static_asset_headers(
+  provider : &ServeStaticProvider,
+  id : String,
+  meta : StaticAssetMeta,
+) -> Map[String, String] {
+  let headers : Map[String, String] = {}
+  match meta.etag {
+    Some(etag) => headers.set("ETag", etag)
+    None => ()
+  }
+  match meta.asset_type {
+    Some(t) => headers.set("Content-Type", t)
+    None => {
+      let parts = id.split(".").collect()
+      if parts.length() > 1 {
+        match provider.get_type(parts[parts.length() - 1].to_string()) {
+          Some(t) => headers.set("Content-Type", t)
+          None => ()
+        }
+      }
+    }
+  }
+  match meta.encoding {
+    Some(enc) => headers.set("Content-Encoding", enc)
+    None => ()
+  }
+  match meta.size {
+    Some(size) => headers.set("Content-Length", size.to_string())
+    None => ()
+  }
+  headers
 }
 
 ///|
@@ -180,6 +259,30 @@ pub fn Mocket::static_assets(
           return HttpResponse::new(NotFound).body("Not Found")
         }
         Some(meta) => {
+          let meta = match meta.etag {
+            Some(etag) =>
+              if get_request_header(
+                  event.req.headers,
+                  "if-none-match",
+                  "If-None-Match",
+                ).map(header => if_none_match_matches(header, etag)) ==
+                Some(true) {
+                match provider.get_meta(id) {
+                  Some(revalidated_meta) =>
+                    match revalidated_meta.etag {
+                      Some(revalidated_etag) if revalidated_etag == etag =>
+                        return HttpResponse::new(NotModified, headers={
+                          "ETag": etag,
+                        })
+                      _ => revalidated_meta
+                    }
+                  None => meta
+                }
+              } else {
+                meta
+              }
+            None => meta
+          }
           // Handle caching
           match meta.mtime {
             Some(_mtime) =>
@@ -189,64 +292,18 @@ pub fn Mocket::static_assets(
               ()
             None => ()
           }
-          match meta.etag {
-            Some(etag) => {
-              if !event.res.headers.contains("ETag") {
-                event.res.headers.set("ETag", etag)
-              }
-              if get_request_header(
-                  event.req.headers,
-                  "if-none-match",
-                  "If-None-Match",
-                ) ==
-                Some(etag) {
-                return HttpResponse::new(NotModified)
-              }
-            }
-            None => ()
-          }
-
-          // Content-Type
-          if !event.res.headers.contains("Content-Type") {
-            match meta.asset_type {
-              Some(t) => event.res.headers.set("Content-Type", t)
-              None => {
-                // Simple extension extraction
-                let parts = id.split(".").collect()
-                if parts.length() > 1 {
-                  match
-                    provider.get_type(parts[parts.length() - 1].to_string()) {
-                    Some(t) => event.res.headers.set("Content-Type", t)
-                    None => ()
-                  }
-                }
-              }
-            }
-          }
-
-          // Content-Encoding
-          match meta.encoding {
-            Some(enc) =>
-              if !event.res.headers.contains("Content-Encoding") {
-                event.res.headers.set("Content-Encoding", enc)
-              }
-            None => ()
-          }
-
-          // Content-Length
-          match meta.size {
-            Some(size) =>
-              if !event.res.headers.contains("Content-Length") {
-                event.res.headers.set("Content-Length", size.to_string())
-              }
-            None => ()
-          }
+          let asset_headers = static_asset_headers(provider, id, meta)
           if event.req.http_method == "HEAD" {
-            return HttpResponse::new(OK)
+            let head_headers = copy_headers(event.res.headers)
+            asset_headers.each((key, value) => {
+              if !head_headers.contains(key) {
+                head_headers.set(key, value)
+              }
+            })
+            return HttpResponse::new(OK, headers=head_headers)
           }
           let contents = provider.get_contents(id)
-          event.res.status_code = OK
-          contents
+          StaticResolvedResponder::{ inner: contents, asset_headers }
         }
       }
     },

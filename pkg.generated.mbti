@@ -42,8 +42,6 @@ pub fn url_decode(BytesView) -> String
 
 pub fn url_encode(String) -> String
 
-pub fn ws_pong(String) -> Unit
-
 pub fn ws_publish(String, String) -> Unit
 
 pub fn ws_send(String, String) -> Unit
@@ -111,7 +109,7 @@ pub(all) enum HttpMethod {
 pub(all) struct HttpRequest {
   http_method : String
   url : String
-  headers : Map[StringView, StringView]
+  headers : Map[String, String]
   mut raw_body : Bytes
 }
 pub fn[T : BodyReader] HttpRequest::body(Self) -> T raise
@@ -120,14 +118,14 @@ pub impl Responder for HttpRequest
 
 pub(all) struct HttpResponse {
   mut status_code : StatusCode
-  headers : Map[StringView, StringView]
+  headers : Map[String, String]
   cookies : Map[String, CookieItem]
   mut raw_body : Bytes
 }
 pub fn HttpResponse::body(Self, &Responder) -> Self
 pub fn HttpResponse::delete_cookie(Self, String) -> Unit
 pub fn HttpResponse::json(Self, &ToJson) -> Self
-pub fn HttpResponse::new(StatusCode, headers? : Map[StringView, StringView], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
+pub fn HttpResponse::new(StatusCode, headers? : Map[String, String], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
 pub fn[T : BodyReader] HttpResponse::read_body(Self) -> T raise
 pub fn HttpResponse::set_cookie(Self, String, String, max_age? : Int, path? : String, domain? : String, secure? : Bool, http_only? : Bool, same_site? : SameSiteOption) -> Unit
 pub fn HttpResponse::to_responder(Self) -> &Responder
@@ -193,6 +191,9 @@ pub(all) struct StaticAssetMeta {
   encoding : String?
 }
 pub fn StaticAssetMeta::new(asset_type? : String, etag? : String, mtime? : Int64, path? : String, size? : Int64, encoding? : String) -> Self
+
+type StaticResolvedResponder
+pub impl Responder for StaticResolvedResponder
 
 pub(all) enum StatusCode {
   Continue
@@ -265,7 +266,6 @@ pub fn StatusCode::to_int(Self) -> Int
 pub enum WebSocketAggregatedMessage {
   Text(String)
   Binary(Bytes)
-  Ping
 }
 
 pub enum WebSocketEvent {
@@ -279,7 +279,6 @@ pub(all) struct WebSocketPeer {
   mut subscribed_channels : Array[String]
 }
 pub fn WebSocketPeer::binary(Self, Bytes) -> Unit
-pub fn WebSocketPeer::pong(Self) -> Unit
 pub fn WebSocketPeer::publish(String, String) -> Unit
 pub fn WebSocketPeer::subscribe(Self, String) -> Unit
 pub fn WebSocketPeer::text(Self, String) -> Unit
@@ -316,8 +315,8 @@ pub impl Responder for &ToJson
 pub impl Responder for StringView
 
 pub(open) trait ServeStaticProvider {
-  get_meta(Self, String) -> StaticAssetMeta?
-  get_contents(Self, String) -> &Responder
+  async get_meta(Self, String) -> StaticAssetMeta? noraise
+  async get_contents(Self, String) -> &Responder noraise
   get_type(Self, String) -> String?
   get_encodings(Self) -> Map[String, String]
   get_index_names(Self) -> Array[String]

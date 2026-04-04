@@ -14,10 +14,6 @@ fn main {
             println("WS binary: " + bytes.length().to_string() + " bytes")
             peer.binary(bytes)
           }
-          Ping => {
-            println("WS ping")
-            peer.pong()
-          }
         }
       Close(peer) => println("WS close: " + peer.to_string())
     }

@@ -114,14 +114,6 @@ pub fn ws_send_bytes(id : String, msg : Bytes) -> Unit {
 }
 
 ///|
-pub fn ws_pong(id : String) -> Unit {
-  ignore(id)
-  abort(
-    "WebSocketPeer::pong() is not supported on the native async runtime; ping/pong is handled internally by moonbitlang/async/websocket",
-  )
-}
-
-///|
 pub fn ws_subscribe(id : String, channel : String) -> Unit {
   match native_ws_connections.get(id) {
     Some(connection) => {

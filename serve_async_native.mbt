@@ -28,20 +28,18 @@ fn request_method_to_string(meth : @http.RequestMethod) -> String {
 }
 
 ///|
-fn copy_async_headers(
-  headers : Map[String, String],
-) -> Map[StringView, StringView] {
-  let copied : Map[StringView, StringView] = {}
+fn copy_async_headers(headers : Map[String, String]) -> Map[String, String] {
+  let copied : Map[String, String] = {}
   headers.each((key, value) => copied.set(key, value))
   copied
 }
 
 ///|
 fn response_headers_to_async(
-  headers : Map[StringView, StringView],
+  headers : Map[String, String],
 ) -> Map[String, String] {
   let copied : Map[String, String] = {}
-  headers.each((key, value) => copied.set(key.to_string(), value.to_string()))
+  headers.each((key, value) => copied.set(key, value))
   copied
 }
 
@@ -116,12 +114,12 @@ fn has_response_header(
 }
 
 ///|
-async fn send_head_response_async(
+async fn send_raw_response_async(
   conn : @http.ServerConnection,
   response : HttpResponse,
+  headers : Map[String, String],
+  include_body : Bool,
 ) -> Unit raise Error {
-  let headers = response_headers_to_async(response.headers)
-  append_cookie_headers(headers, response.cookies)
   if !has_response_header(headers, "Content-Length") {
     headers.set("Content-Length", response.raw_body.length().to_string())
   }
@@ -142,6 +140,9 @@ async fn send_head_response_async(
     raw_response.write_string_utf8("\r\n")
   }
   raw_response.write_string_utf8("\r\n")
+  if include_body && !response.raw_body.is_empty() {
+    raw_response.write_bytes(response.raw_body)
+  }
   conn.enter_passthrough_mode()
   conn.write(raw_response.contents())
   conn.flush()
@@ -185,12 +186,16 @@ async fn send_response_async(
   let buffer = @buffer.new()
   responder.output(buffer)
   response.raw_body = buffer.to_bytes()
-  if request.meth == Head {
-    send_head_response_async(conn, response)
-    return
-  }
   let headers = response_headers_to_async(response.headers)
   append_cookie_headers(headers, response.cookies)
+  if request.meth == Head {
+    send_raw_response_async(conn, response, headers, false)
+    return
+  }
+  if has_response_header(headers, "Content-Encoding") {
+    send_raw_response_async(conn, response, headers, true)
+    return
+  }
   conn.send_response(
     response.status_code.to_int(),
     response.status_code.to_string(),
