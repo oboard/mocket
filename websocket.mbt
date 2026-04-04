@@ -6,13 +6,11 @@ pub(all) struct WebSocketPeer {
 
 ///|
 pub fn WebSocketPeer::text(self : WebSocketPeer, message : String) -> Unit {
-  // 真正发送到后端连接
   ws_send(self.connection_id, message)
 }
 
 ///|
 pub fn WebSocketPeer::binary(self : WebSocketPeer, message : Bytes) -> Unit {
-  // 真正发送到后端连接
   ws_send_bytes(self.connection_id, message)
 }
 
@@ -44,8 +42,12 @@ pub fn WebSocketPeer::unsubscribe(
 }
 
 ///|
-pub fn WebSocketPeer::publish(channel : String, message : String) -> Unit {
-  ws_publish(channel, message)
+pub fn WebSocketPeer::publish(
+  self : WebSocketPeer,
+  channel : String,
+  message : String,
+) -> Unit {
+  ws_publish(self.connection_id, channel, message)
 }
 
 ///|

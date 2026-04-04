@@ -18,9 +18,16 @@ pub(all) struct Mocket {
   // WebSocket 路由（按路径匹配，不区分方法）
   ws_static_routes : Map[String, WebSocketHandler]
   ws_dynamic_routes : Array[(String, WebSocketHandler)]
-  ws_clients : Map[String, Unit]
-  ws_channels : Map[String, Map[String, Unit]]
-  ws_client_port : Map[String, Int]
+  ws_runtime_id : String
+}
+
+///|
+let mocket_instance_counter : Ref[Int] = Ref::new(0)
+
+///|
+fn next_mocket_instance_id() -> String {
+  mocket_instance_counter.val += 1
+  "mocket-\{mocket_instance_counter.val}"
 }
 
 ///|
@@ -33,9 +40,7 @@ pub fn new(base_path? : String = "") -> Mocket {
     dynamic_routes: {},
     ws_static_routes: {},
     ws_dynamic_routes: [],
-    ws_clients: {},
-    ws_channels: {},
-    ws_client_port: {},
+    ws_runtime_id: next_mocket_instance_id(),
   }
 }
 

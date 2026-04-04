@@ -218,7 +218,7 @@ async fn handle_request_async(
   if is_websocket_upgrade_request(request) {
     match app.find_ws_route(request_path) {
       Some(ws_handler) => {
-        handle_websocket_route_async(request, conn, ws_handler)
+        handle_websocket_route_async(app, request, conn, ws_handler)
         return
       }
       None => ()

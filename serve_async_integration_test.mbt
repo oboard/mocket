@@ -150,6 +150,27 @@ async fn with_test_server(app : Mocket, run_test : async (Int) -> Unit) -> Unit 
 }
 
 ///|
+async fn with_two_test_servers(
+  app1 : Mocket,
+  app2 : Mocket,
+  run_test : async (Int, Int) -> Unit,
+) -> Unit {
+  let server1 = allocate_test_server()
+  let server2 = allocate_test_server()
+  let port1 = server1.addr.port()
+  let port2 = server2.addr.port()
+  app1.get("/__mocket_ready", _ => "ready")
+  app2.get("/__mocket_ready", _ => "ready")
+  @async.with_task_group(group => {
+    group.spawn_bg(no_wait=true, () => app1.serve_async_on(server1))
+    group.spawn_bg(no_wait=true, () => app2.serve_async_on(server2))
+    wait_until_ready(port1)
+    wait_until_ready(port2)
+    run_test(port1, port2)
+  })
+}
+
+///|
 async fn issue_request(
   port : Int,
   meth : @http.RequestMethod,
@@ -562,7 +583,7 @@ async test "serve_async keeps websocket subscriptions across events" {
     match event {
       Open(peer) => peer.subscribe("room")
       Message(peer, Text("leave")) => peer.unsubscribe("room")
-      Message(_, Text("publish")) => WebSocketPeer::publish("room", "fanout")
+      Message(peer, Text("publish")) => peer.publish("room", "fanout")
       _ => ()
     }
   })
@@ -579,6 +600,52 @@ async test "serve_async keeps websocket subscriptions across events" {
     client1.send_text("leave")
     client2.send_text("publish")
     inspect(client2.recv().read_all().text(), content="fanout")
+    inspect(
+      @async.with_timeout_opt(100, () => client1.recv().read_all().text()),
+      content="None",
+    )
+
+    client1.send_close()
+    client2.send_close()
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async isolates websocket channels per app" {
+  let app1 = new()
+  let app2 = new()
+  app1.ws("/hub", event => {
+    match event {
+      Open(peer) => peer.subscribe("room")
+      Message(peer, Text("publish")) => peer.publish("room", "alpha")
+      _ => ()
+    }
+  })
+  app2.ws("/hub", event => {
+    match event {
+      Open(peer) => peer.subscribe("room")
+      Message(peer, Text("publish")) => peer.publish("room", "beta")
+      _ => ()
+    }
+  })
+  with_two_test_servers(app1, app2, (port1, port2) => {
+    let client1 = @websocket.connect("ws://127.0.0.1:\{port1}/hub")
+    defer client1.close()
+    let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
+    defer client2.close()
+
+    client1.send_text("publish")
+    inspect(client1.recv().read_all().text(), content="alpha")
+    inspect(
+      @async.with_timeout_opt(100, () => client2.recv().read_all().text()),
+      content="None",
+    )
+
+    client2.send_text("publish")
+    inspect(client2.recv().read_all().text(), content="beta")
     inspect(
       @async.with_timeout_opt(100, () => client1.recv().read_all().text()),
       content="None",

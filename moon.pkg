@@ -17,13 +17,6 @@ import {
 warnings = "-15-29"
 
 options(
-  expose: [
-    "__ws_emit",
-    "ws_send",
-    "ws_subscribe",
-    "ws_unsubscribe",
-    "ws_publish",
-  ],
   targets: {
     "fetch.native.mbt": [ "native" ],
     "fetch_integration_test.mbt": [ "native" ],
