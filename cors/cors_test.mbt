@@ -107,6 +107,17 @@ async fn issue_request(
 }
 
 ///|
+async fn issue_raw_request_headers(port : Int, request : String) -> String {
+  let addr = @socket.Addr::parse("127.0.0.1:\{port}") catch {
+    _ => fail("invalid raw request address")
+  }
+  let client = @socket.Tcp::connect(addr)
+  defer client.close()
+  client.write(request)
+  client.read_until("\r\n\r\n").unwrap_or("")
+}
+
+///|
 async test "handle_cors serves preflight requests through async server" {
   let handler_called = Ref::new(false)
   let app = @mocket.new()
@@ -238,5 +249,43 @@ async test "handle_cors does not short-circuit non-preflight options" {
     )
     assert_eq(response.headers.get("access-control-max-age"), None)
     inspect(handler_called.val, content="true")
+  })
+}
+
+///|
+async test "handle_cors accepts mixed-case preflight headers" {
+  let app = @mocket.new()
+  app.use_middleware(
+    handle_cors(
+      origin="https://frontend.example",
+      methods="GET, PATCH",
+      allow_headers="Content-Type, Authorization",
+      credentials=true,
+      max_age=7200,
+    ),
+  )
+  app.options("/resource", _ => @mocket.text("unexpected"))
+  with_test_server(app, port => {
+    let response_headers = issue_raw_request_headers(
+      port, "OPTIONS /resource HTTP/1.1\r\nHost: localhost\r\nOrIgIn: https://frontend.example\r\nAcCeSs-CoNtRoL-ReQuEsT-MeThOd: PATCH\r\nConnection: close\r\n\r\n",
+    )
+    assert_true(response_headers.has_prefix("HTTP/1.1 200 "))
+    assert_true(
+      response_headers.contains(
+        "Access-Control-Allow-Origin: https://frontend.example",
+      ),
+    )
+    assert_true(
+      response_headers.contains("Access-Control-Allow-Methods: GET, PATCH"),
+    )
+    assert_true(
+      response_headers.contains(
+        "Access-Control-Allow-Headers: Content-Type, Authorization",
+      ),
+    )
+    assert_true(
+      response_headers.contains("Access-Control-Allow-Credentials: true"),
+    )
+    assert_true(response_headers.contains("Access-Control-Max-Age: 7200"))
   })
 }

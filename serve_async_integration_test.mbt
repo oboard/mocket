@@ -193,6 +193,34 @@ async fn issue_request(
 }
 
 ///|
+async fn issue_raw_request_headers(port : Int, request : String) -> String {
+  let addr = @socket.Addr::parse("127.0.0.1:\{port}") catch {
+    _ => fail("invalid raw request address")
+  }
+  let client = @socket.Tcp::connect(addr)
+  defer client.close()
+  client.write(request)
+  client.read_until("\r\n\r\n").unwrap_or("")
+}
+
+///|
+fn raw_header_value(raw_headers : String, header_name : String) -> String? {
+  let needle = header_name.to_lower()
+  for line in raw_headers.split("\r\n") {
+    match line.find(":") {
+      Some(index) => {
+        let key = line[:index].to_string().to_lower()
+        if key == needle {
+          return Some(line[index + 1:].trim(chars=" ").to_string())
+        }
+      }
+      None => ()
+    }
+  }
+  None
+}
+
+///|
 async test "serve_async strips query and reads put bodies" {
   let app = new()
   app.get("/hello/:name", event => {
@@ -607,6 +635,64 @@ async test "serve_async handles websocket text and binary messages" {
     inspect(binary_reply.read_all().text(), content="bytes")
 
     client.send_close()
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard log.contains("open") && log.contains("close") else {
+        raise ServerNotReady
+      }
+    })
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async honors mixed-case static and websocket upgrade headers" {
+  let log : Array[String] = []
+  let app = new()
+  app.static_assets("/assets", EncodedStaticProvider::{  })
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => log.push("open")
+      Close(_) => log.push("close")
+      _ => ()
+    }
+  })
+  with_test_server(app, port => {
+    let encoded_headers = issue_raw_request_headers(
+      port, "GET /assets/hello.txt HTTP/1.1\r\nHost: localhost\r\nAcCePt-EnCoDiNg: gzip\r\nConnection: close\r\n\r\n",
+    )
+    assert_true(encoded_headers.has_prefix("HTTP/1.1 200 "))
+    assert_eq(
+      raw_header_value(encoded_headers, "content-encoding"),
+      Some("gzip"),
+    )
+    let last_modified = raw_header_value(encoded_headers, "last-modified").unwrap_or(
+      "",
+    )
+    assert_eq(raw_header_value(encoded_headers, "etag"), Some("\"encoded-v1\""))
+    assert_true(last_modified != "")
+
+    let etag_headers = issue_raw_request_headers(
+      port, "GET /assets/hello.txt HTTP/1.1\r\nHost: localhost\r\nAcCePt-EnCoDiNg: gzip\r\nIf-NoNe-MaTcH: \"encoded-v1\"\r\nConnection: close\r\n\r\n",
+    )
+    assert_true(etag_headers.has_prefix("HTTP/1.1 304 "))
+    assert_eq(raw_header_value(etag_headers, "etag"), Some("\"encoded-v1\""))
+
+    let ims_headers = issue_raw_request_headers(
+      port,
+      "GET /assets/hello.txt HTTP/1.1\r\nHost: localhost\r\nAcCePt-EnCoDiNg: gzip\r\nIf-MoDiFiEd-SiNcE: \{last_modified}\r\nConnection: close\r\n\r\n",
+    )
+    assert_true(ims_headers.has_prefix("HTTP/1.1 304 "))
+    assert_eq(
+      raw_header_value(ims_headers, "last-modified"),
+      Some(last_modified),
+    )
+
+    let upgrade_headers = issue_raw_request_headers(
+      port, "GET /ws HTTP/1.1\r\nHost: localhost\r\nCoNnEcTiOn: Upgrade\r\nUpGrAdE: websocket\r\nSeC-WeBsOcKeT-KeY: dGhlIHNhbXBsZSBub25jZQ==\r\nSeC-WeBsOcKeT-VeRsIoN: 13\r\n\r\n",
+    )
+    assert_true(upgrade_headers.has_prefix("HTTP/1.1 101 "))
     @async.retry(@async.FixedDelay(20), max_retry=50, () => {
       guard log.contains("open") && log.contains("close") else {
         raise ServerNotReady

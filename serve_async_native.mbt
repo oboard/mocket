@@ -64,7 +64,7 @@ fn append_cookie_headers(
 
 ///|
 fn is_websocket_upgrade_request(request : @http.Request) -> Bool {
-  match request.headers.get("upgrade") {
+  match get_header_case_insensitive(request.headers, "upgrade") {
     Some(value) => value.to_lower() == "websocket"
     None => false
   }
@@ -100,30 +100,16 @@ fn options_handler(allow : String) -> HttpHandler {
 }
 
 ///|
-fn has_response_header(
-  headers : Map[String, String],
-  header_name : String,
-) -> Bool {
-  let normalized_name = header_name.to_lower()
-  for pair in headers.to_array() {
-    if pair.0.to_lower() == normalized_name {
-      return true
-    }
-  }
-  false
-}
-
-///|
 async fn send_raw_response_async(
   conn : @http.ServerConnection,
   response : HttpResponse,
   headers : Map[String, String],
   include_body : Bool,
 ) -> Unit raise Error {
-  if !has_response_header(headers, "Content-Length") {
+  if !has_header_case_insensitive(headers, "Content-Length") {
     headers.set("Content-Length", response.raw_body.length().to_string())
   }
-  if !has_response_header(headers, "Connection") {
+  if !has_header_case_insensitive(headers, "Connection") {
     headers.set("Connection", "close")
   }
   let raw_response = @buffer.new()
@@ -192,7 +178,7 @@ async fn send_response_async(
     send_raw_response_async(conn, response, headers, false)
     return
   }
-  if has_response_header(headers, "Content-Encoding") {
+  if has_header_case_insensitive(headers, "Content-Encoding") {
     send_raw_response_async(conn, response, headers, true)
     return
   }

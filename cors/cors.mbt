@@ -1,7 +1,7 @@
 ///|
 pub fn is_preflight_request(event : @mocket.MocketEvent) -> Bool {
-  let origin = event.req.headers.get("origin")
-  let access_control_request_method = event.req.headers.get(
+  let origin = event.req.get_header("origin")
+  let access_control_request_method = event.req.get_header(
     "access-control-request-method",
   )
   return event.req.http_method == "OPTIONS" &&

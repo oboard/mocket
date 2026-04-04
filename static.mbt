@@ -76,18 +76,6 @@ fn mounted_asset_id(mount_path : String, request_path : String) -> String {
 }
 
 ///|
-fn get_request_header(
-  headers : Map[String, String],
-  lower_name : String,
-  title_name : String,
-) -> String? {
-  match headers.get(lower_name) {
-    Some(value) => Some(value)
-    None => headers.get(title_name)
-  }
-}
-
-///|
 fn parse_accept_encoding_token(token : StringView) -> String {
   match token.find(";") {
     Some(index) => token[:index].trim(chars=" ").to_string().to_lower()
@@ -128,7 +116,7 @@ pub impl Responder for StaticResolvedResponder with options(self, res) -> Unit {
   self.inner.options(res)
   if res.status_code == OK {
     self.asset_headers.each((key, value) => {
-      if !res.headers.contains(key) {
+      if !has_header_case_insensitive(res.headers, key) {
         res.headers.set(key, value)
       }
     })
@@ -225,24 +213,14 @@ pub fn Mocket::static_assets(
         return HttpResponse::new(MethodNotAllowed)
       }
       let original_id = mounted_asset_id(mount_path, event.req.url)
-      let if_none_match = get_request_header(
-        event.req.headers,
-        "if-none-match",
-        "If-None-Match",
-      )
-      let if_modified_since = get_request_header(
-        event.req.headers,
-        "if-modified-since",
-        "If-Modified-Since",
-      )
+      let if_none_match = event.req.get_header("if-none-match")
+      let if_modified_since = event.req.get_header("if-modified-since")
 
       // Parse Accept-Encoding
       // Headers are Map[StringView, StringView]
-      let accept_encoding = get_request_header(
-        event.req.headers,
-        "accept-encoding",
-        "Accept-Encoding",
-      ).unwrap_or("")
+      let accept_encoding = event.req
+        .get_header("accept-encoding")
+        .unwrap_or("")
       let encodings = provider.get_encodings()
       let matched_encodings = []
       if !encodings.is_empty() {
@@ -349,7 +327,7 @@ pub fn Mocket::static_assets(
           if event.req.http_method == "HEAD" {
             let head_headers = copy_headers(event.res.headers)
             asset_headers.each((key, value) => {
-              if !head_headers.contains(key) {
+              if !has_header_case_insensitive(head_headers, key) {
                 head_headers.set(key, value)
               }
             })

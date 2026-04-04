@@ -17,6 +17,20 @@ pub fn[T : BodyReader] HttpRequest::body(self : HttpRequest) -> T raise {
 }
 
 ///|
+test "get_header is case-insensitive" {
+  let req = HttpRequest::{
+    http_method: "GET",
+    url: "/",
+    headers: { "X-Test": "value", "content-type": "text/plain" },
+    raw_body: b"",
+  }
+  assert_eq(req.get_header("x-test"), Some("value"))
+  assert_eq(req.get_header("X-TEST"), Some("value"))
+  assert_eq(req.get_header("Content-Type"), Some("text/plain"))
+  assert_eq(req.get_header("missing"), None)
+}
+
+///|
 pub impl BodyReader for String with from_request(req : HttpRequest) -> String raise {
   let bytes = req.raw_body
   let arr = bytes.to_array()
