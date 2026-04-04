@@ -221,6 +221,24 @@ fn raw_header_value(raw_headers : String, header_name : String) -> String? {
 }
 
 ///|
+fn raw_header_count(raw_headers : String, header_name : String) -> Int {
+  let needle = header_name.to_lower()
+  let mut count = 0
+  for line in raw_headers.split("\r\n") {
+    match line.find(":") {
+      Some(index) => {
+        let key = line[:index].to_string().to_lower()
+        if key == needle {
+          count += 1
+        }
+      }
+      None => ()
+    }
+  }
+  count
+}
+
+///|
 async test "serve_async strips query and reads put bodies" {
   let app = new()
   app.get("/hello/:name", event => {
@@ -430,6 +448,45 @@ async test "serve_async writes cookie headers" {
       response.headers.get("set-cookie").unwrap_or(""),
       content="session=abc; Path=/; HttpOnly",
     )
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async preserves explicit content-type headers without duplicates" {
+  let app = new()
+  app.get("/custom", event => {
+    event.res.headers.set("content-type", "application/custom")
+    "ok"
+  })
+  app.get("/override", event => {
+    event.res.headers.set("content-type", "text/plain; charset=latin1")
+    HttpResponse::new(OK, headers={ "Content-Type": "application/json" }).body(
+      "{}",
+    )
+  })
+  with_test_server(app, port => {
+    let custom_headers = issue_raw_request_headers(
+      port, "GET /custom HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+    )
+    assert_true(custom_headers.has_prefix("HTTP/1.1 200 "))
+    assert_eq(
+      raw_header_value(custom_headers, "content-type"),
+      Some("application/custom"),
+    )
+    assert_eq(raw_header_count(custom_headers, "content-type"), 1)
+
+    let override_headers = issue_raw_request_headers(
+      port, "GET /override HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+    )
+    assert_true(override_headers.has_prefix("HTTP/1.1 200 "))
+    assert_eq(
+      raw_header_value(override_headers, "content-type"),
+      Some("application/json"),
+    )
+    assert_eq(raw_header_count(override_headers, "content-type"), 1)
   }) catch {
     SocketBindUnavailable => return
     err => raise err

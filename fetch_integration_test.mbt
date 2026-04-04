@@ -56,6 +56,40 @@ async test "fetch uses async client for request headers and payloads" {
 }
 
 ///|
+async test "fetch preserves explicit content-type without duplicate request headers" {
+  let raw_headers = Ref::new("")
+  @async.with_task_group(group => {
+    let server = @socket.TcpServer(@socket.Addr::parse("127.0.0.1:0"))
+    let port = server.addr.port()
+    group.spawn_bg(() => {
+      defer server.close()
+      let (conn, _) = server.accept()
+      defer conn.close()
+      raw_headers.val = conn.read_until("\r\n\r\n").unwrap_or("")
+      conn.write(
+        "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+      )
+    })
+
+    let response = fetch(
+      "http://127.0.0.1:\{port}/request",
+      POST,
+      data=text("body"),
+      headers={ "content-type": "application/custom", "X-Test": "yes" },
+    )
+    assert_eq(response.status_code, OK)
+    assert_eq(response.raw_body, b"")
+  })
+
+  assert_eq(
+    raw_header_value(raw_headers.val, "content-type"),
+    Some("application/custom"),
+  )
+  assert_eq(raw_header_count(raw_headers.val, "content-type"), 1)
+  assert_eq(raw_header_value(raw_headers.val, "x-test"), Some("yes"))
+}
+
+///|
 async test "fetch supports head and rejects unsupported protocols" {
   let app = new()
   app.head("/fetch/head", event => {
