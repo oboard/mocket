@@ -479,13 +479,17 @@ async fn run_native_server(
   ignore(resolve_native_websocket_read_timeout_ms(options))
   match max_connections {
     Some(max_connections) =>
-      server.run_forever(max_connections~, (request, body_reader, conn) => {
+      server.run_forever(allow_failure=true, max_connections~, (
+        request,
+        body_reader,
+        conn,
+      ) => {
         handle_request_async(
           app, ws_runtime_id, request, body_reader, conn, options,
         )
       })
     None =>
-      server.run_forever((request, body_reader, conn) => {
+      server.run_forever(allow_failure=true, (request, body_reader, conn) => {
         handle_request_async(
           app, ws_runtime_id, request, body_reader, conn, options,
         )

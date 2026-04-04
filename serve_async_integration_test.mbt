@@ -482,6 +482,173 @@ async test "serve_async preserves middleware onion order" {
 }
 
 ///|
+async test "serve_async keeps invalid websocket opcodes connection-local and stays healthy" {
+  let opened : Ref[Int] = Ref::new(0)
+  let closed : Ref[Int] = Ref::new(0)
+  let messages : Ref[Int] = Ref::new(0)
+  let healthy_hits : Ref[Int] = Ref::new(0)
+  let app = new()
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => opened.val += 1
+      Message(peer, Text(text)) => {
+        messages.val += 1
+        peer.text(text)
+      }
+      Message(peer, Binary(bytes)) => {
+        messages.val += 1
+        peer.binary(bytes)
+      }
+      Close(_) => closed.val += 1
+    }
+  })
+  app.get("/healthy", _ => {
+    healthy_hits.val += 1
+    "ok"
+  })
+  with_test_server(app, port => {
+    let http_client = @http.Client::new("http://127.0.0.1:\{port}")
+    defer http_client.close()
+    let ws_client = @websocket.from_http_client(http_client, "/ws")
+    defer ws_client.close()
+    @async.with_task_group(group => {
+      group.spawn_bg(() => {
+        http_client.write(Bytes::from_array([b'\x8b', b'\x00']))
+      })
+      match
+        @async.with_timeout_opt(200, () => {
+          try? ws_client.recv().read_all().binary()
+        }) {
+        Some(
+          Err(
+            @websocket.ConnectionClosed(
+              @websocket.CloseCode::ProtocolError,
+              Some(reason)
+            )
+          )
+        ) => inspect(reason, content="Invalid OP code 11")
+        Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+          fail(
+            "expected invalid websocket opcode close, got \{code} / \{reason}",
+          )
+        Some(Err(err)) =>
+          fail("expected invalid websocket opcode close, got error: \{err}")
+        Some(Ok(bytes)) =>
+          fail(
+            "expected invalid websocket opcode close, got \{bytes.length()} bytes",
+          )
+        None => fail("timed out waiting for invalid websocket opcode close")
+      }
+    })
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 0)
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+    assert_eq(healthy_hits.val, 1)
+
+    let healthy_ws_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+    defer healthy_ws_client.close()
+    healthy_ws_client.send_text("ok")
+    inspect(healthy_ws_client.recv().read_all().text(), content="ok")
+    healthy_ws_client.send_close()
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 1)
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async keeps invalid websocket text payloads connection-local and stays healthy" {
+  let opened : Ref[Int] = Ref::new(0)
+  let closed : Ref[Int] = Ref::new(0)
+  let messages : Ref[Int] = Ref::new(0)
+  let healthy_hits : Ref[Int] = Ref::new(0)
+  let app = new()
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => opened.val += 1
+      Message(peer, Text(text)) => {
+        messages.val += 1
+        peer.text(text)
+      }
+      Message(peer, Binary(bytes)) => {
+        messages.val += 1
+        peer.binary(bytes)
+      }
+      Close(_) => closed.val += 1
+    }
+  })
+  app.get("/healthy", _ => {
+    healthy_hits.val += 1
+    "ok"
+  })
+  with_test_server(app, port => {
+    let client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+    defer client.close()
+    client
+    ..start_message(Text)
+    ..write(Bytes::from_array([b'\x80']))
+    .end_message()
+    match
+      @async.with_timeout_opt(200, () => try? client.recv().read_all().binary()) {
+      Some(
+        Err(
+          @websocket.ConnectionClosed(
+            @websocket.CloseCode::InvalidFramePayload,
+            Some(reason)
+          )
+        )
+      ) => inspect(reason, content="Text message is not valid UTF8")
+      Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+        fail(
+          "expected invalid websocket text payload close, got \{code} / \{reason}",
+        )
+      Some(Err(err)) =>
+        fail("expected invalid websocket text payload close, got error: \{err}")
+      Some(Ok(bytes)) =>
+        fail(
+          "expected invalid websocket text payload close, got \{bytes.length()} bytes",
+        )
+      None => fail("timed out waiting for invalid websocket text payload close")
+    }
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 0)
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+    assert_eq(healthy_hits.val, 1)
+
+    let healthy_ws_client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+    defer healthy_ws_client.close()
+    healthy_ws_client.send_text("ok")
+    inspect(healthy_ws_client.recv().read_all().text(), content="ok")
+    healthy_ws_client.send_close()
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
+    })
+    assert_eq(messages.val, 1)
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
 async test "serve_async_on_with enforces max_connections" {
   let app = new()
   let gate = @async.Queue::new(kind=Unbounded)
