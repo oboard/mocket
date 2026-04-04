@@ -871,27 +871,27 @@ async test "serve_async_until_with rejects non-positive request_body_read_timeou
 }
 
 ///|
-async test "serve_async_on_with rejects negative websocket_outgoing_queue_capacity" {
+async test "serve_async_on_with rejects non-positive websocket_outgoing_queue_capacity" {
   let app = new()
   let server = allocate_test_server()
   defer server.close()
   let result : Result[Unit, Error] = try? app.serve_async_on_with(
     server,
-    NativeServeOptions::new(websocket_outgoing_queue_capacity=-1),
+    NativeServeOptions::new(websocket_outgoing_queue_capacity=0),
   )
   match result {
-    Err(NativeServeError::InvalidWebSocketOutgoingQueueCapacity(-1)) => ()
+    Err(NativeServeError::InvalidWebSocketOutgoingQueueCapacity(0)) => ()
     Err(err) =>
       fail("unexpected invalid websocket_outgoing_queue_capacity error: \{err}")
     Ok(_) =>
       fail(
-        "expected serve_async_on_with to reject websocket_outgoing_queue_capacity=-1",
+        "expected serve_async_on_with to reject websocket_outgoing_queue_capacity=0",
       )
   }
 }
 
 ///|
-async test "serve_async_on_until_with rejects negative websocket_outgoing_queue_capacity" {
+async test "serve_async_on_until_with rejects non-positive websocket_outgoing_queue_capacity" {
   let app = new()
   let server = allocate_test_server()
   defer server.close()
@@ -899,57 +899,57 @@ async test "serve_async_on_until_with rejects negative websocket_outgoing_queue_
   let result : Result[Unit, Error] = try? app.serve_async_on_until_with(
     server,
     shutdown,
-    NativeServeOptions::new(websocket_outgoing_queue_capacity=-1),
+    NativeServeOptions::new(websocket_outgoing_queue_capacity=0),
   )
   match result {
-    Err(NativeServeError::InvalidWebSocketOutgoingQueueCapacity(-1)) => ()
+    Err(NativeServeError::InvalidWebSocketOutgoingQueueCapacity(0)) => ()
     Err(err) =>
       fail(
         "unexpected serve_async_on_until_with websocket_outgoing_queue_capacity error: \{err}",
       )
     Ok(_) =>
       fail(
-        "expected serve_async_on_until_with to reject websocket_outgoing_queue_capacity=-1",
+        "expected serve_async_on_until_with to reject websocket_outgoing_queue_capacity=0",
       )
   }
 }
 
 ///|
-async test "serve_async_with rejects negative websocket_outgoing_queue_capacity" {
+async test "serve_async_with rejects non-positive websocket_outgoing_queue_capacity" {
   let app = new()
   let result : Result[Unit, Error] = try? app.serve_async_with(
     port=0,
-    NativeServeOptions::new(websocket_outgoing_queue_capacity=-1),
+    NativeServeOptions::new(websocket_outgoing_queue_capacity=0),
   )
   match result {
-    Err(NativeServeError::InvalidWebSocketOutgoingQueueCapacity(-1)) => ()
+    Err(NativeServeError::InvalidWebSocketOutgoingQueueCapacity(0)) => ()
     Err(err) =>
       fail("unexpected invalid websocket_outgoing_queue_capacity error: \{err}")
     Ok(_) =>
       fail(
-        "expected serve_async_with to reject websocket_outgoing_queue_capacity=-1",
+        "expected serve_async_with to reject websocket_outgoing_queue_capacity=0",
       )
   }
 }
 
 ///|
-async test "serve_async_until_with rejects negative websocket_outgoing_queue_capacity" {
+async test "serve_async_until_with rejects non-positive websocket_outgoing_queue_capacity" {
   let app = new()
   let shutdown = @async.Queue::new(kind=Unbounded)
   let result : Result[Unit, Error] = try? app.serve_async_until_with(
     port=0,
     shutdown,
-    NativeServeOptions::new(websocket_outgoing_queue_capacity=-1),
+    NativeServeOptions::new(websocket_outgoing_queue_capacity=0),
   )
   match result {
-    Err(NativeServeError::InvalidWebSocketOutgoingQueueCapacity(-1)) => ()
+    Err(NativeServeError::InvalidWebSocketOutgoingQueueCapacity(0)) => ()
     Err(err) =>
       fail(
         "unexpected serve_async_until_with websocket_outgoing_queue_capacity error: \{err}",
       )
     Ok(_) =>
       fail(
-        "expected serve_async_until_with to reject websocket_outgoing_queue_capacity=-1",
+        "expected serve_async_until_with to reject websocket_outgoing_queue_capacity=0",
       )
   }
 }
@@ -1857,6 +1857,7 @@ async test "serve_async drops oldest buffered websocket messages by default" {
   }
 }
 
+///|
 async test "serve_async drops latest buffered websocket messages on overflow when configured" {
   let app = new()
   app.ws("/ws", event => {

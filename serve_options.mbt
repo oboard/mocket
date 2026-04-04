@@ -102,7 +102,7 @@ fn resolve_native_websocket_outgoing_queue_capacity(
 ) -> Int? raise Error {
   match options.websocket_outgoing_queue_capacity {
     Some(websocket_outgoing_queue_capacity) => {
-      guard websocket_outgoing_queue_capacity >= 0 else {
+      guard websocket_outgoing_queue_capacity > 0 else {
         raise NativeServeError::InvalidWebSocketOutgoingQueueCapacity(
           websocket_outgoing_queue_capacity,
         )
