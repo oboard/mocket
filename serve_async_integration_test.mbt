@@ -2766,6 +2766,91 @@ async test "serve_async closes the connection after rejected websocket upgrades"
 }
 
 ///|
+async test "serve_async rejects malformed websocket-like requests on websocket routes without stealing plain http" {
+  let http_hits : Ref[Int] = Ref::new(0)
+  let ws_opened : Ref[Int] = Ref::new(0)
+  let ws_closed : Ref[Int] = Ref::new(0)
+  let app = new()
+  app.get("/ws", _ => {
+    http_hits.val += 1
+    "http route"
+  })
+  app.get("/healthy", _ => "ok")
+  app.ws("/ws", event => {
+    match event {
+      Open(_) => ws_opened.val += 1
+      Message(peer, Text(text)) => peer.text(text)
+      Close(_) => ws_closed.val += 1
+      _ => ()
+    }
+  })
+  with_test_server(app, port => {
+    let (plain_response, plain_body) = @http.get(localhost_url(port, "/ws"))
+    assert_eq(plain_response.code, 200)
+    inspect(plain_body.text(), content="http route")
+    assert_eq(http_hits.val, 1)
+    assert_eq(ws_opened.val, 0)
+    assert_eq(ws_closed.val, 0)
+
+    let (other_upgrade_headers, other_upgrade_body) = issue_raw_request_response(
+      port, "GET /ws HTTP/1.1\r\nHost: localhost\r\nConnection: Upgrade\r\nUpgrade: h2c\r\n\r\n",
+    )
+    assert_true(other_upgrade_headers.has_prefix("HTTP/1.1 200 "))
+    inspect(other_upgrade_body, content="http route")
+    assert_eq(http_hits.val, 2)
+    assert_eq(ws_opened.val, 0)
+    assert_eq(ws_closed.val, 0)
+
+    let (upgrade_only_headers, upgrade_only_body) = issue_raw_request_response(
+      port, "GET /ws HTTP/1.1\r\nHost: localhost\r\nUpgrade: websocket\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nConnection: close\r\n\r\n",
+    )
+    assert_true(upgrade_only_headers.has_prefix("HTTP/1.1 400 "))
+    assert_true(upgrade_only_body.contains("Connection"))
+    assert_eq(http_hits.val, 2)
+    assert_eq(ws_opened.val, 0)
+    assert_eq(ws_closed.val, 0)
+
+    let (connection_only_headers, connection_only_body) = issue_raw_request_response(
+      port, "GET /ws HTTP/1.1\r\nHost: localhost\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n",
+    )
+    assert_true(connection_only_headers.has_prefix("HTTP/1.1 400 "))
+    assert_true(connection_only_body.contains("Upgrade"))
+    assert_eq(http_hits.val, 2)
+    assert_eq(ws_opened.val, 0)
+    assert_eq(ws_closed.val, 0)
+
+    let (accept_only_headers, _) = issue_raw_request_response(
+      port, "GET /ws HTTP/1.1\r\nHost: localhost\r\nSec-WebSocket-Accept: bogus\r\nConnection: close\r\n\r\n",
+    )
+    assert_true(accept_only_headers.has_prefix("HTTP/1.1 400 "))
+    assert_eq(http_hits.val, 2)
+    assert_eq(ws_opened.val, 0)
+    assert_eq(ws_closed.val, 0)
+
+    let client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
+    defer client.close()
+
+    client.send_text("ok")
+    inspect(client.recv().read_all().text(), content="ok")
+    client.send_close()
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard ws_opened.val == 1 && ws_closed.val == 1 else {
+        raise ServerNotReady
+      }
+    })
+
+    let (healthy_response, healthy_body) = @http.get(
+      localhost_url(port, "/healthy"),
+    )
+    assert_eq(healthy_response.code, 200)
+    inspect(healthy_body.text(), content="ok")
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
 async test "serve_async honors mixed-case static and websocket upgrade headers" {
   let log : Array[String] = []
   let app = new()

@@ -93,6 +93,22 @@ fn is_websocket_upgrade_request(request : @http.Request) -> Bool {
 }
 
 ///|
+fn looks_like_websocket_handshake_request(request : @http.Request) -> Bool {
+  let websocket_upgrade_header = match
+    get_header_case_insensitive(request.headers, "upgrade") {
+    Some(value) => value.trim().to_lower() == "websocket"
+    None => false
+  }
+  for pair in request.headers {
+    let (key, _) = pair
+    if key.to_lower().has_prefix("sec-websocket-") {
+      return true
+    }
+  }
+  is_websocket_upgrade_request(request) || websocket_upgrade_header
+}
+
+///|
 priv enum HttpRouteLookup {
   Found(HttpHandler, Map[String, StringView])
   MethodNotAllowed(String)
@@ -382,7 +398,9 @@ async fn handle_request_async(
   options : NativeServeOptions,
 ) -> Unit raise Error {
   let request_path = request_target_path(request.path)
-  if is_websocket_upgrade_request(request) {
+  let strict_websocket_upgrade = is_websocket_upgrade_request(request)
+  let websocket_like_request = looks_like_websocket_handshake_request(request)
+  if websocket_like_request {
     let websocket_max_message_bytes = resolve_native_websocket_max_message_bytes(
       options,
     )
@@ -405,10 +423,11 @@ async fn handle_request_async(
         )
         return
       }
-      None => {
+      None if strict_websocket_upgrade => {
         send_not_found_async(request, conn)
         return
       }
+      None => ()
     }
   }
   let http_method_text = request_method_to_string(request.meth)
