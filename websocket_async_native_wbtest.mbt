@@ -569,3 +569,81 @@ async test "serve_async_on cleans up subscriptions added during close handler" {
     err => raise err
   }
 }
+
+///|
+async test "serve_async_on handles unsubscribe then subscribe mutations during close handler" {
+  let close_connection_id : Ref[String?] = Ref::new(None)
+  let close_primary_members : Ref[Int?] = Ref::new(None)
+  let close_late_members : Ref[Int?] = Ref::new(None)
+  @async.with_task_group(group => {
+    let server = allocate_websocket_lifecycle_server()
+    let port = server.addr.port()
+    let primary_channel = "room-close-swap-primary-\{port}"
+    let late_channel = "room-close-swap-late-\{port}"
+    let app = new()
+    app.get("/__ws_lifecycle_ready", _ => "ready")
+    app.ws("/hub", event => {
+      match event {
+        Open(peer) => peer.subscribe(primary_channel)
+        Close(peer) => {
+          close_connection_id.val = Some(peer.connection_id)
+          peer.unsubscribe(primary_channel)
+          peer.subscribe(late_channel)
+          close_primary_members.val = Some(
+            native_ws_channel_member_count(primary_channel),
+          )
+          close_late_members.val = Some(
+            native_ws_channel_member_count(late_channel),
+          )
+        }
+        _ => ()
+      }
+    })
+    let task = group.spawn(no_wait=true, () => app.serve_async_on(server))
+    wait_until_websocket_lifecycle_ready(port)
+
+    let client = @websocket.connect("ws://127.0.0.1:\{port}/hub")
+    defer client.close()
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard native_ws_channel_member_count(primary_channel) == 1 else {
+        raise WebSocketLifecycleServerNotReady
+      }
+    })
+
+    client.send_close()
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard close_connection_id.val is Some(_) &&
+        close_primary_members.val is Some(_) &&
+        close_late_members.val is Some(_) else {
+        raise WebSocketLifecycleServerNotReady
+      }
+    })
+
+    inspect(close_primary_members.val, content="Some(0)")
+    inspect(close_late_members.val, content="Some(1)")
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      match close_connection_id.val {
+        Some(connection_id) => {
+          guard !native_ws_connection_exists(connection_id) &&
+            native_ws_channel_member_count(primary_channel) == 0 &&
+            native_ws_channel_member_count(late_channel) == 0 else {
+            raise WebSocketLifecycleServerNotReady
+          }
+        }
+        None => raise WebSocketLifecycleServerNotReady
+      }
+    })
+
+    task.cancel()
+    assert_eq(
+      @async.with_timeout_opt(200, () => ignore(try? task.wait())),
+      Some(()),
+    )
+  }) catch {
+    WebSocketLifecycleSocketBindUnavailable => return
+    err => raise err
+  }
+}
