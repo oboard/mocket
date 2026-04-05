@@ -25,7 +25,9 @@ options(
     "mocket.native.mbt": [ "native" ],
     "serve_async_integration_test.mbt": [ "native" ],
     "serve_async_native.mbt": [ "native" ],
+    "serve_async_native_wbtest.mbt": [ "native" ],
     "serve_integration_test.mbt": [ "native" ],
     "websocket_async_native.mbt": [ "native" ],
+    "websocket_async_native_wbtest.mbt": [ "native" ],
   },
 )

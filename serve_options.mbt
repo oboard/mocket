@@ -12,6 +12,14 @@ pub suberror NativeServeError {
 pub(all) enum NativeWebSocketOverflowPolicy {
   DropOldest
   DropLatest
+} derive(Debug, Eq)
+
+///|
+pub impl Show for NativeWebSocketOverflowPolicy with output(self, logger) {
+  match self {
+    DropOldest => logger.write_string("DropOldest")
+    DropLatest => logger.write_string("DropLatest")
+  }
 }
 
 ///|
