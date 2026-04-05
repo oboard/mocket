@@ -4375,3 +4375,121 @@ async test "serve_async_on_until broadcasts going-away close when the shutdown q
     err => raise err
   }
 }
+
+///|
+async test "serve_async_on_until queue close stops remaining reused websocket servers after cancellation" {
+  let app = new()
+  app.get("/__mocket_ready", _ => "ready")
+  app.ws("/hub", event => {
+    match event {
+      Open(peer) => peer.subscribe("room")
+      Message(peer, Text(text)) => peer.publish("room", text)
+      _ => ()
+    }
+  })
+  @async.with_task_group(group => {
+    let server1 = allocate_test_server()
+    let server2 = allocate_test_server()
+    let port1 = server1.addr.port()
+    let port2 = server2.addr.port()
+    let shutdown = @async.Queue::new(kind=Unbounded)
+    let task1 = group.spawn(no_wait=true, () => {
+      app.serve_async_on_until(server1, shutdown)
+    })
+    let task2 = group.spawn(no_wait=true, () => {
+      app.serve_async_on_until(server2, shutdown)
+    })
+    wait_until_ready(port1)
+    wait_until_ready(port2)
+
+    let client1 = @websocket.connect("ws://127.0.0.1:\{port1}/hub")
+    defer client1.close()
+    let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
+    defer client2.close()
+
+    client1.send_text("before-cancel")
+    inspect(client1.recv().read_all().text(), content="before-cancel")
+    inspect(
+      @async.with_timeout_opt(100, () => client2.recv().read_all().text()),
+      content="None",
+    )
+
+    task1.cancel()
+    assert_eq(
+      @async.with_timeout_opt(200, () => ignore(try? task1.wait())),
+      Some(()),
+    )
+    match
+      @async.with_timeout_opt(300, () => try? client1.recv().read_all().text()) {
+      Some(
+        Err(
+          @websocket.ConnectionClosed(
+            @websocket.CloseCode::GoingAway,
+            Some(reason)
+          )
+        )
+      ) => inspect(reason, content="websocket server shutdown")
+      Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+        fail(
+          "expected cancelled reused websocket client to observe going-away close, got \{code} / \{reason}",
+        )
+      Some(Err(err)) =>
+        fail(
+          "expected cancelled reused websocket client to observe shutdown close, got error: \{err}",
+        )
+      Some(Ok(text)) =>
+        fail(
+          "expected cancelled reused websocket client to observe shutdown close, got text: \{text}",
+        )
+      None =>
+        fail("expected cancelled reused websocket client to observe shutdown")
+    }
+
+    client2.send_text("after-cancel")
+    inspect(client2.recv().read_all().text(), content="after-cancel")
+
+    shutdown.close()
+    match
+      @async.with_timeout_opt(300, () => try? client2.recv().read_all().text()) {
+      Some(
+        Err(
+          @websocket.ConnectionClosed(
+            @websocket.CloseCode::GoingAway,
+            Some(reason)
+          )
+        )
+      ) => inspect(reason, content="websocket server shutdown")
+      Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+        fail(
+          "expected surviving reused websocket client to observe going-away close after queue close, got \{code} / \{reason}",
+        )
+      Some(Err(err)) =>
+        fail(
+          "expected surviving reused websocket client to close after queue close, got error: \{err}",
+        )
+      Some(Ok(text)) =>
+        fail(
+          "expected surviving reused websocket client to close after queue close, got text: \{text}",
+        )
+      None =>
+        fail(
+          "expected surviving reused websocket client to observe queue-close shutdown",
+        )
+    }
+
+    match @async.with_timeout_opt(300, () => try? task2.wait()) {
+      Some(Ok(_)) => ()
+      Some(Err(err)) =>
+        fail(
+          "expected queue close to stop the surviving reused websocket server cleanly: \{err}",
+        )
+      None =>
+        fail(
+          "timed out waiting for the surviving reused websocket server to stop after queue close",
+        )
+    }
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
