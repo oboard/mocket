@@ -3,7 +3,18 @@ priv struct ContentType {
   media_type : StringView
   subtype : StringView
   params : Map[StringView, StringView]
-} derive(Show)
+}
+
+///|
+impl Show for ContentType with output(self, logger) {
+  logger.write_string("{media_type: ")
+  logger.write_object(self.media_type)
+  logger.write_string(", subtype: ")
+  logger.write_object(self.subtype)
+  logger.write_string(", params: ")
+  logger.write_object(self.params)
+  logger.write_string("}")
+}
 
 ///|
 fn parse_content_type(s : StringView) -> ContentType? {

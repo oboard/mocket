@@ -9,14 +9,14 @@ pub(all) enum HttpMethod {
   OPTIONS
   TRACE
   CONNECT
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub(all) enum FetchCredentials {
   Omit
   SameOrigin
   Include
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub fn FetchCredentials::to_string(self : FetchCredentials) -> String {
@@ -33,7 +33,7 @@ pub(all) enum FetchMode {
   NoCors
   SameOrigin
   Navigate
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub fn FetchMode::to_string(self : FetchMode) -> String {
@@ -48,7 +48,7 @@ pub fn FetchMode::to_string(self : FetchMode) -> String {
 ///|
 pub suberror FetchError {
   RequestFailed(String)
-} derive(Show)
+} derive(Debug)
 
 ///|
 fn copy_headers(headers : Map[String, String]) -> Map[String, String] {

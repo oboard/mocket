@@ -4,14 +4,41 @@
 pub enum Host {
   IPv6Address(BytesView)
   RegName(BytesView)
-} derive(Eq, Show)
+} derive(Eq, Debug)
+
+///|
+impl Show for Host with output(self, logger) {
+  match self {
+    IPv6Address(addr) => {
+      logger.write_string("IPv6Address(")
+      logger.write_object(addr)
+      logger.write_string(")")
+    }
+    RegName(name) => {
+      logger.write_string("RegName(")
+      logger.write_object(name)
+      logger.write_string(")")
+    }
+  }
+}
 
 ///|
 pub struct Authority {
   mut userinfo : BytesView?
   mut host : Host
   mut port : Int?
-} derive(Eq, Show)
+} derive(Eq, Debug)
+
+///|
+impl Show for Authority with output(self, logger) {
+  logger.write_string("{userinfo: ")
+  logger.write_object(self.userinfo)
+  logger.write_string(", host: ")
+  logger.write_object(self.host)
+  logger.write_string(", port: ")
+  logger.write_object(self.port)
+  logger.write_string("}")
+}
 
 ///|
 pub struct Uri {
@@ -20,7 +47,7 @@ pub struct Uri {
   path : Array[BytesView]
   mut query : BytesView?
   mut fragment : BytesView?
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub suberror ParseError {

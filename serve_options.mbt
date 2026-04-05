@@ -6,7 +6,7 @@ pub suberror NativeServeError {
   InvalidWebSocketMaxMessageBytes(Int)
   InvalidWebSocketOutgoingQueueCapacity(Int)
   InvalidWebSocketReadTimeoutMs(Int)
-} derive(Show, ToJson)
+} derive(Debug, ToJson)
 
 ///|
 pub(all) enum NativeWebSocketOverflowPolicy {

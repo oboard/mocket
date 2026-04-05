@@ -127,7 +127,85 @@ pub(all) enum StatusCode {
   /// RFC 6585, 6
   NetworkAuthenticationRequired
   Custom(Int)
-} derive(Show, ToJson, Eq)
+} derive(Debug, ToJson, Eq)
+
+///|
+pub impl Show for StatusCode with output(self, logger) {
+  match self {
+    Continue => logger.write_string("Continue")
+    SwitchingProtocols => logger.write_string("SwitchingProtocols")
+    Processing => logger.write_string("Processing")
+    EarlyHints => logger.write_string("EarlyHints")
+    OK => logger.write_string("OK")
+    Created => logger.write_string("Created")
+    Accepted => logger.write_string("Accepted")
+    NonAuthoritativeInfo => logger.write_string("NonAuthoritativeInfo")
+    NoContent => logger.write_string("NoContent")
+    ResetContent => logger.write_string("ResetContent")
+    PartialContent => logger.write_string("PartialContent")
+    MultiStatus => logger.write_string("MultiStatus")
+    AlreadyReported => logger.write_string("AlreadyReported")
+    IMUsed => logger.write_string("IMUsed")
+    MultipleChoices => logger.write_string("MultipleChoices")
+    MovedPermanently => logger.write_string("MovedPermanently")
+    Found => logger.write_string("Found")
+    SeeOther => logger.write_string("SeeOther")
+    NotModified => logger.write_string("NotModified")
+    UseProxy => logger.write_string("UseProxy")
+    TemporaryRedirect => logger.write_string("TemporaryRedirect")
+    PermanentRedirect => logger.write_string("PermanentRedirect")
+    BadRequest => logger.write_string("BadRequest")
+    Unauthorized => logger.write_string("Unauthorized")
+    PaymentRequired => logger.write_string("PaymentRequired")
+    Forbidden => logger.write_string("Forbidden")
+    NotFound => logger.write_string("NotFound")
+    MethodNotAllowed => logger.write_string("MethodNotAllowed")
+    NotAcceptable => logger.write_string("NotAcceptable")
+    ProxyAuthRequired => logger.write_string("ProxyAuthRequired")
+    RequestTimeout => logger.write_string("RequestTimeout")
+    Conflict => logger.write_string("Conflict")
+    Gone => logger.write_string("Gone")
+    LengthRequired => logger.write_string("LengthRequired")
+    PreconditionFailed => logger.write_string("PreconditionFailed")
+    RequestEntityTooLarge => logger.write_string("RequestEntityTooLarge")
+    RequestUriTooLong => logger.write_string("RequestUriTooLong")
+    UnsupportedMediaType => logger.write_string("UnsupportedMediaType")
+    RequestedRangeNotSatisfiable =>
+      logger.write_string("RequestedRangeNotSatisfiable")
+    ExpectationFailed => logger.write_string("ExpectationFailed")
+    Teapot => logger.write_string("Teapot")
+    MisdirectedRequest => logger.write_string("MisdirectedRequest")
+    UnprocessableEntity => logger.write_string("UnprocessableEntity")
+    Locked => logger.write_string("Locked")
+    FailedDependency => logger.write_string("FailedDependency")
+    TooEarly => logger.write_string("TooEarly")
+    UpgradeRequired => logger.write_string("UpgradeRequired")
+    PreconditionRequired => logger.write_string("PreconditionRequired")
+    TooManyRequests => logger.write_string("TooManyRequests")
+    RequestHeaderFieldsTooLarge =>
+      logger.write_string("RequestHeaderFieldsTooLarge")
+    UnavailableForLegalReasons =>
+      logger.write_string("UnavailableForLegalReasons")
+    InternalServerError => logger.write_string("InternalServerError")
+    NotImplemented => logger.write_string("NotImplemented")
+    BadGateway => logger.write_string("BadGateway")
+    ServiceUnavailable => logger.write_string("ServiceUnavailable")
+    GatewayTimeout => logger.write_string("GatewayTimeout")
+    HttpVersionNotSupported =>
+      logger.write_string("HttpVersionNotSupported")
+    VariantAlsoNegotiates => logger.write_string("VariantAlsoNegotiates")
+    InsufficientStorage => logger.write_string("InsufficientStorage")
+    LoopDetected => logger.write_string("LoopDetected")
+    NotExtended => logger.write_string("NotExtended")
+    NetworkAuthenticationRequired =>
+      logger.write_string("NetworkAuthenticationRequired")
+    Custom(i) => {
+      logger.write_string("Custom(")
+      logger.write_string(i.to_string())
+      logger.write_string(")")
+    }
+  }
+}
 
 ///|
 pub fn StatusCode::from_int(i : Int) -> StatusCode {

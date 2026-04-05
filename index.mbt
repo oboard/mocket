@@ -51,7 +51,16 @@ pub(all) enum SameSiteOption {
   Lax
   Strict
   SameSiteNone
-} derive(Show, Eq)
+} derive(Debug, Eq)
+
+///|
+pub impl Show for SameSiteOption with output(self, logger) {
+  match self {
+    Lax => logger.write_string("Lax")
+    Strict => logger.write_string("Strict")
+    SameSiteNone => logger.write_string("SameSiteNone")
+  }
+}
 
 ///|
 pub impl ToJson for SameSiteOption with to_json(self : SameSiteOption) -> Json {
