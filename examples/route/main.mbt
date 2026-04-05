@@ -13,7 +13,7 @@ fn main {
   // Hello World
   ..on("GET", "/hello", _ => "Hello world!")
   ..group("/api", group => {
-    // 添加组级中间件
+    // Add group-level middleware
     group.use_middleware((event, next) => {
       println(
         "🔒 API Group Middleware: \{event.req.http_method} \{event.req.url}",

@@ -69,5 +69,5 @@ pub enum WebSocketAggregatedMessage {
 }
 
 ///|
-// WebSocket 路由的事件处理器类型（不返回 HttpBody）
+// WebSocket route event handler type (does not return HttpBody)
 pub type WebSocketHandler = (WebSocketEvent) -> Unit

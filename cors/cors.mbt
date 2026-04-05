@@ -66,7 +66,7 @@ pub fn handle_cors(
         credentials~,
         max_age~,
       )
-      // 对于预检请求，直接返回空响应，不调用next()
+      // For preflight requests, return empty response without calling next()
       @mocket.HttpResponse::new(OK).to_responder()
     } else {
       append_cors_headers(
@@ -77,7 +77,7 @@ pub fn handle_cors(
         expose_headers~,
         credentials~,
       )
-      // 对于普通请求，继续执行后续中间件和处理器
+      // For regular requests, continue executing subsequent middleware and handlers
       next()
     }
   }

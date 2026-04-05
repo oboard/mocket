@@ -2,7 +2,7 @@
 pub type MiddlewareNext = async () -> &Responder noraise
 
 ///|
-// 中间件类型：接受 HttpEvent 和 next 函数，返回 HttpBody
+// Middleware type: accepts HttpEvent and next function, returns HttpBody
 pub type Middleware = async (MocketEvent, MiddlewareNext) -> &Responder noraise
 
 ///|
@@ -17,7 +17,7 @@ fn normalize_middleware_base_path(base_path : String) -> String {
 }
 
 ///|
-// 注册中间件，支持路径匹配
+// Register middleware with path matching support
 pub fn Mocket::use_middleware(
   self : Mocket,
   middleware : Middleware,
@@ -26,35 +26,35 @@ pub fn Mocket::use_middleware(
   let base_path = normalize_middleware_base_path(
     base_path.unwrap_or(self.base_path),
   )
-  // 将中间件和路径信息一起存储
+  // Store middleware together with path scope
   self.middlewares.push((base_path, middleware))
 }
 
 ///|
-// 执行中间件链，支持路径匹配和洋葱模型
+// Execute middleware chain with path matching (onion model)
 pub async fn execute_middlewares(
   middlewares : Array[(String, Middleware)],
   event : MocketEvent,
   final_handler : HttpHandler,
 ) -> &Responder noraise {
-  // 过滤出匹配路径的中间件
+  // Filter middlewares matching the request path
   let matched_middlewares = []
   let request_path = event.req.path()
   middlewares.each(middleware => {
     let (base_path, middleware) = middleware
-    // 如果 base_path 为空字符串，则为全局中间件
-    // 否则检查请求路径是否匹配 base_path
+    // Empty base_path means global middleware;
+    // otherwise check if the request path matches the scope
     if base_path == "" || path_scope_matches(base_path, request_path) {
       matched_middlewares.push(middleware)
     }
   })
 
-  // 递归构建中间件链（洋葱模型）
+  // Build middleware chain recursively (onion model)
   execute_middleware_chain(matched_middlewares, 0, event, final_handler)
 }
 
 ///|
-// 递归执行中间件链
+// Recursively execute middleware chain
 async fn execute_middleware_chain(
   middlewares : Array[Middleware],
   index : Int,
@@ -62,10 +62,10 @@ async fn execute_middleware_chain(
   final_handler : HttpHandler,
 ) -> &Responder noraise {
   if index >= middlewares.length() {
-    // 所有中间件都执行完毕，调用最终处理器
+    // All middlewares executed: call the final handler
     final_handler(event)
   } else {
-    // 执行当前中间件
+    // Execute current middleware
     let current_middleware = middlewares[index]
     let next = async fn() noraise {
       execute_middleware_chain(middlewares, index + 1, event, final_handler)

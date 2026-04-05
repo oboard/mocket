@@ -1,19 +1,19 @@
 ///|
-// 匹配路径并提取参数 - 重写版本，消除复杂性
+// Match path and extract parameters
 fn match_path(template : String, path : String) -> Map[String, StringView]? {
-  // 静态路径直接比较 - 好品味：消除特殊情况
+  // Static paths: direct comparison
   if !template.contains(":") && !template.contains("*") {
     return if template == path { Some({}) } else { None }
   }
 
-  // 使用递归进行路径匹配和参数提取
+  // Use recursion for path matching and parameter extraction
   let template_parts = template.split("/")
   let path_parts = path.split("/").collect()
   match_path_segments(template_parts.to_array(), path_parts, 0, 0, {})
 }
 
 ///|
-// 递归匹配路径段 - 简洁的核心逻辑
+// Recursively match path segments
 fn match_path_segments(
   template_parts : Array[StringView],
   path_parts : Array[StringView],
@@ -21,17 +21,17 @@ fn match_path_segments(
   path_idx : Int,
   params : Map[String, StringView],
 ) -> Map[String, StringView]? {
-  // 都结束了，匹配成功
+  // Both exhausted: match succeeded
   if template_idx >= template_parts.length() && path_idx >= path_parts.length() {
     return Some(params)
   }
 
-  // 模板结束但路径还有，失败
+  // Template exhausted but path remains: no match
   if template_idx >= template_parts.length() {
     return None
   }
 
-  // 路径结束但模板还有
+  // Path exhausted but template remains
   if path_idx >= path_parts.length() {
     let template_part = template_parts[template_idx]
     return if template_part == "**" {
@@ -50,13 +50,13 @@ fn match_path_segments(
     }
   }
 
-  // 都有内容，继续匹配
+  // Both have content: continue matching
   let template_part = template_parts[template_idx]
   let path_part = path_parts[path_idx]
 
-  // 使用 lexmatch? 匹配参数模式
+  // Match parameter patterns using lexmatch
   if template_part.view() lexmatch? (":", param_name) {
-    // 命名参数：:param_name
+    // Named parameter: :param_name
     params.set(param_name.to_string(), path_part)
     match_path_segments(
       template_parts,
@@ -66,7 +66,7 @@ fn match_path_segments(
       params,
     )
   } else if template_part == "*" {
-    // 单级通配符
+    // Single-level wildcard
     params.set("_", path_part)
     match_path_segments(
       template_parts,
@@ -76,7 +76,7 @@ fn match_path_segments(
       params,
     )
   } else if template_part == "**" {
-    // 多级通配符 - 可以匹配零个或多个路径段
+    // Multi-level wildcard: matches zero or more path segments
     let mut end_idx = path_idx
     while end_idx <= path_parts.length() {
       let matched_segments : Array[StringView] = []
@@ -103,7 +103,7 @@ fn match_path_segments(
     }
     None
   } else if template_part == path_part {
-    // 静态段匹配
+    // Static segment match
     match_path_segments(
       template_parts,
       path_parts,
@@ -112,7 +112,7 @@ fn match_path_segments(
       params,
     )
   } else {
-    // 不匹配
+    // No match
     None
   }
 }
@@ -189,7 +189,7 @@ fn Mocket::allowed_methods(
 }
 
 ///|
-// 查找匹配的路由和参数
+// Find matching route and parameters
 fn Mocket::find_route(
   self : Mocket,
   http_method : String,
@@ -243,16 +243,16 @@ fn Mocket::find_ws_route(self : Mocket, path : String) -> WebSocketHandler? {
 }
 
 ///|
-// 路径匹配测试用例 - 全面覆盖各种场景
+// Path matching tests
 
-test "静态路径匹配" {
+test "static path matching" {
   assert_eq(match_path("/api/users", "/api/users"), Some({}))
   assert_eq(match_path("/api/users", "/api/posts"), None)
   assert_eq(match_path("/", "/"), Some({}))
 }
 
 ///|
-test "命名参数匹配" {
+test "named parameter matching" {
   assert_eq(match_path("/users/:id", "/users/123"), Some({ "id": "123" }))
   assert_eq(
     match_path("/users/:userId/posts/:postId", "/users/456/posts/789"),
@@ -262,7 +262,7 @@ test "命名参数匹配" {
 }
 
 ///|
-test "单级通配符匹配" {
+test "single-level wildcard matching" {
   assert_eq(
     match_path("/files/*", "/files/document.pdf"),
     Some({ "_": "document.pdf" }),
@@ -272,7 +272,7 @@ test "单级通配符匹配" {
 }
 
 ///|
-test "多级通配符匹配" {
+test "multi-level wildcard matching" {
   assert_eq(
     match_path("/static/**", "/static/css/main.css"),
     Some({ "_": "css/main.css" }),
@@ -295,18 +295,18 @@ test "多级通配符匹配" {
 }
 
 ///|
-test "复杂混合模式" {
-  // 参数 + 通配符
+test "complex mixed patterns" {
+  // Parameter + wildcard
   let result = match_path("/users/:id/files/*", "/users/123/files/avatar.jpg")
   assert_eq(result, Some({ "id": "123", "_": "avatar.jpg" }))
 
-  // 参数 + 多级通配符
+  // Parameter + multi-level wildcard
   let result2 = match_path(
     "/projects/:projectId/**", "/projects/abc/src/main.mbt",
   )
   assert_eq(result2, Some({ "projectId": "abc", "_": "src/main.mbt" }))
 
-  // 多个参数 + 静态段
+  // Multiple parameters + static segments
   let result3 = match_path(
     "/api/:version/users/:id/profile", "/api/v2/users/456/profile",
   )
@@ -314,35 +314,35 @@ test "复杂混合模式" {
 }
 
 ///|
-test "边界情况" {
-  // 空路径段
+test "edge cases" {
+  // Empty path segment
   let result = match_path("/api//users", "/api//users")
   assert_eq(result, Some({}))
 
-  // 路径末尾斜杠
+  // Trailing slash
   let result2 = match_path("/api/users/", "/api/users/")
   assert_eq(result2, Some({}))
 
-  // 参数名为空
+  // Empty parameter name
   let result3 = match_path("/users/:", "/users/123")
   assert_eq(result3, Some({ "": "123" }))
 
-  // 模板比路径短
+  // Template shorter than path
   let result4 = match_path("/api", "/api/users")
   assert_eq(result4, None)
 
-  // 路径比模板短（非通配符）
+  // Path shorter than template (non-wildcard)
   let result5 = match_path("/api/users", "/api")
   assert_eq(result5, None)
 }
 
 ///|
-test "性能对比场景" {
-  // 静态路径应该快速返回
+test "performance scenarios" {
+  // Static paths should return quickly
   let result = match_path("/health", "/health")
   assert_eq(result, Some({}))
 
-  // 复杂模式也应该高效
+  // Complex patterns should also be efficient
   let result2 = match_path(
     "/api/:v/users/:id/posts/:postId/comments/*", "/api/v1/users/123/posts/456/comments/789",
   )
@@ -353,12 +353,12 @@ test "性能对比场景" {
 }
 
 ///|
-test "lexmatch 特殊字符处理" {
-  // 包含特殊字符的参数
+test "special character handling" {
+  // Parameters with special characters
   let result = match_path("/search/:query", "/search/hello%20world")
   assert_eq(result, Some({ "query": "hello%20world" }))
 
-  // 包含点号的文件名
+  // Filename with dots
   let result2 = match_path("/files/*", "/files/config.json")
   assert_eq(result2, Some({ "_": "config.json" }))
 }

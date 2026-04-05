@@ -2,15 +2,15 @@
 pub fn async_run(f : async () -> Unit noraise) -> Unit = "%async.run"
 
 ///|
-/// `suspend` 会中断当前协程的运行。
-/// `suspend` 会接受一个回调函数，并让这个回调函数来操作中断的协程
+/// `suspend` pauses the current coroutine.
+/// It accepts a callback that controls the suspended coroutine.
 pub async fn[T, E : Error] suspend(
-  // `f` 是负责操作中断的协程的回调函数
+  // `f` is the callback that controls the suspended coroutine.
   f : (
-    // `f` 的第一个参数用于继续运行被中断的协程
+    // First argument: resumes the suspended coroutine with a value.
     (T) -> Unit,
-    // `f` 的第二个参数用于取消被中断的协程。
-    // 取消会被表示为在中断处抛出错误
+    // Second argument: cancels the suspended coroutine.
+    // Cancellation manifests as an error thrown at the suspension point.
     (E) -> Unit,
   ) -> Unit,
 ) -> T raise E = "%async.suspend"

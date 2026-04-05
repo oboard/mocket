@@ -11,11 +11,11 @@ pub(all) struct Mocket {
   base_path : String
   mappings : Map[(String, String), HttpHandler]
   middlewares : Array[(String, Middleware)]
-  // 添加静态路由缓存（精确匹配的路由）
+  // Static route cache (exact match routes)
   static_routes : Map[String, Map[String, HttpHandler]]
-  // 添加动态路由缓存（包含参数的路由）
+  // Dynamic route cache (routes with parameters)
   dynamic_routes : Map[String, Array[(String, HttpHandler)]]
-  // WebSocket 路由（按路径匹配，不区分方法）
+  // WebSocket routes (matched by path, method-agnostic)
   ws_static_routes : Map[String, WebSocketHandler]
   ws_dynamic_routes : Array[(String, WebSocketHandler)]
   ws_runtime_id : String
@@ -129,9 +129,9 @@ pub fn Mocket::on(
   let path = self.base_path + path
   self.mappings.set((event, path), handler)
 
-  // 优化：根据路径类型分别缓存
+  // Cache routes by path type for faster lookup
   if path.find(":").unwrap_or(-1) == -1 && path.find("*").unwrap_or(-1) == -1 {
-    // 静态路径，直接缓存
+    // Static path: cache directly
     match self.static_routes.get(event) {
       Some(http_methodroutes) => http_methodroutes.set(path, handler)
       None => {
@@ -141,7 +141,7 @@ pub fn Mocket::on(
       }
     }
   } else {
-    // 动态路径，加入动态路由列表
+    // Dynamic path: add to dynamic route list
     match self.dynamic_routes.get(event) {
       Some(routes) => routes.push((path, handler))
       None => {
@@ -231,7 +231,7 @@ pub fn Mocket::all(self : Mocket, path : String, handler : HttpHandler) -> Unit 
 }
 
 ///|
-// 创建路由组
+// Create route group
 pub fn Mocket::group(
   self : Mocket,
   base_path : String,
@@ -239,7 +239,7 @@ pub fn Mocket::group(
 ) -> Unit {
   let group = new(base_path=self.base_path + base_path)
   configure(group)
-  // 合并路由
+  // Merge routes
   group.mappings.iter().each(i => self.mappings.set(i.0, i.1))
   group.static_routes
   .iter()
@@ -265,23 +265,23 @@ pub fn Mocket::group(
   })
   group.ws_static_routes.iter().each(i => self.ws_static_routes.set(i.0, i.1))
   self.ws_dynamic_routes.append(group.ws_dynamic_routes)
-  // 合并中间件
+  // Merge middlewares
   self.middlewares.append(group.middlewares)
 }
 
 ///|
-// 注册 WebSocket 路由（不区分方法，按路径匹配）
+// Register WebSocket route (method-agnostic, matched by path)
 pub fn Mocket::ws(
   self : Mocket,
   path : String,
   handler : WebSocketHandler,
 ) -> Unit {
   let path = self.base_path + path
-  // 静态路径直接缓存
+  // Static path: cache directly
   if path.find(":").unwrap_or(-1) == -1 && path.find("*").unwrap_or(-1) == -1 {
     self.ws_static_routes.set(path, handler)
   } else {
-    // 动态路径加入列表
+    // Dynamic path: add to list
     self.ws_dynamic_routes.push((path, handler))
   }
 }
