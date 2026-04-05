@@ -4072,6 +4072,58 @@ async test "serve_async isolates websocket channels per server invocation when r
 }
 
 ///|
+async test "serve_async isolates close-handler websocket fanout per reused app server" {
+  let app = new()
+  app.ws("/hub", event => {
+    match event {
+      Open(peer) => peer.subscribe("room")
+      Message(peer, Text("publish")) => peer.publish("room", "fanout")
+      Close(peer) => peer.publish("room", "left")
+      _ => ()
+    }
+  })
+  with_two_test_servers(app, app, (port1, port2) => {
+    let client1a = @websocket.connect("ws://127.0.0.1:\{port1}/hub")
+    defer client1a.close()
+    let client1b = @websocket.connect("ws://127.0.0.1:\{port1}/hub")
+    defer client1b.close()
+    let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
+    defer client2.close()
+
+    client1a.send_close()
+    match
+      @async.with_timeout_opt(300, () => client1b.recv().read_all().text()) {
+      Some(message) => inspect(message, content="left")
+      None => fail("timed out waiting for same-server close handler fanout")
+    }
+    inspect(
+      @async.with_timeout_opt(100, () => client2.recv().read_all().text()),
+      content="None",
+    )
+
+    client1b.send_text("publish")
+    inspect(client1b.recv().read_all().text(), content="fanout")
+    inspect(
+      @async.with_timeout_opt(100, () => client2.recv().read_all().text()),
+      content="None",
+    )
+
+    client2.send_text("publish")
+    inspect(client2.recv().read_all().text(), content="fanout")
+    inspect(
+      @async.with_timeout_opt(100, () => client1b.recv().read_all().text()),
+      content="None",
+    )
+
+    client1b.send_close()
+    client2.send_close()
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
 async test "serve_async keeps other reused-app servers alive when one server is cancelled" {
   let app = new()
   app.get("/__mocket_ready", _ => "ready")
