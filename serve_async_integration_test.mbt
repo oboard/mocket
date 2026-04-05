@@ -4997,3 +4997,210 @@ async test "serve_async_on_until queue close stops surviving reused websocket se
     err => raise err
   }
 }
+
+///|
+async test "serve_async_on_until queue close broadcasts to remaining reused websocket servers after shutdown signal" {
+  let app = new()
+  app.get("/__mocket_ready", _ => "ready")
+  app.ws("/hub", event => {
+    match event {
+      Open(peer) => peer.subscribe("room")
+      Message(peer, Text(text)) => peer.publish("room", text)
+      _ => ()
+    }
+  })
+  @async.with_task_group(group => {
+    let server1 = allocate_test_server()
+    let server2 = allocate_test_server()
+    let server3 = allocate_test_server()
+    let port1 = server1.addr.port()
+    let port2 = server2.addr.port()
+    let port3 = server3.addr.port()
+    let shutdown = @async.Queue::new(kind=Blocking(0))
+    let task1 = group.spawn(no_wait=true, () => {
+      app.serve_async_on_until(server1, shutdown)
+    })
+    let task2 = group.spawn(no_wait=true, () => {
+      app.serve_async_on_until(server2, shutdown)
+    })
+    let task3 = group.spawn(no_wait=true, () => {
+      app.serve_async_on_until(server3, shutdown)
+    })
+    wait_until_ready(port1)
+    wait_until_ready(port2)
+    wait_until_ready(port3)
+
+    let client1 = @websocket.connect("ws://127.0.0.1:\{port1}/hub")
+    defer client1.close()
+    let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
+    defer client2.close()
+    let client3 = @websocket.connect("ws://127.0.0.1:\{port3}/hub")
+    defer client3.close()
+    let clients = [client1, client2, client3]
+    let tasks = [task1, task2, task3]
+
+    fn classify_shutdown_signal_results(
+      outcomes : Array[Result[String, Error]?],
+    ) -> Int raise {
+      let mut stopped_index = -1
+      for i = 0; i < outcomes.length(); i = i + 1 {
+        match outcomes[i] {
+          None => ()
+          Some(
+            Err(
+              @websocket.ConnectionClosed(
+                @websocket.CloseCode::GoingAway,
+                Some(reason)
+              )
+            )
+          ) => {
+            if stopped_index >= 0 {
+              fail(
+                "expected exactly one reused websocket client to stop after shutdown signal, but client \{stopped_index + 1} and client \{i + 1} both closed",
+              )
+            }
+            inspect(reason, content="websocket server shutdown")
+            stopped_index = i
+          }
+          Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+            fail(
+              "expected client \{i + 1} to stay open or observe a going-away close after shutdown signal, got \{code} / \{reason}",
+            )
+          Some(Err(err)) =>
+            fail(
+              "expected client \{i + 1} to stay open or observe a shutdown close after shutdown signal, got error: \{err}",
+            )
+          Some(Ok(text)) =>
+            fail(
+              "expected client \{i + 1} to stay open or observe a shutdown close after shutdown signal, got text: \{text}",
+            )
+        }
+      }
+      if stopped_index < 0 {
+        fail("expected exactly one reused websocket client to stop after shutdown signal")
+      }
+      stopped_index
+    }
+
+    fn expect_shutdown_close(
+      outcome : Result[String, Error]?,
+      client_index : Int,
+      phase : String,
+    ) -> Unit raise {
+      match outcome {
+        Some(
+          Err(
+            @websocket.ConnectionClosed(
+              @websocket.CloseCode::GoingAway,
+              Some(reason)
+            )
+          )
+        ) => inspect(reason, content="websocket server shutdown")
+        Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+          fail(
+            "expected client \{client_index + 1} to observe going-away close during \{phase}, got \{code} / \{reason}",
+          )
+        Some(Err(err)) =>
+          fail(
+            "expected client \{client_index + 1} to close during \{phase}, got error: \{err}",
+          )
+        Some(Ok(text)) =>
+          fail(
+            "expected client \{client_index + 1} to close during \{phase}, got text: \{text}",
+          )
+        None =>
+          fail(
+            "expected client \{client_index + 1} to observe shutdown during \{phase}",
+          )
+      }
+    }
+
+    for i = 0; i < clients.length(); i = i + 1 {
+      let text = "before-signal-\{i + 1}"
+      clients[i].send_text(text)
+      inspect(clients[i].recv().read_all().text(), content=text)
+    }
+
+    shutdown.put(())
+    let outcomes = [
+      @async.with_timeout_opt(300, () => try? client1.recv().read_all().text()),
+      @async.with_timeout_opt(300, () => try? client2.recv().read_all().text()),
+      @async.with_timeout_opt(300, () => try? client3.recv().read_all().text()),
+    ]
+    let stopped_index = classify_shutdown_signal_results(outcomes)
+
+    let surviving_indexes : Array[Int] = []
+    for i = 0; i < clients.length(); i = i + 1 {
+      if i != stopped_index {
+        surviving_indexes.push(i)
+      }
+    }
+
+    match @async.with_timeout_opt(300, () => try? tasks[stopped_index].wait()) {
+      Some(Ok(_)) => ()
+      Some(Err(err)) =>
+        fail(
+          "expected shutdown signal to stop reused websocket server \{stopped_index + 1} cleanly: \{err}",
+        )
+      None =>
+        fail(
+          "timed out waiting for reused websocket server \{stopped_index + 1} to stop after shutdown signal",
+        )
+    }
+
+    for surviving_index in surviving_indexes {
+      match @async.with_timeout_opt(100, () => try? tasks[surviving_index].wait()) {
+        Some(result) =>
+          fail(
+            "expected reused websocket server \{surviving_index + 1} to stay alive after one shutdown signal, got \{result}",
+          )
+        None => ()
+      }
+    }
+
+    for surviving_index in surviving_indexes {
+      let text = "after-signal-\{surviving_index + 1}"
+      clients[surviving_index].send_text(text)
+      inspect(clients[surviving_index].recv().read_all().text(), content=text)
+    }
+
+    for surviving_index in surviving_indexes {
+      match @async.with_timeout_opt(100, () => try? tasks[surviving_index].wait()) {
+        Some(result) =>
+          fail(
+            "expected reused websocket server \{surviving_index + 1} to remain alive immediately before queue close, got \{result}",
+          )
+        None => ()
+      }
+    }
+
+    shutdown.close()
+
+    for surviving_index in surviving_indexes {
+      expect_shutdown_close(
+        @async.with_timeout_opt(300, () => {
+          try? clients[surviving_index].recv().read_all().text()
+        }),
+        surviving_index,
+        "queue close after shutdown signal",
+      )
+    }
+
+    for surviving_index in surviving_indexes {
+      match @async.with_timeout_opt(300, () => try? tasks[surviving_index].wait()) {
+        Some(Ok(_)) => ()
+        Some(Err(err)) =>
+          fail(
+            "expected queue close to stop reused websocket server \{surviving_index + 1} cleanly after shutdown signal: \{err}",
+          )
+        None =>
+          fail(
+            "timed out waiting for reused websocket server \{surviving_index + 1} to stop after queue close",
+          )
+      }
+    }
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
