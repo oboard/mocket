@@ -388,3 +388,107 @@ async test "serve_async_on makes closed websocket peers inert after unregister" 
     err => raise err
   }
 }
+
+///|
+async test "serve_async_on closes outgoing queues before close-handler cleanup" {
+  let close_connection_id : Ref[String?] = Ref::new(None)
+  let close_saw_registered : Ref[Bool?] = Ref::new(None)
+  let close_saw_queue_closed : Ref[Bool?] = Ref::new(None)
+  let close_channel_members : Ref[Int?] = Ref::new(None)
+  @async.with_task_group(group => {
+    let server = allocate_websocket_lifecycle_server()
+    let port = server.addr.port()
+    let channel = "room-close-order-\{port}"
+    let app = new()
+    app.get("/__ws_lifecycle_ready", _ => "ready")
+    app.ws("/hub", event => {
+      match event {
+        Open(peer) => peer.subscribe(channel)
+        Message(peer, Text("publish")) => peer.publish(channel, "fanout")
+        Close(peer) => {
+          close_connection_id.val = Some(peer.connection_id)
+          close_channel_members.val = Some(
+            native_ws_channel_member_count(channel),
+          )
+          match resolve_native_ws_connection(peer.connection_id) {
+            Some((_, connection)) => {
+              close_saw_registered.val = Some(true)
+              let queue_put_result : Result[Bool, Error] = try? connection.outgoing.try_put(
+                SendText("ghost"),
+              )
+              close_saw_queue_closed.val = Some(
+                match queue_put_result {
+                  Err(_) => true
+                  _ => false
+                },
+              )
+            }
+            None => {
+              close_saw_registered.val = Some(false)
+              close_saw_queue_closed.val = Some(false)
+            }
+          }
+        }
+        _ => ()
+      }
+    })
+    let task = group.spawn(no_wait=true, () => app.serve_async_on(server))
+    wait_until_websocket_lifecycle_ready(port)
+
+    let client1 = @websocket.connect("ws://127.0.0.1:\{port}/hub")
+    defer client1.close()
+    let client2 = @websocket.connect("ws://127.0.0.1:\{port}/hub")
+    defer client2.close()
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard native_ws_channel_member_count(channel) == 2 else {
+        raise WebSocketLifecycleServerNotReady
+      }
+    })
+
+    client1.send_close()
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard close_connection_id.val is Some(_) &&
+        close_saw_registered.val is Some(_) &&
+        close_saw_queue_closed.val is Some(_) &&
+        close_channel_members.val is Some(_) else {
+        raise WebSocketLifecycleServerNotReady
+      }
+    })
+
+    inspect(close_saw_registered.val, content="Some(true)")
+    inspect(close_saw_queue_closed.val, content="Some(true)")
+    inspect(close_channel_members.val, content="Some(2)")
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      match close_connection_id.val {
+        Some(connection_id) => {
+          guard !native_ws_connection_exists(connection_id) &&
+            native_ws_channel_member_count(channel) == 1 else {
+            raise WebSocketLifecycleServerNotReady
+          }
+        }
+        None => raise WebSocketLifecycleServerNotReady
+      }
+    })
+
+    client2.send_text("publish")
+    inspect(client2.recv().read_all().text(), content="fanout")
+
+    task.cancel()
+    assert_eq(
+      @async.with_timeout_opt(200, () => ignore(try? task.wait())),
+      Some(()),
+    )
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard native_ws_channel_member_count(channel) == 0 else {
+        raise WebSocketLifecycleServerNotReady
+      }
+    })
+  }) catch {
+    WebSocketLifecycleSocketBindUnavailable => return
+    err => raise err
+  }
+}
