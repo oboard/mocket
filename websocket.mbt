@@ -1,7 +1,7 @@
 /// Represents a connected WebSocket client with its connection ID and subscribed channels.
 
 ///|
-pub(all) struct WebSocketPeer {
+pub struct WebSocketPeer {
   connection_id : String
   mut subscribed_channels : Array[String]
 }
@@ -38,8 +38,8 @@ pub fn WebSocketPeer::unsubscribe(
   channel : String,
 ) -> Unit {
   let mut index = None
-  for i = 0; i < self.subscribed_channels.length(); i = i + 1 {
-    if self.subscribed_channels[i] == channel {
+  for i, ch in self.subscribed_channels {
+    if ch == channel {
       index = Some(i)
       break
     }

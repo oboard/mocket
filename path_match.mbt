@@ -123,25 +123,17 @@ fn Mocket::find_route_for_method(
   http_method : String,
   path : String,
 ) -> (HttpHandler, Map[String, StringView])? {
-  match self.static_routes.get(http_method) {
-    Some(http_methodroutes) =>
-      match http_methodroutes.get(path) {
-        Some(handler) => return Some((handler, {}))
-        None => ignore(())
-      }
-    None => ignore(())
+  if self.static_routes.get(http_method) is Some(method_routes) {
+    if method_routes.get(path) is Some(handler) {
+      return Some((handler, {}))
+    }
   }
-
   if self.dynamic_routes.get(http_method) is Some(routes) {
-    let mut i = 0
-    while i < routes.length() {
-      let route_item = routes[i]
-      let route_path = route_item.0
-      let handler = route_item.1
+    for route in routes {
+      let (route_path, handler) = route
       if match_path(route_path, path) is Some(params) {
         return Some((handler, params))
       }
-      i = i + 1
     }
   }
   None
@@ -195,29 +187,20 @@ fn Mocket::find_route(
   http_method : String,
   path : String,
 ) -> (HttpHandler, Map[String, StringView])? {
-  match self.find_route_for_method(http_method, path) {
-    Some(route) => return Some(route)
-    None => ()
+  if self.find_route_for_method(http_method, path) is Some(route) {
+    return Some(route)
   }
-  match self.static_routes.get("*") {
-    Some(http_methodroutes) =>
-      match http_methodroutes.get(path) {
-        Some(handler) => return Some((handler, {}))
-        None => ()
-      }
-    None => ()
+  if self.static_routes.get("*") is Some(wildcard_routes) {
+    if wildcard_routes.get(path) is Some(handler) {
+      return Some((handler, {}))
+    }
   }
-
   if self.dynamic_routes.get("*") is Some(routes) {
-    let mut i = 0
-    while i < routes.length() {
-      let route_item = routes[i]
-      let route_path = route_item.0
-      let handler = route_item.1
+    for route in routes {
+      let (route_path, handler) = route
       if match_path(route_path, path) is Some(params) {
         return Some((handler, params))
       }
-      i = i + 1
     }
   }
   None
@@ -225,19 +208,14 @@ fn Mocket::find_route(
 
 ///|
 fn Mocket::find_ws_route(self : Mocket, path : String) -> WebSocketHandler? {
-  match self.ws_static_routes.get(path) {
-    Some(handler) => return Some(handler)
-    None => ()
+  if self.ws_static_routes.get(path) is Some(handler) {
+    return Some(handler)
   }
-  let mut i = 0
-  while i < self.ws_dynamic_routes.length() {
-    let route_item = self.ws_dynamic_routes[i]
-    let route_path = route_item.0
-    let handler = route_item.1
+  for route in self.ws_dynamic_routes {
+    let (route_path, handler) = route
     if match_path(route_path, path) is Some(_) {
       return Some(handler)
     }
-    i = i + 1
   }
   None
 }

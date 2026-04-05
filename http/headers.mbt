@@ -1,7 +1,7 @@
 /// Compares two HTTP header names for equality using case-insensitive matching.
 
 ///|
-pub fn header_name_matches(left : String, right : String) -> Bool {
+fn header_name_matches(left : String, right : String) -> Bool {
   left.to_lower() == right.to_lower()
 }
 
@@ -9,7 +9,7 @@ pub fn header_name_matches(left : String, right : String) -> Bool {
 /// case-insensitively, or `None` if no match is found.
 
 ///|
-pub fn find_header_key_case_insensitive(
+fn find_header_key_case_insensitive(
   headers : Map[String, String],
   header_name : String,
 ) -> String? {
@@ -52,7 +52,7 @@ pub fn has_header_case_insensitive(
 /// otherwise the new key-value pair is inserted.
 
 ///|
-pub fn set_header_case_insensitive(
+fn set_header_case_insensitive(
   headers : Map[String, String],
   header_name : String,
   value : String,

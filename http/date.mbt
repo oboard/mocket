@@ -35,7 +35,7 @@ fn positive_mod_i64(lhs : Int64, rhs : Int64) -> Int64 {
 /// date as a `(year, month, day)` tuple.
 
 ///|
-pub fn civil_from_days(days_since_epoch : Int64) -> (Int, Int, Int) {
+fn civil_from_days(days_since_epoch : Int64) -> (Int, Int, Int) {
   let z = days_since_epoch + 719_468L
   let era = if z >= 0L { z / 146_097L } else { (z - 146_096L) / 146_097L }
   let doe = z - era * 146_097L
@@ -55,7 +55,7 @@ pub fn civil_from_days(days_since_epoch : Int64) -> (Int, Int, Int) {
 /// since the Unix epoch (1970-01-01).
 
 ///|
-pub fn days_from_civil(year : Int, month : Int, day : Int) -> Int64 {
+fn days_from_civil(year : Int, month : Int, day : Int) -> Int64 {
   let year_offset = if month <= 2 { 1 } else { 0 }
   let adjusted_year = year - year_offset
   let era = if adjusted_year >= 0 {
@@ -78,7 +78,7 @@ pub fn days_from_civil(year : Int, month : Int, day : Int) -> Int64 {
 /// calendar.
 
 ///|
-pub fn is_leap_year(year : Int) -> Bool {
+fn is_leap_year(year : Int) -> Bool {
   year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
 }
 
@@ -86,7 +86,7 @@ pub fn is_leap_year(year : Int) -> Bool {
 /// for leap years in February.
 
 ///|
-pub fn days_in_month(year : Int, month : Int) -> Int {
+fn days_in_month(year : Int, month : Int) -> Int {
   match month {
     1 => 31
     2 => if is_leap_year(year) { 29 } else { 28 }
@@ -127,7 +127,7 @@ fn http_month_number(month : StringView) -> Int? {
 /// `None` if the text is not a valid integer.
 
 ///|
-pub fn parse_http_date_part(text : StringView) -> Int? {
+fn parse_http_date_part(text : StringView) -> Int? {
   try @string.parse_int(text) catch {
     _ => None
   } noraise {

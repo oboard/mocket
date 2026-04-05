@@ -3,6 +3,7 @@ package "oboard/mocket"
 
 import {
   "moonbitlang/async/aqueue",
+  "moonbitlang/async/http",
   "moonbitlang/core/buffer",
   "moonbitlang/core/debug",
 }
@@ -12,13 +13,7 @@ pub fn async_run(async () -> Unit noraise) -> Unit
 
 pub fn cookie_to_string(Array[CookieItem]) -> String
 
-pub async fn execute_middlewares(Array[(String, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise)], MocketEvent, async (MocketEvent) -> &Responder noraise) -> &Responder noraise
-
 pub async fn fetch(String, body? : String, HttpMethod, data? : &Responder, headers? : Map[String, String], credentials? : FetchCredentials, mode? : FetchMode) -> HttpResponse
-
-pub fn form_encode(Map[String, String]) -> String
-
-pub fn handle_not_found() -> async (MocketEvent) -> &Responder noraise
 
 pub fn html(&Show) -> &Responder
 
@@ -26,19 +21,7 @@ pub fn new(base_path? : String) -> Mocket
 
 pub fn parse_cookie(StringView) -> Map[String, CookieItem]
 
-pub fn parse_form_data(BytesView) -> Map[String, String]
-
-pub fn parse_multipart(BytesView, String) -> Map[String, @oboard/mocket/http.MultipartFormValue]
-
-pub fn serve_ffi(Mocket, port~ : Int) -> Unit
-
-pub async fn[T, E : Error] suspend(((T) -> Unit, (E) -> Unit) -> Unit) -> T raise E
-
 pub fn text(&Show) -> &Responder
-
-pub fn url_decode(BytesView) -> String
-
-pub fn url_encode(String) -> String
 
 // Errors
 pub suberror ExecError derive(@debug.Debug)
@@ -157,10 +140,10 @@ pub fn Mocket::post(Self, String, async (MocketEvent) -> &Responder noraise) -> 
 pub fn Mocket::put(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::serve(Self, port~ : Int) -> Unit
 pub async fn Mocket::serve_async(Self, port~ : Int) -> Unit
-pub async fn Mocket::serve_async_on(Self, @moonbitlang/async/http.Server) -> Unit
-pub async fn Mocket::serve_async_on_until(Self, @moonbitlang/async/http.Server, @aqueue.Queue[Unit]) -> Unit
-pub async fn Mocket::serve_async_on_until_with(Self, @moonbitlang/async/http.Server, @aqueue.Queue[Unit], NativeServeOptions) -> Unit
-pub async fn Mocket::serve_async_on_with(Self, @moonbitlang/async/http.Server, NativeServeOptions) -> Unit
+pub async fn Mocket::serve_async_on(Self, @http.Server) -> Unit
+pub async fn Mocket::serve_async_on_until(Self, @http.Server, @aqueue.Queue[Unit]) -> Unit
+pub async fn Mocket::serve_async_on_until_with(Self, @http.Server, @aqueue.Queue[Unit], NativeServeOptions) -> Unit
+pub async fn Mocket::serve_async_on_with(Self, @http.Server, NativeServeOptions) -> Unit
 pub async fn Mocket::serve_async_until(Self, port~ : Int, @aqueue.Queue[Unit]) -> Unit
 pub async fn Mocket::serve_async_until_with(Self, port~ : Int, @aqueue.Queue[Unit], NativeServeOptions) -> Unit
 pub async fn Mocket::serve_async_with(Self, port~ : Int, NativeServeOptions) -> Unit
@@ -293,7 +276,7 @@ pub enum WebSocketEvent {
   Close(WebSocketPeer)
 }
 
-pub(all) struct WebSocketPeer {
+pub struct WebSocketPeer {
   connection_id : String
   mut subscribed_channels : Array[String]
 }
@@ -310,8 +293,6 @@ pub type HttpHandler = async (MocketEvent) -> &Responder noraise
 pub type Middleware = async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise
 
 pub type MiddlewareNext = async () -> &Responder noraise
-
-pub using @oboard/mocket/http {type MultipartFormValue}
 
 pub type WebSocketHandler = (WebSocketEvent) -> Unit
 

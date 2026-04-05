@@ -86,7 +86,7 @@ fn parse_multipart_part(
 ) -> Unit {
   let len = part.length()
   let mut body_start = -1
-  for i = 0; i < len - 3; i = i + 1 {
+  for i in 0..<(len - 3) {
     if part[i] == b'\r' &&
       part[i + 1] == b'\n' &&
       part[i + 2] == b'\r' &&
@@ -112,8 +112,8 @@ fn parse_multipart_part(
       let val = parts[1].trim()
       if key == "content-disposition" {
         let directives = val.split(";").to_array()
-        for i = 0; i < directives.length(); i = i + 1 {
-          let directive = directives[i].trim()
+        for directive in directives {
+          let directive = directive.trim()
           if directive.has_prefix("name=") {
             let d_str = directive.to_string()
             let substr = d_str[6:d_str.length() - 1]

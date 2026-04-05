@@ -61,7 +61,7 @@ pub fn parse_form_data(bytes : BytesView) -> Map[String, String] {
   }
   let mut start = 0
   let len = bytes.length()
-  for i = 0; i < len; i = i + 1 {
+  for i in 0..<len {
     if bytes[i] == b'&' {
       let part = bytes[start:i]
       parse_kv(part, res)
@@ -78,7 +78,7 @@ pub fn parse_form_data(bytes : BytesView) -> Map[String, String] {
 fn parse_kv(part : BytesView, map : Map[String, String]) -> Unit {
   let len = part.length()
   let mut eq_idx = -1
-  for i = 0; i < len; i = i + 1 {
+  for i in 0..<len {
     if part[i] == b'=' {
       eq_idx = i
       break
@@ -117,7 +117,7 @@ fn is_unreserved(b : Byte) -> Bool {
 pub fn url_encode(s : String) -> String {
   let bytes = @utf8.encode(s)
   let buf = StringBuilder::new()
-  for i = 0; i < bytes.length(); i = i + 1 {
+  for i in 0..<bytes.length() {
     let b = bytes[i]
     if is_unreserved(b) {
       match b.to_int().to_char() {

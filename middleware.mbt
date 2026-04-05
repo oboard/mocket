@@ -40,7 +40,7 @@ pub fn Mocket::use_middleware(
 
 ///|
 // Execute middleware chain with path matching (onion model)
-pub async fn execute_middlewares(
+async fn execute_middlewares(
   middlewares : Array[(String, Middleware)],
   event : MocketEvent,
   final_handler : HttpHandler,

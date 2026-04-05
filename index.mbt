@@ -1,6 +1,3 @@
-///|
-pub type MultipartFormValue = @mhttp.MultipartFormValue
-
 /// The main application type that holds route mappings, middleware, and WebSocket handlers.
 
 ///|
@@ -136,25 +133,20 @@ pub fn Mocket::on(
   self.mappings.set((event, path), handler)
 
   // Cache routes by path type for faster lookup
-  if path.find(":").unwrap_or(-1) == -1 && path.find("*").unwrap_or(-1) == -1 {
+  if !path.contains(":") && !path.contains("*") {
     // Static path: cache directly
-    match self.static_routes.get(event) {
-      Some(http_methodroutes) => http_methodroutes.set(path, handler)
-      None => {
-        let new_routes : Map[String, HttpHandler] = {}
-        new_routes.set(path, handler)
-        self.static_routes.set(event, new_routes)
-      }
+    if self.static_routes.get(event) is Some(method_routes) {
+      method_routes.set(path, handler)
+    } else {
+      let new_routes : Map[String, HttpHandler] = Map::new()
+      new_routes.set(path, handler)
+      self.static_routes.set(event, new_routes)
     }
-  } else {
     // Dynamic path: add to dynamic route list
-    match self.dynamic_routes.get(event) {
-      Some(routes) => routes.push((path, handler))
-      None => {
-        let new_routes = [(path, handler)]
-        self.dynamic_routes.set(event, new_routes)
-      }
-    }
+  } else if self.dynamic_routes.get(event) is Some(routes) {
+    routes.push((path, handler))
+  } else {
+    self.dynamic_routes.set(event, [(path, handler)])
   }
 }
 
