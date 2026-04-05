@@ -131,7 +131,7 @@ fn prepare_fetch_payload_bytes(
           let res = HttpResponse::new(OK)
           responder_data.options(res)
           res.headers.each((key, value) => {
-            if !has_header_case_insensitive(req_headers, key) {
+            if !@mhttp.has_header_case_insensitive(req_headers, key) {
               req_headers.set(key.to_string(), value.to_string())
             }
           })

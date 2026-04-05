@@ -52,7 +52,7 @@ pub async fn execute_middlewares(
     let (base_path, middleware) = middleware
     // Empty base_path means global middleware;
     // otherwise check if the request path matches the scope
-    if base_path == "" || path_scope_matches(base_path, request_path) {
+    if base_path == "" || @mhttp.path_scope_matches(base_path, request_path) {
       matched_middlewares.push(middleware)
     }
   })

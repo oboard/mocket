@@ -11,7 +11,7 @@ pub(open) trait Responder {
 
 ///|
 pub impl Responder for &ToJson with options(_, res) -> Unit {
-  set_missing_header_case_insensitive(
+  @mhttp.set_missing_header_case_insensitive(
     res.headers,
     "Content-Type",
     "application/json; charset=utf-8",
@@ -25,7 +25,7 @@ pub impl Responder for &ToJson with output(self, buf) -> Unit {
 
 ///|
 pub impl Responder for HttpRequest with options(self, res) -> Unit {
-  merge_headers_case_insensitive(res.headers, self.headers)
+  @mhttp.merge_headers_case_insensitive(res.headers, self.headers)
 }
 
 ///|
@@ -36,7 +36,7 @@ pub impl Responder for HttpRequest with output(self, buf) -> Unit {
 ///|
 pub impl Responder for HttpResponse with options(self, res) -> Unit {
   res.status_code = self.status_code
-  merge_headers_case_insensitive(res.headers, self.headers)
+  @mhttp.merge_headers_case_insensitive(res.headers, self.headers)
 }
 
 ///|
@@ -46,7 +46,7 @@ pub impl Responder for HttpResponse with output(self, buf) -> Unit {
 
 ///|
 pub impl Responder for Json with options(_, res) -> Unit {
-  set_missing_header_case_insensitive(
+  @mhttp.set_missing_header_case_insensitive(
     res.headers,
     "Content-Type",
     "application/json; charset=utf-8",
@@ -60,7 +60,7 @@ pub impl Responder for Json with output(self, buf) -> Unit {
 
 ///|
 pub impl Responder for Bytes with options(_, res) -> Unit {
-  set_missing_header_case_insensitive(
+  @mhttp.set_missing_header_case_insensitive(
     res.headers,
     "Content-Type",
     "application/octet-stream",
@@ -74,7 +74,7 @@ pub impl Responder for Bytes with output(self, buf) -> Unit {
 
 ///|
 pub impl Responder for String with options(_, res) -> Unit {
-  set_missing_header_case_insensitive(
+  @mhttp.set_missing_header_case_insensitive(
     res.headers,
     "Content-Type",
     "text/plain; charset=utf-8",
@@ -88,7 +88,7 @@ pub impl Responder for String with output(self, buf) -> Unit {
 
 ///|
 pub impl Responder for StringView with options(_, res) -> Unit {
-  set_missing_header_case_insensitive(
+  @mhttp.set_missing_header_case_insensitive(
     res.headers,
     "Content-Type",
     "text/plain; charset=utf-8",
@@ -105,7 +105,7 @@ struct Html(String)
 
 ///|
 pub impl Responder for Html with options(_, res) -> Unit {
-  set_missing_header_case_insensitive(
+  @mhttp.set_missing_header_case_insensitive(
     res.headers,
     "Content-Type",
     "text/html; charset=utf-8",

@@ -109,7 +109,7 @@ pub impl Responder for StaticResolvedResponder with options(self, res) -> Unit {
   self.inner.options(res)
   if res.status_code == OK {
     self.asset_headers.each((key, value) => {
-      if !has_header_case_insensitive(res.headers, key) {
+      if !@mhttp.has_header_case_insensitive(res.headers, key) {
         res.headers.set(key, value)
       }
     })
@@ -133,7 +133,7 @@ fn static_asset_headers(
     None => ()
   }
   match meta.mtime {
-    Some(mtime) => headers.set("Last-Modified", format_http_date(mtime))
+    Some(mtime) => headers.set("Last-Modified", @mhttp.format_http_date(mtime))
     None => ()
   }
   match meta.asset_type {
@@ -170,7 +170,7 @@ fn static_not_modified_headers(
     None => ()
   }
   match meta.mtime {
-    Some(mtime) => headers.set("Last-Modified", format_http_date(mtime))
+    Some(mtime) => headers.set("Last-Modified", @mhttp.format_http_date(mtime))
     None => ()
   }
   headers
@@ -178,7 +178,7 @@ fn static_not_modified_headers(
 
 ///|
 fn if_modified_since_matches(header_value : String, mtime : Int64) -> Bool {
-  match parse_http_date(header_value) {
+  match @mhttp.parse_http_date(header_value) {
     Some(if_modified_since) => if_modified_since >= mtime
     None => false
   }
@@ -196,7 +196,7 @@ pub fn Mocket::static_assets(
   self.use_middleware(
     async fn(event, next) noraise {
       let request_path = event.req.path()
-      if !path_scope_matches(mount_path, request_path) {
+      if !@mhttp.path_scope_matches(mount_path, request_path) {
         return next()
       }
 
@@ -323,7 +323,7 @@ pub fn Mocket::static_assets(
           if event.req.http_method == "HEAD" {
             let head_headers = copy_headers(event.res.headers)
             asset_headers.each((key, value) => {
-              if !has_header_case_insensitive(head_headers, key) {
+              if !@mhttp.has_header_case_insensitive(head_headers, key) {
                 head_headers.set(key, value)
               }
             })

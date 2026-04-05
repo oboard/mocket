@@ -32,7 +32,7 @@ fn positive_mod_i64(lhs : Int64, rhs : Int64) -> Int64 {
 }
 
 ///|
-fn civil_from_days(days_since_epoch : Int64) -> (Int, Int, Int) {
+pub fn civil_from_days(days_since_epoch : Int64) -> (Int, Int, Int) {
   let z = days_since_epoch + 719_468L
   let era = if z >= 0L { z / 146_097L } else { (z - 146_096L) / 146_097L }
   let doe = z - era * 146_097L
@@ -49,7 +49,7 @@ fn civil_from_days(days_since_epoch : Int64) -> (Int, Int, Int) {
 }
 
 ///|
-fn days_from_civil(year : Int, month : Int, day : Int) -> Int64 {
+pub fn days_from_civil(year : Int, month : Int, day : Int) -> Int64 {
   let year_offset = if month <= 2 { 1 } else { 0 }
   let adjusted_year = year - year_offset
   let era = if adjusted_year >= 0 {
@@ -69,12 +69,12 @@ fn days_from_civil(year : Int, month : Int, day : Int) -> Int64 {
 }
 
 ///|
-fn is_leap_year(year : Int) -> Bool {
+pub fn is_leap_year(year : Int) -> Bool {
   year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
 }
 
 ///|
-fn days_in_month(year : Int, month : Int) -> Int {
+pub fn days_in_month(year : Int, month : Int) -> Int {
   match month {
     1 => 31
     2 => if is_leap_year(year) { 29 } else { 28 }
@@ -112,7 +112,7 @@ fn http_month_number(month : StringView) -> Int? {
 }
 
 ///|
-fn parse_http_date_part(text : StringView) -> Int? {
+pub fn parse_http_date_part(text : StringView) -> Int? {
   try @string.parse_int(text) catch {
     _ => None
   } noraise {
@@ -152,7 +152,7 @@ fn http_month_name(month : Int) -> String {
 }
 
 ///|
-fn format_http_date(epoch_seconds : Int64) -> String {
+pub fn format_http_date(epoch_seconds : Int64) -> String {
   let days_since_epoch = floor_div_i64(epoch_seconds, HTTP_SECONDS_PER_DAY)
   let seconds_of_day = (epoch_seconds - days_since_epoch * HTTP_SECONDS_PER_DAY).to_int()
   let hour = seconds_of_day / 3_600
@@ -163,7 +163,7 @@ fn format_http_date(epoch_seconds : Int64) -> String {
 }
 
 ///|
-fn parse_http_date(http_date : StringView) -> Int64? {
+pub fn parse_http_date(http_date : StringView) -> Int64? {
   if http_date.length() != 29 {
     return None
   }

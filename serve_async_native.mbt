@@ -55,7 +55,7 @@ fn header_contains_token_case_insensitive(
   token_name : String,
 ) -> Bool {
   let normalized_token_name = token_name.to_lower()
-  match get_header_case_insensitive(headers, header_name) {
+  match @mhttp.get_header_case_insensitive(headers, header_name) {
     Some(value) => {
       for token in value.split(",") {
         if token.trim().to_lower() == normalized_token_name {
@@ -76,7 +76,7 @@ fn is_websocket_upgrade_request(request : @http.Request) -> Bool {
     "upgrade",
   )
   let has_websocket_upgrade = match
-    get_header_case_insensitive(request.headers, "upgrade") {
+    @mhttp.get_header_case_insensitive(request.headers, "upgrade") {
     Some(value) => value.trim().to_lower() == "websocket"
     None => false
   }
@@ -86,7 +86,7 @@ fn is_websocket_upgrade_request(request : @http.Request) -> Bool {
 ///|
 fn looks_like_websocket_handshake_request(request : @http.Request) -> Bool {
   let websocket_upgrade_header = match
-    get_header_case_insensitive(request.headers, "upgrade") {
+    @mhttp.get_header_case_insensitive(request.headers, "upgrade") {
     Some(value) => value.trim().to_lower() == "websocket"
     None => false
   }
@@ -135,10 +135,10 @@ async fn send_raw_response_async(
   headers : Map[String, String],
   include_body : Bool,
 ) -> Unit raise Error {
-  if !has_header_case_insensitive(headers, "Content-Length") {
+  if !@mhttp.has_header_case_insensitive(headers, "Content-Length") {
     headers.set("Content-Length", response.raw_body.length().to_string())
   }
-  if !has_header_case_insensitive(headers, "Connection") {
+  if !@mhttp.has_header_case_insensitive(headers, "Connection") {
     headers.set("Connection", "close")
   }
   let raw_response = @buffer.new()
@@ -207,7 +207,7 @@ async fn send_response_async(
     send_raw_response_async(conn, response, headers, false)
     return
   }
-  if has_header_case_insensitive(headers, "Content-Encoding") {
+  if @mhttp.has_header_case_insensitive(headers, "Content-Encoding") {
     send_raw_response_async(conn, response, headers, true)
     return
   }
@@ -230,7 +230,7 @@ async fn send_response_and_close_async(
 ) -> Unit raise Error {
   let headers = copy_async_headers(response.headers)
   append_cookie_headers(headers, response.cookies)
-  if !has_header_case_insensitive(headers, "Content-Length") {
+  if !@mhttp.has_header_case_insensitive(headers, "Content-Length") {
     headers.set("Content-Length", response.raw_body.length().to_string())
   }
   headers.set("Connection", "close")
@@ -284,7 +284,7 @@ async fn send_not_found_async(
 
 ///|
 fn request_content_length(request : @http.Request) -> Int? {
-  match get_header_case_insensitive(request.headers, "content-length") {
+  match @mhttp.get_header_case_insensitive(request.headers, "content-length") {
     Some(value) => Some(@string.parse_int(value) catch { _ => return None })
     None => None
   }
@@ -388,7 +388,7 @@ async fn handle_request_async(
   conn : @http.ServerConnection,
   options : NativeServeOptions,
 ) -> Unit raise Error {
-  let request_path = request_target_path(request.path)
+  let request_path = @mhttp.request_target_path(request.path)
   let strict_websocket_upgrade = is_websocket_upgrade_request(request)
   let websocket_like_request = looks_like_websocket_handshake_request(request)
   if websocket_like_request {

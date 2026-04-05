@@ -22,14 +22,14 @@ pub(open) trait BodyReader {
 
 ///|
 pub fn HttpRequest::path(self : HttpRequest) -> String {
-  request_target_path(self.url)
+  @mhttp.request_target_path(self.url)
 }
 
 /// Returns the raw query string from the request URL, or `None` if absent.
 
 ///|
 pub fn HttpRequest::query_string(self : HttpRequest) -> String? {
-  request_target_query_string(self.url)
+  @mhttp.request_target_query_string(self.url)
 }
 
 /// Parses the query string into a map of key-value pairs.
@@ -39,7 +39,7 @@ pub fn HttpRequest::query_string(self : HttpRequest) -> String? {
 ///|
 pub fn HttpRequest::query_params(self : HttpRequest) -> Map[String, String] {
   match self.query_string() {
-    Some(query) => parse_form_data(@utf8.encode(query)[:])
+    Some(query) => @mhttp.parse_form_data(@utf8.encode(query)[:])
     None => {}
   }
 }

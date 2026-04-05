@@ -1,11 +1,5 @@
-/// A single value from a multipart form submission, containing optional filename, content type, and raw data.
-
 ///|
-pub(all) struct MultipartFormValue {
-  filename : String?
-  content_type : String?
-  data : BytesView
-}
+pub type MultipartFormValue = @mhttp.MultipartFormValue
 
 /// The main application type that holds route mappings, middleware, and WebSocket handlers.
 

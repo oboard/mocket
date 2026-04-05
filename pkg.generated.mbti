@@ -3,7 +3,6 @@ package "oboard/mocket"
 
 import {
   "moonbitlang/async/aqueue",
-  "moonbitlang/async/http",
   "moonbitlang/core/buffer",
   "moonbitlang/core/debug",
 }
@@ -29,7 +28,7 @@ pub fn parse_cookie(StringView) -> Map[String, CookieItem]
 
 pub fn parse_form_data(BytesView) -> Map[String, String]
 
-pub fn parse_multipart(BytesView, String) -> Map[String, MultipartFormValue]
+pub fn parse_multipart(BytesView, String) -> Map[String, @oboard/mocket/http.MultipartFormValue]
 
 pub fn serve_ffi(Mocket, port~ : Int) -> Unit
 
@@ -158,10 +157,10 @@ pub fn Mocket::post(Self, String, async (MocketEvent) -> &Responder noraise) -> 
 pub fn Mocket::put(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::serve(Self, port~ : Int) -> Unit
 pub async fn Mocket::serve_async(Self, port~ : Int) -> Unit
-pub async fn Mocket::serve_async_on(Self, @http.Server) -> Unit
-pub async fn Mocket::serve_async_on_until(Self, @http.Server, @aqueue.Queue[Unit]) -> Unit
-pub async fn Mocket::serve_async_on_until_with(Self, @http.Server, @aqueue.Queue[Unit], NativeServeOptions) -> Unit
-pub async fn Mocket::serve_async_on_with(Self, @http.Server, NativeServeOptions) -> Unit
+pub async fn Mocket::serve_async_on(Self, @moonbitlang/async/http.Server) -> Unit
+pub async fn Mocket::serve_async_on_until(Self, @moonbitlang/async/http.Server, @aqueue.Queue[Unit]) -> Unit
+pub async fn Mocket::serve_async_on_until_with(Self, @moonbitlang/async/http.Server, @aqueue.Queue[Unit], NativeServeOptions) -> Unit
+pub async fn Mocket::serve_async_on_with(Self, @moonbitlang/async/http.Server, NativeServeOptions) -> Unit
 pub async fn Mocket::serve_async_until(Self, port~ : Int, @aqueue.Queue[Unit]) -> Unit
 pub async fn Mocket::serve_async_until_with(Self, port~ : Int, @aqueue.Queue[Unit], NativeServeOptions) -> Unit
 pub async fn Mocket::serve_async_with(Self, port~ : Int, NativeServeOptions) -> Unit
@@ -174,12 +173,6 @@ pub(all) struct MocketEvent {
   req : HttpRequest
   res : HttpResponse
   params : Map[String, StringView]
-}
-
-pub(all) struct MultipartFormValue {
-  filename : String?
-  content_type : String?
-  data : BytesView
 }
 
 pub struct NativeServeOptions {
@@ -317,6 +310,8 @@ pub type HttpHandler = async (MocketEvent) -> &Responder noraise
 pub type Middleware = async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise
 
 pub type MiddlewareNext = async () -> &Responder noraise
+
+pub using @oboard/mocket/http {type MultipartFormValue}
 
 pub type WebSocketHandler = (WebSocketEvent) -> Unit
 

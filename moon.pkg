@@ -1,6 +1,7 @@
 import {
   "oboard/mocket/native",
   "oboard/mocket/uri",
+  "oboard/mocket/http" @mhttp,
   "moonbitlang/async",
   "moonbitlang/async/http",
   "moonbitlang/async/io",

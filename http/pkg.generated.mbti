@@ -1,0 +1,61 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/mocket/http"
+
+// Values
+pub fn civil_from_days(Int64) -> (Int, Int, Int)
+
+pub fn days_from_civil(Int, Int, Int) -> Int64
+
+pub fn days_in_month(Int, Int) -> Int
+
+pub fn find_header_key_case_insensitive(Map[String, String], String) -> String?
+
+pub fn form_encode(Map[String, String]) -> String
+
+pub fn format_http_date(Int64) -> String
+
+pub fn get_header_case_insensitive(Map[String, String], String) -> String?
+
+pub fn has_header_case_insensitive(Map[String, String], String) -> Bool
+
+pub fn header_name_matches(String, String) -> Bool
+
+pub fn is_leap_year(Int) -> Bool
+
+pub fn merge_headers_case_insensitive(Map[String, String], Map[String, String]) -> Unit
+
+pub fn parse_form_data(BytesView) -> Map[String, String]
+
+pub fn parse_http_date(StringView) -> Int64?
+
+pub fn parse_http_date_part(StringView) -> Int?
+
+pub fn parse_multipart(BytesView, String) -> Map[String, MultipartFormValue]
+
+pub fn path_scope_matches(String, String) -> Bool
+
+pub fn request_target_path(String) -> String
+
+pub fn request_target_query_string(String) -> String?
+
+pub fn set_header_case_insensitive(Map[String, String], String, String) -> Unit
+
+pub fn set_missing_header_case_insensitive(Map[String, String], String, String) -> Unit
+
+pub fn url_decode(BytesView) -> String
+
+pub fn url_encode(String) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct MultipartFormValue {
+  filename : String?
+  content_type : String?
+  data : BytesView
+}
+
+// Type aliases
+
+// Traits
+
