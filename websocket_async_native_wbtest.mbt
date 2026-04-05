@@ -1434,3 +1434,236 @@ async test "serve_async_on_until shutdown signal wakes one reused runtime" {
     err => raise err
   }
 }
+
+///|
+async test "serve_async_on_until queue close clears surviving reused runtime after shutdown signal" {
+  let app = new()
+  app.get("/__ws_lifecycle_ready", _ => "ready")
+  app.ws("/hub", event => {
+    match event {
+      Open(peer) => peer.subscribe("room")
+      Message(peer, Text("publish")) => peer.publish("room", "fanout")
+      _ => ()
+    }
+  })
+
+  @async.with_task_group(group => {
+    let server1 = allocate_websocket_lifecycle_server()
+    let server2 = allocate_websocket_lifecycle_server()
+    let port1 = server1.addr.port()
+    let port2 = server2.addr.port()
+    let shutdown = @async.Queue::new(kind=Blocking(0))
+    let task1 = group.spawn(no_wait=true, () => {
+      try? app.serve_async_on_until(server1, shutdown)
+    })
+    let task2 = group.spawn(no_wait=true, () => {
+      try? app.serve_async_on_until(server2, shutdown)
+    })
+    wait_until_websocket_lifecycle_ready(port1)
+    wait_until_websocket_lifecycle_ready(port2)
+
+    let client1 = @websocket.connect("ws://127.0.0.1:\{port1}/hub")
+    defer client1.close()
+    let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
+    defer client2.close()
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      let runtime_ids = native_ws_runtime_ids_for_app(app)
+      guard runtime_ids.length() == 2 else {
+        raise WebSocketLifecycleServerNotReady
+      }
+      let mut room_members = 0
+      for runtime_id in runtime_ids {
+        room_members += native_ws_channel_member_count_in_runtime(
+          runtime_id, "room",
+        )
+      }
+      guard room_members == 2 else { raise WebSocketLifecycleServerNotReady }
+    })
+
+    shutdown.put(())
+    let client1_after = @async.with_timeout_opt(300, () => {
+      try? client1.recv().read_all().text()
+    })
+    let client2_after = @async.with_timeout_opt(300, () => {
+      try? client2.recv().read_all().text()
+    })
+
+    match client1_after {
+      Some(
+        Err(
+          @websocket.ConnectionClosed(
+            @websocket.CloseCode::GoingAway,
+            Some(reason)
+          )
+        )
+      ) => {
+        inspect(reason, content="websocket server shutdown")
+        match client2_after {
+          None => ()
+          Some(Err(@websocket.ConnectionClosed(code, why))) =>
+            fail(
+              "expected only one reused runtime to stop after shutdown signal, but both websocket clients closed: \{code} / \{why}",
+            )
+          Some(Err(err)) =>
+            fail(
+              "expected sibling reused websocket runtime to stay alive after shutdown signal, got error: \{err}",
+            )
+          Some(Ok(text)) =>
+            fail(
+              "expected sibling reused websocket runtime to stay alive after shutdown signal, got text: \{text}",
+            )
+        }
+        match @async.with_timeout_opt(200, () => task1.wait()) {
+          Some(result) =>
+            match result {
+              Ok(_) => ()
+              Err(err) =>
+                fail("expected signaled reused runtime to stop cleanly: \{err}")
+            }
+          None => fail("timed out waiting for signaled reused runtime to stop")
+        }
+        @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+          let runtime_ids = native_ws_runtime_ids_for_app(app)
+          guard runtime_ids.length() == 1 else {
+            raise WebSocketLifecycleServerNotReady
+          }
+          let surviving_runtime_id = runtime_ids[0]
+          guard native_ws_channel_member_count_in_runtime(
+              surviving_runtime_id, "room",
+            ) ==
+            1 else {
+            raise WebSocketLifecycleServerNotReady
+          }
+        })
+        match @async.with_timeout_opt(100, () => task2.wait()) {
+          Some(result) =>
+            fail(
+              "expected sibling reused runtime to stay alive after one shutdown signal, got \{result}",
+            )
+          None => ()
+        }
+        client2.send_text("publish")
+        inspect(client2.recv().read_all().text(), content="fanout")
+        shutdown.close()
+        match @async.with_timeout_opt(200, () => task2.wait()) {
+          Some(result) =>
+            match result {
+              Ok(_) => ()
+              Err(err) =>
+                fail(
+                  "expected queue close to stop the surviving reused runtime cleanly after shutdown signal: \{err}",
+                )
+            }
+          None =>
+            fail(
+              "timed out waiting for the surviving reused runtime to stop after queue close",
+            )
+        }
+        @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+          guard native_ws_runtime_ids_for_app(app).is_empty() else {
+            raise WebSocketLifecycleServerNotReady
+          }
+        })
+      }
+      Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+        fail(
+          "expected stopped reused websocket client to observe going-away close after shutdown signal, got \{code} / \{reason}",
+        )
+      Some(Err(err)) =>
+        fail(
+          "expected stopped reused websocket client to observe shutdown close, got error: \{err}",
+        )
+      Some(Ok(text)) =>
+        fail(
+          "expected stopped reused websocket client to observe shutdown close, got text: \{text}",
+        )
+      None =>
+        match client2_after {
+          Some(
+            Err(
+              @websocket.ConnectionClosed(
+                @websocket.CloseCode::GoingAway,
+                Some(reason)
+              )
+            )
+          ) => {
+            inspect(reason, content="websocket server shutdown")
+            match @async.with_timeout_opt(200, () => task2.wait()) {
+              Some(result) =>
+                match result {
+                  Ok(_) => ()
+                  Err(err) =>
+                    fail(
+                      "expected signaled reused runtime to stop cleanly: \{err}",
+                    )
+                }
+              None =>
+                fail("timed out waiting for signaled reused runtime to stop")
+            }
+            @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+              let runtime_ids = native_ws_runtime_ids_for_app(app)
+              guard runtime_ids.length() == 1 else {
+                raise WebSocketLifecycleServerNotReady
+              }
+              let surviving_runtime_id = runtime_ids[0]
+              guard native_ws_channel_member_count_in_runtime(
+                  surviving_runtime_id, "room",
+                ) ==
+                1 else {
+                raise WebSocketLifecycleServerNotReady
+              }
+            })
+            match @async.with_timeout_opt(100, () => task1.wait()) {
+              Some(result) =>
+                fail(
+                  "expected sibling reused runtime to stay alive after one shutdown signal, got \{result}",
+                )
+              None => ()
+            }
+            client1.send_text("publish")
+            inspect(client1.recv().read_all().text(), content="fanout")
+            shutdown.close()
+            match @async.with_timeout_opt(200, () => task1.wait()) {
+              Some(result) =>
+                match result {
+                  Ok(_) => ()
+                  Err(err) =>
+                    fail(
+                      "expected queue close to stop the surviving reused runtime cleanly after shutdown signal: \{err}",
+                    )
+                }
+              None =>
+                fail(
+                  "timed out waiting for the surviving reused runtime to stop after queue close",
+                )
+            }
+            @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+              guard native_ws_runtime_ids_for_app(app).is_empty() else {
+                raise WebSocketLifecycleServerNotReady
+              }
+            })
+          }
+          Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+            fail(
+              "expected exactly one reused websocket runtime to stop after shutdown signal, but got unexpected second close: \{code} / \{reason}",
+            )
+          Some(Err(err)) =>
+            fail(
+              "expected a reused websocket runtime to stop after shutdown signal, got error: \{err}",
+            )
+          Some(Ok(text)) =>
+            fail(
+              "expected a reused websocket runtime to stop after shutdown signal, got text: \{text}",
+            )
+          None =>
+            fail(
+              "expected exactly one reused websocket runtime to stop after shutdown signal",
+            )
+        }
+    }
+  }) catch {
+    WebSocketLifecycleSocketBindUnavailable => return
+    err => raise err
+  }
+}
