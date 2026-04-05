@@ -1,8 +1,0 @@
-import {
-  "moonbit-community/rabbita/dom",
-  "moonbit-community/rabbita/common",
-  "moonbit-community/rabbita/cmd",
-  "moonbit-community/rabbita/internal/interface",
-}
-
-supported_targets = "js+native"

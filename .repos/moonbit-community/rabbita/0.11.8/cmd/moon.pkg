@@ -1,6 +1,0 @@
-import {
-  "moonbit-community/rabbita/js",
-  "moonbit-community/rabbita/url",
-  "moonbit-community/rabbita/internal/interface",
-  "moonbitlang/core/queue",
-}

@@ -1,9 +1,0 @@
-import {
-  "moonbitlang/core/encoding/utf8",
-  "moonbitlang/async/internal/c_buffer",
-}
-
-options(
-  "native-stub": [ "stub.c" ],
-  targets: { "os_string.mbt": [ "native" ] },
-)

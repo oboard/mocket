@@ -1,9 +1,0 @@
-import {
-  "moonbitlang/core/json",
-  "moonbitlang/async",
-  "moonbitlang/async/fs",
-}
-
-options(
-  "is-main": true,
-)

@@ -1,5 +1,0 @@
-import {
-  "moonbit-community/rabbita/dom",
-  "moonbit-community/rabbita/cmd",
-  "moonbit-community/rabbita/js",
-}

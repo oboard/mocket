@@ -1,4 +1,0 @@
-options(
-  "native-stub": [ "stub.c" ],
-  targets: { "c_buffer.mbt": [ "native" ] },
-)

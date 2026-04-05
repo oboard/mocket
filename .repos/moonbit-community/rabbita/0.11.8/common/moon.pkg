@@ -1,5 +1,0 @@
-import {
-  "moonbitlang/core/debug",
-}
-
-supported_targets = "js+native"

@@ -1,4 +1,0 @@
-import {
-  "moonbit-community/rabbita/cmd",
-  "moonbitlang/core/json",
-}

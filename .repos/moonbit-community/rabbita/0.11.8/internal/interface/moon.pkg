@@ -1,4 +1,0 @@
-import {
-  "moonbit-community/rabbita/url",
-  "moonbitlang/core/ref",
-}

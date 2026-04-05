@@ -1,3 +1,0 @@
-options(
-  "native-stub": [ "time.c" ],
-)
