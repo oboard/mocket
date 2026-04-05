@@ -1,8 +1,7 @@
 /// The main application type that holds route mappings, middleware, and WebSocket handlers.
 
 ///|
-#alias(T)
-pub(all) struct Mocket {
+pub struct Mocket {
   base_path : String
   mappings : Map[(String, String), HttpHandler]
   middlewares : Array[(String, Middleware)]

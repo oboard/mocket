@@ -116,8 +116,7 @@ pub fn HttpResponse::set_cookie(Self, String, String, max_age? : Int, path? : St
 pub fn HttpResponse::to_responder(Self) -> &Responder
 pub impl Responder for HttpResponse
 
-#alias(T)
-pub(all) struct Mocket {
+pub struct Mocket {
   base_path : String
   mappings : Map[(String, String), async (MocketEvent) -> &Responder noraise]
   middlewares : Array[(String, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise)]
