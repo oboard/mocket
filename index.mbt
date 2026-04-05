@@ -13,6 +13,8 @@ pub struct Mocket {
   ws_static_routes : Map[String, WebSocketHandler]
   ws_dynamic_routes : Array[(String, WebSocketHandler)]
   ws_runtime_id : String
+  // Custom handler for 404 Not Found responses
+  mut not_found_handler : HttpHandler?
 }
 
 ///|
@@ -37,6 +39,7 @@ pub fn new(base_path? : String = "") -> Mocket {
     ws_static_routes: {},
     ws_dynamic_routes: [],
     ws_runtime_id: next_mocket_instance_id(),
+    not_found_handler: None,
   }
 }
 
@@ -301,6 +304,20 @@ pub fn Mocket::group(
   self.ws_dynamic_routes.append(group.ws_dynamic_routes)
   // Merge middlewares
   self.middlewares.append(group.middlewares)
+  // Merge not_found_handler (group's handler takes precedence if set)
+  if group.not_found_handler is Some(_) {
+    self.not_found_handler = group.not_found_handler
+  }
+}
+
+/// Sets a custom handler for 404 Not Found responses.
+
+///|
+pub fn Mocket::set_not_found_handler(
+  self : Mocket,
+  handler : HttpHandler,
+) -> Unit {
+  self.not_found_handler = Some(handler)
 }
 
 /// Registers a WebSocket handler for the given path, matched regardless of HTTP method.

@@ -32,6 +32,13 @@ pub fn HttpRequest::query_string(self : HttpRequest) -> String? {
   @mhttp.request_target_query_string(self.url)
 }
 
+/// Returns the Content-Type header value, or None if not set.
+
+///|
+pub fn HttpRequest::content_type(self : HttpRequest) -> String? {
+  self.get_header("content-type")
+}
+
 /// Parses the query string into a map of key-value pairs.
 ///
 /// Returns an empty map when no query string is present.

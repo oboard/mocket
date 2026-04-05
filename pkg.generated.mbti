@@ -21,6 +21,8 @@ pub fn new(base_path? : String) -> Mocket
 
 pub fn parse_cookie(StringView) -> Map[String, CookieItem]
 
+pub fn security_headers() -> async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise
+
 pub fn text(&Show) -> &Responder
 
 // Errors
@@ -93,6 +95,7 @@ pub(all) struct HttpRequest {
   mut raw_body : Bytes
 }
 pub fn[T : BodyReader] HttpRequest::body(Self) -> T raise
+pub fn HttpRequest::content_type(Self) -> String?
 pub fn HttpRequest::get_cookie(Self, String) -> CookieItem?
 pub fn HttpRequest::get_header(Self, String) -> String?
 pub fn HttpRequest::get_query(Self, String) -> String?
@@ -107,10 +110,19 @@ pub(all) struct HttpResponse {
   cookies : Map[String, CookieItem]
   mut raw_body : Bytes
 }
+pub fn HttpResponse::bad_request() -> Self
 pub fn HttpResponse::body(Self, &Responder) -> Self
+pub fn HttpResponse::created() -> Self
 pub fn HttpResponse::delete_cookie(Self, String) -> Unit
+pub fn HttpResponse::error(StatusCode, String) -> Self
+pub fn HttpResponse::forbidden() -> Self
+pub fn HttpResponse::header(Self, String, String) -> Self
+pub fn HttpResponse::internal_server_error() -> Self
 pub fn HttpResponse::json(Self, &ToJson) -> Self
 pub fn HttpResponse::new(StatusCode, headers? : Map[String, String], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
+pub fn HttpResponse::no_content() -> Self
+pub fn HttpResponse::not_found() -> Self
+pub fn HttpResponse::ok() -> Self
 pub fn[T : BodyReader] HttpResponse::read_body(Self) -> T raise
 pub fn HttpResponse::redirect(String) -> Self
 pub fn HttpResponse::redirect_307(String) -> Self
@@ -118,6 +130,7 @@ pub fn HttpResponse::redirect_308(String) -> Self
 pub fn HttpResponse::redirect_temporary(String) -> Self
 pub fn HttpResponse::set_cookie(Self, String, String, max_age? : Int, path? : String, domain? : String, secure? : Bool, http_only? : Bool, same_site? : SameSiteOption) -> Unit
 pub fn HttpResponse::to_responder(Self) -> &Responder
+pub fn HttpResponse::unauthorized() -> Self
 pub impl Responder for HttpResponse
 
 pub struct Mocket {
@@ -129,6 +142,7 @@ pub struct Mocket {
   ws_static_routes : Map[String, (WebSocketEvent) -> Unit]
   ws_dynamic_routes : Array[(String, (WebSocketEvent) -> Unit)]
   ws_runtime_id : String
+  mut not_found_handler : (async (MocketEvent) -> &Responder noraise)?
 }
 pub fn Mocket::all(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::connect(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
@@ -150,6 +164,7 @@ pub async fn Mocket::serve_async_on_with(Self, @http.Server, NativeServeOptions)
 pub async fn Mocket::serve_async_until(Self, port~ : Int, @aqueue.Queue[Unit]) -> Unit
 pub async fn Mocket::serve_async_until_with(Self, port~ : Int, @aqueue.Queue[Unit], NativeServeOptions) -> Unit
 pub async fn Mocket::serve_async_with(Self, port~ : Int, NativeServeOptions) -> Unit
+pub fn Mocket::set_not_found_handler(Self, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::static_assets(Self, String, &ServeStaticProvider) -> Unit
 pub fn Mocket::trace(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::use_middleware(Self, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise, base_path? : String) -> Unit
@@ -160,6 +175,9 @@ pub(all) struct MocketEvent {
   res : HttpResponse
   params : Map[String, StringView]
 }
+pub fn MocketEvent::param(Self, String) -> String?
+pub fn MocketEvent::param_int(Self, String) -> Int?
+pub fn MocketEvent::param_int64(Self, String) -> Int64?
 
 pub struct NativeServeOptions {
   max_connections : Int?

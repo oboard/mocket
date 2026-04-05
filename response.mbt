@@ -57,6 +57,18 @@ pub fn HttpResponse::json(self : HttpResponse, obj : &ToJson) -> HttpResponse {
   self.body(obj.to_json())
 }
 
+/// Sets a response header and returns self for fluent chaining.
+
+///|
+pub fn HttpResponse::header(
+  self : HttpResponse,
+  name : String,
+  value : String,
+) -> HttpResponse {
+  self.headers.set(name, value)
+  self
+}
+
 /// Converts this response into a `Responder` trait object for use as a handler return value.
 
 ///|
