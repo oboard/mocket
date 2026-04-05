@@ -5,7 +5,5 @@ async fn main {
     reuse_addr=true,
   )
   println("Minimal MoonBit server on port 3005")
-  server.run_forever((_request, _body, conn) => {
-    conn.send_response(200, "OK")
-  })
+  server.run_forever((_request, _body, conn) => conn.send_response(200, "OK"))
 }

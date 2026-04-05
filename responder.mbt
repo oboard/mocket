@@ -20,7 +20,7 @@ pub impl Responder for &ToJson with options(_, res) -> Unit {
 
 ///|
 pub impl Responder for &ToJson with output(self, buf) -> Unit {
-  buf.write_bytes(@utf8.encode(self.to_json().stringify()))
+  buf.write_string_utf8(self.to_json().stringify())
 }
 
 ///|
@@ -55,7 +55,7 @@ pub impl Responder for Json with options(_, res) -> Unit {
 
 ///|
 pub impl Responder for Json with output(self, buf) -> Unit {
-  buf.write_bytes(@utf8.encode(self.to_json().stringify()))
+  buf.write_string_utf8(self.to_json().stringify())
 }
 
 ///|
@@ -83,7 +83,7 @@ pub impl Responder for String with options(_, res) -> Unit {
 
 ///|
 pub impl Responder for String with output(self, buf) -> Unit {
-  buf.write_bytes(@utf8.encode(self))
+  buf.write_string_utf8(self)
 }
 
 ///|
@@ -97,7 +97,7 @@ pub impl Responder for StringView with options(_, res) -> Unit {
 
 ///|
 pub impl Responder for StringView with output(self, buf) -> Unit {
-  buf.write_bytes(@utf8.encode(self))
+  buf.write_string_utf8(self)
 }
 
 ///|
@@ -114,7 +114,7 @@ pub impl Responder for Html with options(_, res) -> Unit {
 
 ///|
 pub impl Responder for Html with output(self, buf) -> Unit {
-  buf.write_bytes(@utf8.encode(self.0))
+  buf.write_string_utf8(self.0)
 }
 
 /// Creates an HTML responder from any `Show` value, setting the Content-Type to `text/html`.

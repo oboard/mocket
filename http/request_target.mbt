@@ -12,6 +12,13 @@ pub fn request_target_path(request_target : String) -> String {
     Some(index) => if index < end { end = index }
     None => ()
   }
+  // Avoid allocation when the path is the entire string (common case: no query/fragment)
+  if end == request_target.length() {
+    if request_target.contains("//") {
+      return normalize_path(request_target)
+    }
+    return request_target
+  }
   normalize_path(request_target[:end].to_string())
 }
 
