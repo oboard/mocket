@@ -135,6 +135,9 @@ async fn send_raw_response_async(
   headers : Map[String, String],
   include_body : Bool,
 ) -> Unit raise Error {
+  if !@mhttp.has_header_case_insensitive(headers, "Date") {
+    headers.set("Date", @mhttp.format_http_date(@async.now() / 1000L))
+  }
   if !@mhttp.has_header_case_insensitive(headers, "Content-Length") {
     headers.set("Content-Length", response.raw_body.length().to_string())
   }
@@ -203,6 +206,9 @@ async fn send_response_async(
   response.raw_body = buffer.to_bytes()
   let headers = copy_async_headers(response.headers)
   append_cookie_headers(headers, response.cookies)
+  if !@mhttp.has_header_case_insensitive(headers, "Date") {
+    headers.set("Date", @mhttp.format_http_date(@async.now() / 1000L))
+  }
   if request.meth == Head {
     send_raw_response_async(conn, response, headers, false)
     return
@@ -230,6 +236,9 @@ async fn send_response_and_close_async(
 ) -> Unit raise Error {
   let headers = copy_async_headers(response.headers)
   append_cookie_headers(headers, response.cookies)
+  if !@mhttp.has_header_case_insensitive(headers, "Date") {
+    headers.set("Date", @mhttp.format_http_date(@async.now() / 1000L))
+  }
   if !@mhttp.has_header_case_insensitive(headers, "Content-Length") {
     headers.set("Content-Length", response.raw_body.length().to_string())
   }
@@ -462,12 +471,12 @@ async fn run_native_server(
   options : NativeServeOptions,
 ) -> Unit raise Error {
   let max_connections = resolve_native_max_connections(options)
-  ignore(resolve_native_max_request_body_bytes(options))
-  ignore(resolve_native_request_body_read_timeout_ms(options))
-  ignore(resolve_native_websocket_max_message_bytes(options))
-  ignore(resolve_native_websocket_outgoing_queue_capacity(options))
-  ignore(resolve_native_websocket_overflow_policy(options))
-  ignore(resolve_native_websocket_read_timeout_ms(options))
+  let _ = resolve_native_max_request_body_bytes(options)
+  let _ = resolve_native_request_body_read_timeout_ms(options)
+  let _ = resolve_native_websocket_max_message_bytes(options)
+  let _ = resolve_native_websocket_outgoing_queue_capacity(options)
+  let _ = resolve_native_websocket_overflow_policy(options)
+  let _ = resolve_native_websocket_read_timeout_ms(options)
   match max_connections {
     Some(max_connections) =>
       server.run_forever(allow_failure=true, max_connections~, (
@@ -602,13 +611,13 @@ pub async fn Mocket::serve_async_with(
   port~ : Int,
   options : NativeServeOptions,
 ) -> Unit raise Error {
-  ignore(resolve_native_max_connections(options))
-  ignore(resolve_native_max_request_body_bytes(options))
-  ignore(resolve_native_request_body_read_timeout_ms(options))
-  ignore(resolve_native_websocket_max_message_bytes(options))
-  ignore(resolve_native_websocket_outgoing_queue_capacity(options))
-  ignore(resolve_native_websocket_overflow_policy(options))
-  ignore(resolve_native_websocket_read_timeout_ms(options))
+  let _ = resolve_native_max_connections(options)
+  let _ = resolve_native_max_request_body_bytes(options)
+  let _ = resolve_native_request_body_read_timeout_ms(options)
+  let _ = resolve_native_websocket_max_message_bytes(options)
+  let _ = resolve_native_websocket_outgoing_queue_capacity(options)
+  let _ = resolve_native_websocket_overflow_policy(options)
+  let _ = resolve_native_websocket_read_timeout_ms(options)
   let addr = @socket.Addr::parse("0.0.0.0:\{port}")
   let server = @http.Server::new(addr, reuse_addr=true)
   self.serve_async_on_with(server, options)
@@ -652,13 +661,13 @@ pub async fn Mocket::serve_async_until_with(
   shutdown : @async.Queue[Unit],
   options : NativeServeOptions,
 ) -> Unit raise Error {
-  ignore(resolve_native_max_connections(options))
-  ignore(resolve_native_max_request_body_bytes(options))
-  ignore(resolve_native_request_body_read_timeout_ms(options))
-  ignore(resolve_native_websocket_max_message_bytes(options))
-  ignore(resolve_native_websocket_outgoing_queue_capacity(options))
-  ignore(resolve_native_websocket_overflow_policy(options))
-  ignore(resolve_native_websocket_read_timeout_ms(options))
+  let _ = resolve_native_max_connections(options)
+  let _ = resolve_native_max_request_body_bytes(options)
+  let _ = resolve_native_request_body_read_timeout_ms(options)
+  let _ = resolve_native_websocket_max_message_bytes(options)
+  let _ = resolve_native_websocket_outgoing_queue_capacity(options)
+  let _ = resolve_native_websocket_overflow_policy(options)
+  let _ = resolve_native_websocket_read_timeout_ms(options)
   let addr = @socket.Addr::parse("0.0.0.0:\{port}")
   let server = @http.Server::new(addr, reuse_addr=true)
   self.serve_async_on_until_with(server, shutdown, options)

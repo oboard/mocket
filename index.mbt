@@ -84,10 +84,25 @@ pub(all) struct CookieItem {
 } derive(Eq)
 
 ///|
+fn sanitize_cookie_value(s : String) -> String {
+  if s.contains("\r") || s.contains("\n") || s.contains(";") {
+    let buf = StringBuilder::new()
+    for c in s {
+      if c != '\r' && c != '\n' && c != ';' {
+        buf.write_char(c)
+      }
+    }
+    buf.to_string()
+  } else {
+    s
+  }
+}
+
+///|
 pub impl Show for CookieItem with output(self, logger) -> Unit {
-  logger.write_string(self.name)
+  logger.write_string(sanitize_cookie_value(self.name))
   logger.write_char('=')
-  logger.write_string(self.value)
+  logger.write_string(sanitize_cookie_value(self.value))
   if self.max_age is Some(max_age) {
     logger.write_string("; Max-Age=")
     logger.write_string(max_age.to_string())

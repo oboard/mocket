@@ -112,6 +112,10 @@ pub fn HttpResponse::delete_cookie(Self, String) -> Unit
 pub fn HttpResponse::json(Self, &ToJson) -> Self
 pub fn HttpResponse::new(StatusCode, headers? : Map[String, String], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
 pub fn[T : BodyReader] HttpResponse::read_body(Self) -> T raise
+pub fn HttpResponse::redirect(String) -> Self
+pub fn HttpResponse::redirect_307(String) -> Self
+pub fn HttpResponse::redirect_308(String) -> Self
+pub fn HttpResponse::redirect_temporary(String) -> Self
 pub fn HttpResponse::set_cookie(Self, String, String, max_age? : Int, path? : String, domain? : String, secure? : Bool, http_only? : Bool, same_site? : SameSiteOption) -> Unit
 pub fn HttpResponse::to_responder(Self) -> &Responder
 pub impl Responder for HttpResponse

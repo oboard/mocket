@@ -12,7 +12,31 @@ pub fn request_target_path(request_target : String) -> String {
     Some(index) => if index < end { end = index }
     None => ()
   }
-  request_target[:end].to_string()
+  normalize_path(request_target[:end].to_string())
+}
+
+/// Normalizes a URL path by collapsing consecutive slashes into single slashes.
+/// Preserves the leading slash if present.
+
+///|
+pub fn normalize_path(path : String) -> String {
+  if !path.contains("//") {
+    return path
+  }
+  let buf = StringBuilder::new()
+  let mut prev_slash = false
+  for c in path {
+    if c == '/' {
+      if !prev_slash {
+        buf.write_char('/')
+      }
+      prev_slash = true
+    } else {
+      buf.write_char(c)
+      prev_slash = false
+    }
+  }
+  buf.to_string()
 }
 
 /// Extracts the query string from an HTTP request target, excluding the leading

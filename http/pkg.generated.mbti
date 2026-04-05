@@ -12,6 +12,8 @@ pub fn has_header_case_insensitive(Map[String, String], String) -> Bool
 
 pub fn merge_headers_case_insensitive(Map[String, String], Map[String, String]) -> Unit
 
+pub fn normalize_path(String) -> String
+
 pub fn parse_form_data(BytesView) -> Map[String, String]
 
 pub fn parse_http_date(StringView) -> Int64?
