@@ -53,6 +53,18 @@ fn native_ws_connection_hub_count() -> Int {
 }
 
 ///|
+fn native_ws_channel_member_count(channel : String) -> Int {
+  let mut count = 0
+  native_ws_hubs.each((_runtime_id, hub) => {
+    match hub.channels.get(channel) {
+      Some(members) => members.each((_member_id, _) => count += 1)
+      None => ()
+    }
+  })
+  count
+}
+
+///|
 fn test_native_ws_connection(
   capacity : Int,
   overflow_policy : NativeWebSocketOverflowPolicy,
@@ -229,6 +241,63 @@ async test "serve_async_on_until clears websocket runtime state on shutdown sign
     @async.retry(@async.FixedDelay(20), max_retry=50, () => {
       guard native_ws_hub_count() == initial_hub_count &&
         native_ws_connection_hub_count() == initial_connection_hub_count else {
+        raise WebSocketLifecycleServerNotReady
+      }
+    })
+  }) catch {
+    WebSocketLifecycleSocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async_on removes websocket channel subscriptions on close" {
+  @async.with_task_group(group => {
+    let server = allocate_websocket_lifecycle_server()
+    let port = server.addr.port()
+    let channel = "room-close-cleanup-\{port}"
+    let app = new()
+    app.get("/__ws_lifecycle_ready", _ => "ready")
+    app.ws("/hub", event => {
+      match event {
+        Open(peer) => peer.subscribe(channel)
+        Message(peer, Text("publish")) => peer.publish(channel, "fanout")
+        _ => ()
+      }
+    })
+    let task = group.spawn(no_wait=true, () => app.serve_async_on(server))
+    wait_until_websocket_lifecycle_ready(port)
+
+    let client1 = @websocket.connect("ws://127.0.0.1:\{port}/hub")
+    defer client1.close()
+    let client2 = @websocket.connect("ws://127.0.0.1:\{port}/hub")
+    defer client2.close()
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard native_ws_channel_member_count(channel) == 2 else {
+        raise WebSocketLifecycleServerNotReady
+      }
+    })
+
+    client1.send_close()
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard native_ws_channel_member_count(channel) == 1 else {
+        raise WebSocketLifecycleServerNotReady
+      }
+    })
+
+    client2.send_text("publish")
+    inspect(client2.recv().read_all().text(), content="fanout")
+
+    task.cancel()
+    assert_eq(
+      @async.with_timeout_opt(200, () => ignore(try? task.wait())),
+      Some(()),
+    )
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard native_ws_channel_member_count(channel) == 0 else {
         raise WebSocketLifecycleServerNotReady
       }
     })
