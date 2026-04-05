@@ -2352,7 +2352,7 @@ async test "serve_async_on_until stops on shutdown signal" {
   @async.with_task_group(group => {
     let server = allocate_test_server()
     let port = server.addr.port()
-    let shutdown = @async.Queue::new(kind=Unbounded)
+    let shutdown = @async.Queue::new(kind=Blocking(0))
     let task = group.spawn(no_wait=true, () => {
       try? app.serve_async_on_until(server, shutdown)
     })
@@ -2395,7 +2395,7 @@ async test "serve_async_on_until broadcasts shutdown when the queue is closed" {
     let server2 = allocate_test_server()
     let port1 = server1.addr.port()
     let port2 = server2.addr.port()
-    let shutdown = @async.Queue::new(kind=Unbounded)
+    let shutdown = @async.Queue::new(kind=Blocking(0))
     let task1 = group.spawn(no_wait=true, () => {
       try? app1.serve_async_on_until(server1, shutdown)
     })
@@ -4487,6 +4487,270 @@ async test "serve_async_on_until queue close stops remaining reused websocket se
         fail(
           "timed out waiting for the surviving reused websocket server to stop after queue close",
         )
+    }
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async_on_until shutdown signal wakes one reused websocket server" {
+  let app = new()
+  app.get("/__mocket_ready", _ => "ready")
+  app.ws("/hub", event => {
+    match event {
+      Open(peer) => peer.subscribe("room")
+      Message(peer, Text(text)) => peer.publish("room", text)
+      _ => ()
+    }
+  })
+  @async.with_task_group(group => {
+    let server1 = allocate_test_server()
+    let server2 = allocate_test_server()
+    let port1 = server1.addr.port()
+    let port2 = server2.addr.port()
+    let shutdown = @async.Queue::new(kind=Blocking(0))
+    let task1 = group.spawn(no_wait=true, () => {
+      app.serve_async_on_until(server1, shutdown)
+    })
+    let task2 = group.spawn(no_wait=true, () => {
+      app.serve_async_on_until(server2, shutdown)
+    })
+    wait_until_ready(port1)
+    wait_until_ready(port2)
+
+    let client1 = @websocket.connect("ws://127.0.0.1:\{port1}/hub")
+    defer client1.close()
+    let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
+    defer client2.close()
+
+    client1.send_text("before-signal-1")
+    inspect(client1.recv().read_all().text(), content="before-signal-1")
+    client2.send_text("before-signal-2")
+    inspect(client2.recv().read_all().text(), content="before-signal-2")
+
+    shutdown.put(())
+    let client1_after = @async.with_timeout_opt(300, () => {
+      try? client1.recv().read_all().text()
+    })
+    let client2_after = @async.with_timeout_opt(300, () => {
+      try? client2.recv().read_all().text()
+    })
+
+    match client1_after {
+      Some(
+        Err(
+          @websocket.ConnectionClosed(
+            @websocket.CloseCode::GoingAway,
+            Some(reason)
+          )
+        )
+      ) => {
+        inspect(reason, content="websocket server shutdown")
+        match client2_after {
+          None => ()
+          Some(Err(@websocket.ConnectionClosed(code, why))) =>
+            fail(
+              "expected only one reused websocket client to stop after shutdown signal, but both closed: \{code} / \{why}",
+            )
+          Some(Err(err)) =>
+            fail(
+              "expected surviving reused websocket client to stay open after shutdown signal, got error: \{err}",
+            )
+          Some(Ok(text)) =>
+            fail(
+              "expected surviving reused websocket client to stay open after shutdown signal, got text: \{text}",
+            )
+        }
+        match @async.with_timeout_opt(300, () => try? task1.wait()) {
+          Some(Ok(_)) => ()
+          Some(Err(err)) =>
+            fail(
+              "expected shutdown signal to stop one reused websocket server cleanly: \{err}",
+            )
+          None =>
+            fail(
+              "timed out waiting for the signaled reused websocket server to stop",
+            )
+        }
+        match @async.with_timeout_opt(100, () => try? task2.wait()) {
+          Some(result) =>
+            fail(
+              "expected sibling reused websocket server to stay alive after one shutdown signal, got \{result}",
+            )
+          None => ()
+        }
+        client2.send_text("after-signal")
+        inspect(client2.recv().read_all().text(), content="after-signal")
+        try shutdown.try_put(()) catch {
+          err =>
+            fail(
+              "expected second shutdown signal delivery to the surviving reused websocket server to succeed: \{err}",
+            )
+        } noraise {
+          delivered =>
+            if !delivered {
+              fail(
+                "expected surviving reused websocket server to remain blocked on the shutdown queue after one shutdown signal",
+              )
+            }
+        }
+        match
+          @async.with_timeout_opt(300, () => {
+            try? client2.recv().read_all().text()
+          }) {
+          Some(
+            Err(
+              @websocket.ConnectionClosed(
+                @websocket.CloseCode::GoingAway,
+                Some(second_reason)
+              )
+            )
+          ) => inspect(second_reason, content="websocket server shutdown")
+          Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+            fail(
+              "expected surviving reused websocket client to observe going-away close after second shutdown signal, got \{code} / \{reason}",
+            )
+          Some(Err(err)) =>
+            fail(
+              "expected surviving reused websocket client to close after second shutdown signal, got error: \{err}",
+            )
+          Some(Ok(text)) =>
+            fail(
+              "expected surviving reused websocket client to close after second shutdown signal, got text: \{text}",
+            )
+          None =>
+            fail(
+              "expected surviving reused websocket client to observe second shutdown-signal close",
+            )
+        }
+        match @async.with_timeout_opt(300, () => try? task2.wait()) {
+          Some(Ok(_)) => ()
+          Some(Err(err)) =>
+            fail(
+              "expected second shutdown signal to stop the surviving reused websocket server cleanly: \{err}",
+            )
+          None =>
+            fail(
+              "timed out waiting for the surviving reused websocket server to stop after second shutdown signal",
+            )
+        }
+      }
+      Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+        fail(
+          "expected stopped reused websocket client to observe going-away close after shutdown signal, got \{code} / \{reason}",
+        )
+      Some(Err(err)) =>
+        fail(
+          "expected stopped reused websocket client to observe shutdown close, got error: \{err}",
+        )
+      Some(Ok(text)) =>
+        fail(
+          "expected stopped reused websocket client to observe shutdown close, got text: \{text}",
+        )
+      None =>
+        match client2_after {
+          Some(
+            Err(
+              @websocket.ConnectionClosed(
+                @websocket.CloseCode::GoingAway,
+                Some(reason)
+              )
+            )
+          ) => {
+            inspect(reason, content="websocket server shutdown")
+            match @async.with_timeout_opt(300, () => try? task2.wait()) {
+              Some(Ok(_)) => ()
+              Some(Err(err)) =>
+                fail(
+                  "expected shutdown signal to stop one reused websocket server cleanly: \{err}",
+                )
+              None =>
+                fail(
+                  "timed out waiting for the signaled reused websocket server to stop",
+                )
+            }
+            match @async.with_timeout_opt(100, () => try? task1.wait()) {
+              Some(result) =>
+                fail(
+                  "expected sibling reused websocket server to stay alive after one shutdown signal, got \{result}",
+                )
+              None => ()
+            }
+            client1.send_text("after-signal")
+            inspect(client1.recv().read_all().text(), content="after-signal")
+            try shutdown.try_put(()) catch {
+              err =>
+                fail(
+                  "expected second shutdown signal delivery to the surviving reused websocket server to succeed: \{err}",
+                )
+            } noraise {
+              delivered =>
+                if !delivered {
+                  fail(
+                    "expected surviving reused websocket server to remain blocked on the shutdown queue after one shutdown signal",
+                  )
+                }
+            }
+            match
+              @async.with_timeout_opt(300, () => {
+                try? client1.recv().read_all().text()
+              }) {
+              Some(
+                Err(
+                  @websocket.ConnectionClosed(
+                    @websocket.CloseCode::GoingAway,
+                    Some(second_reason)
+                  )
+                )
+              ) => inspect(second_reason, content="websocket server shutdown")
+              Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+                fail(
+                  "expected surviving reused websocket client to observe going-away close after second shutdown signal, got \{code} / \{reason}",
+                )
+              Some(Err(err)) =>
+                fail(
+                  "expected surviving reused websocket client to close after second shutdown signal, got error: \{err}",
+                )
+              Some(Ok(text)) =>
+                fail(
+                  "expected surviving reused websocket client to close after second shutdown signal, got text: \{text}",
+                )
+              None =>
+                fail(
+                  "expected surviving reused websocket client to observe second shutdown-signal close",
+                )
+            }
+            match @async.with_timeout_opt(300, () => try? task1.wait()) {
+              Some(Ok(_)) => ()
+              Some(Err(err)) =>
+                fail(
+                  "expected second shutdown signal to stop the surviving reused websocket server cleanly: \{err}",
+                )
+              None =>
+                fail(
+                  "timed out waiting for the surviving reused websocket server to stop after second shutdown signal",
+                )
+            }
+          }
+          Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+            fail(
+              "expected exactly one reused websocket client to stop after shutdown signal, but got unexpected second close: \{code} / \{reason}",
+            )
+          Some(Err(err)) =>
+            fail(
+              "expected a reused websocket client to stop after shutdown signal, got error: \{err}",
+            )
+          Some(Ok(text)) =>
+            fail(
+              "expected a reused websocket client to stop after shutdown signal, got text: \{text}",
+            )
+          None =>
+            fail(
+              "expected exactly one reused websocket client to stop after shutdown signal",
+            )
+        }
     }
   }) catch {
     SocketBindUnavailable => return
