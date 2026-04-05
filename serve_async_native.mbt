@@ -20,14 +20,6 @@ fn copy_async_headers(headers : Map[String, String]) -> Map[String, String] {
   copied
 }
 
-///|
-fn response_headers_to_async(
-  headers : Map[String, String],
-) -> Map[String, String] {
-  let copied : Map[String, String] = {}
-  headers.each((key, value) => copied.set(key, value))
-  copied
-}
 
 ///|
 let ws_serve_runtime_counter : Ref[Int] = Ref::new(0)
@@ -210,7 +202,7 @@ async fn send_response_async(
   let buffer = @buffer.new()
   responder.output(buffer)
   response.raw_body = buffer.to_bytes()
-  let headers = response_headers_to_async(response.headers)
+  let headers = copy_async_headers(response.headers)
   append_cookie_headers(headers, response.cookies)
   if request.meth == Head {
     send_raw_response_async(conn, response, headers, false)
@@ -237,7 +229,7 @@ async fn send_response_and_close_async(
   conn : @http.ServerConnection,
   response : HttpResponse,
 ) -> Unit raise Error {
-  let headers = response_headers_to_async(response.headers)
+  let headers = copy_async_headers(response.headers)
   append_cookie_headers(headers, response.cookies)
   if !has_header_case_insensitive(headers, "Content-Length") {
     headers.set("Content-Length", response.raw_body.length().to_string())
