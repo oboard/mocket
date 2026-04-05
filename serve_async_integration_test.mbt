@@ -4259,3 +4259,119 @@ async test "serve_async_on_until sends going-away close to websocket clients on 
     err => raise err
   }
 }
+
+///|
+async test "serve_async_on_until broadcasts going-away close when the shutdown queue is closed" {
+  let app = new()
+  app.get("/__mocket_ready", _ => "ready")
+  app.ws("/ws", event => {
+    match event {
+      Message(peer, Text(text)) => peer.text(text)
+      _ => ()
+    }
+  })
+  @async.with_task_group(group => {
+    let server1 = allocate_test_server()
+    let server2 = allocate_test_server()
+    let port1 = server1.addr.port()
+    let port2 = server2.addr.port()
+    let shutdown = @async.Queue::new(kind=Unbounded)
+    let task1 = group.spawn(no_wait=true, () => {
+      app.serve_async_on_until(server1, shutdown)
+    })
+    let task2 = group.spawn(no_wait=true, () => {
+      app.serve_async_on_until(server2, shutdown)
+    })
+    wait_until_ready(port1)
+    wait_until_ready(port2)
+
+    let client1 = @websocket.connect("ws://127.0.0.1:\{port1}/ws")
+    defer client1.close()
+    let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/ws")
+    defer client2.close()
+
+    client1.send_text("left")
+    inspect(client1.recv().read_all().text(), content="left")
+    client2.send_text("right")
+    inspect(client2.recv().read_all().text(), content="right")
+
+    shutdown.close()
+
+    match
+      @async.with_timeout_opt(300, () => try? client1.recv().read_all().text()) {
+      Some(
+        Err(
+          @websocket.ConnectionClosed(
+            @websocket.CloseCode::GoingAway,
+            Some(reason)
+          )
+        )
+      ) => inspect(reason, content="websocket server shutdown")
+      Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+        fail(
+          "expected first websocket client to observe going-away close after queue close, got \{code} / \{reason}",
+        )
+      Some(Err(err)) =>
+        fail(
+          "expected first websocket client to close after queue close, got error: \{err}",
+        )
+      Some(Ok(text)) =>
+        fail(
+          "expected first websocket client to close after queue close, got text: \{text}",
+        )
+      None => fail("timed out waiting for first websocket queue-close shutdown")
+    }
+
+    match
+      @async.with_timeout_opt(300, () => try? client2.recv().read_all().text()) {
+      Some(
+        Err(
+          @websocket.ConnectionClosed(
+            @websocket.CloseCode::GoingAway,
+            Some(reason)
+          )
+        )
+      ) => inspect(reason, content="websocket server shutdown")
+      Some(Err(@websocket.ConnectionClosed(code, reason))) =>
+        fail(
+          "expected second websocket client to observe going-away close after queue close, got \{code} / \{reason}",
+        )
+      Some(Err(err)) =>
+        fail(
+          "expected second websocket client to close after queue close, got error: \{err}",
+        )
+      Some(Ok(text)) =>
+        fail(
+          "expected second websocket client to close after queue close, got text: \{text}",
+        )
+      None =>
+        fail("timed out waiting for second websocket queue-close shutdown")
+    }
+
+    match @async.with_timeout_opt(300, () => try? task1.wait()) {
+      Some(Ok(_)) => ()
+      Some(Err(err)) =>
+        fail(
+          "expected queue close to stop the first websocket server cleanly: \{err}",
+        )
+      None =>
+        fail(
+          "timed out waiting for the first websocket server to stop after queue close",
+        )
+    }
+    match @async.with_timeout_opt(300, () => try? task2.wait()) {
+      Some(Ok(_)) => ()
+      Some(Err(err)) =>
+        fail(
+          "expected queue close to stop the second websocket server cleanly: \{err}",
+        )
+      None =>
+        fail(
+          "timed out waiting for the second websocket server to stop after queue close",
+        )
+    }
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
