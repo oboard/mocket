@@ -4,4 +4,4 @@ target
 _build/
 .mooncakes/
 .DS_Store
-.repos
+.reposnode_modules/
