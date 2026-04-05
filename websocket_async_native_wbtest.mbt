@@ -885,3 +885,110 @@ async test "serve_async_on cancellation stays isolated across reused app runtime
     err => raise err
   }
 }
+
+///|
+async test "serve_async_on_until shutdown stays isolated across reused app runtimes" {
+  let app = new()
+  app.get("/__ws_lifecycle_ready", _ => "ready")
+  app.ws("/hub", event => {
+    match event {
+      Open(peer) => peer.subscribe("room")
+      Message(peer, Text("publish")) => peer.publish("room", "fanout")
+      _ => ()
+    }
+  })
+
+  @async.with_task_group(group => {
+    let server1 = allocate_websocket_lifecycle_server()
+    let server2 = allocate_websocket_lifecycle_server()
+    let port1 = server1.addr.port()
+    let port2 = server2.addr.port()
+    let shutdown1 = @async.Queue::new(kind=Unbounded)
+    let shutdown2 = @async.Queue::new(kind=Unbounded)
+    let task1 = group.spawn(no_wait=true, () => {
+      try? app.serve_async_on_until(server1, shutdown1)
+    })
+    let task2 = group.spawn(no_wait=true, () => {
+      try? app.serve_async_on_until(server2, shutdown2)
+    })
+    wait_until_websocket_lifecycle_ready(port1)
+    wait_until_websocket_lifecycle_ready(port2)
+
+    let client1 = @websocket.connect("ws://127.0.0.1:\{port1}/hub")
+    defer client1.close()
+    let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
+    defer client2.close()
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      let runtime_ids = native_ws_runtime_ids_for_app(app)
+      guard runtime_ids.length() == 2 else {
+        raise WebSocketLifecycleServerNotReady
+      }
+      let mut room_members = 0
+      for runtime_id in runtime_ids {
+        room_members += native_ws_channel_member_count_in_runtime(
+          runtime_id, "room",
+        )
+      }
+      guard room_members == 2 else { raise WebSocketLifecycleServerNotReady }
+    })
+
+    shutdown1.put(())
+    match @async.with_timeout_opt(200, () => task1.wait()) {
+      Some(result) =>
+        match result {
+          Ok(_) => ()
+          Err(err) =>
+            fail(
+              "expected first reused-app shutdown signal to stop cleanly: \{err}",
+            )
+        }
+      None =>
+        fail(
+          "timed out waiting for first reused-app shutdown signal to stop server",
+        )
+    }
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      let runtime_ids = native_ws_runtime_ids_for_app(app)
+      guard runtime_ids.length() == 1 else {
+        raise WebSocketLifecycleServerNotReady
+      }
+      let surviving_runtime_id = runtime_ids[0]
+      guard native_ws_channel_member_count_in_runtime(
+          surviving_runtime_id, "room",
+        ) ==
+        1 else {
+        raise WebSocketLifecycleServerNotReady
+      }
+    })
+
+    client2.send_text("publish")
+    inspect(client2.recv().read_all().text(), content="fanout")
+
+    shutdown2.put(())
+    match @async.with_timeout_opt(200, () => task2.wait()) {
+      Some(result) =>
+        match result {
+          Ok(_) => ()
+          Err(err) =>
+            fail(
+              "expected second reused-app shutdown signal to stop cleanly: \{err}",
+            )
+        }
+      None =>
+        fail(
+          "timed out waiting for second reused-app shutdown signal to stop server",
+        )
+    }
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard native_ws_runtime_ids_for_app(app).is_empty() else {
+        raise WebSocketLifecycleServerNotReady
+      }
+    })
+  }) catch {
+    WebSocketLifecycleSocketBindUnavailable => return
+    err => raise err
+  }
+}
