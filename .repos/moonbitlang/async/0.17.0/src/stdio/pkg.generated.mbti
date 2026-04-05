@@ -1,0 +1,29 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/async/stdio"
+
+import {
+  "moonbitlang/async/io",
+}
+
+// Values
+pub let stderr : Output
+
+pub let stdin : Input
+
+pub let stdout : Output
+
+// Errors
+
+// Types and methods
+type Input
+pub fn Input::fd(Self) -> Int
+pub impl @io.Reader for Input
+
+type Output
+pub fn Output::fd(Self) -> Int
+pub impl @io.Writer for Output
+
+// Type aliases
+
+// Traits
+

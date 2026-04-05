@@ -1,0 +1,14 @@
+import {
+  "moonbitlang/async/internal/c_buffer",
+  "moonbitlang/async/internal/os_string",
+}
+
+import {
+  "moonbitlang/async",
+  "moonbitlang/async/fs",
+} for "test"
+
+options(
+  "native-stub": [ "stub.c" ],
+  targets: { "error.mbt": [ "native" ], "os_error_test.mbt": [ "native" ] },
+)

@@ -1,0 +1,8 @@
+import {
+  "moonbitlang/core/encoding/utf8",
+}
+
+options(
+  "is-main": true,
+  "native-stub": [ "stub.c" ],
+)

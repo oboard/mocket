@@ -1,0 +1,39 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/async/tls"
+
+import {
+  "moonbitlang/async/io",
+}
+
+// Values
+pub fn rand_bytes(Int) -> Bytes raise
+
+pub fn sha1(Bytes) -> Bytes
+
+// Errors
+pub suberror ConnectionClosed derive(Show, ToJson)
+
+pub suberror TlsError {
+  TlsError(String)
+} derive(Show, ToJson)
+
+// Types and methods
+type Tls
+pub async fn[Inner : @io.Reader + @io.Writer] Tls::client(Inner, verify? : Bool, host? : String, sni? : Bool) -> Self
+pub async fn[R : @io.Reader, W : @io.Writer] Tls::client_from_pair(R, W, verify? : Bool, host? : String, sni? : Bool) -> Self
+pub fn Tls::close(Self) -> Unit
+pub async fn[Inner : @io.Reader + @io.Writer] Tls::server(Inner, private_key_file~ : String, private_key_type~ : X509FileType, certificate_file~ : String, certificate_type~ : X509FileType) -> Self
+pub async fn[R : @io.Reader, W : @io.Writer] Tls::server_from_pair(R, W, private_key_file~ : String, private_key_type~ : X509FileType, certificate_file~ : String, certificate_type~ : X509FileType) -> Self
+pub async fn Tls::shutdown(Self) -> Unit
+pub impl @io.Reader for Tls
+pub impl @io.Writer for Tls
+
+pub(all) enum X509FileType {
+  PEM
+  ANS1
+}
+
+// Type aliases
+
+// Traits
+

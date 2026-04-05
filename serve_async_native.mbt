@@ -21,6 +21,22 @@ fn copy_async_headers(headers : Map[String, String]) -> Map[String, String] {
 }
 
 ///|
+let cached_date_second : Ref[Int64] = Ref::new(0L)
+
+///|
+let cached_date_string : Ref[String] = Ref::new("")
+
+///|
+fn current_http_date() -> String {
+  let now = @async.now() / 1000L
+  if now != cached_date_second.val {
+    cached_date_second.val = now
+    cached_date_string.val = @mhttp.format_http_date(now)
+  }
+  cached_date_string.val
+}
+
+///|
 let ws_serve_runtime_counter : Ref[Int] = Ref::new(0)
 
 ///|
@@ -136,7 +152,7 @@ async fn send_raw_response_async(
   include_body : Bool,
 ) -> Unit raise Error {
   if !@mhttp.has_header_case_insensitive(headers, "Date") {
-    headers.set("Date", @mhttp.format_http_date(@async.now() / 1000L))
+    headers.set("Date", current_http_date())
   }
   if !@mhttp.has_header_case_insensitive(headers, "Content-Length") {
     headers.set("Content-Length", response.raw_body.length().to_string())
@@ -204,10 +220,11 @@ async fn send_response_async(
   let buffer = @buffer.new()
   responder.output(buffer)
   response.raw_body = buffer.to_bytes()
-  let headers = copy_async_headers(response.headers)
+  // Use response headers directly, append cookies in-place
+  let headers = response.headers
   append_cookie_headers(headers, response.cookies)
   if !@mhttp.has_header_case_insensitive(headers, "Date") {
-    headers.set("Date", @mhttp.format_http_date(@async.now() / 1000L))
+    headers.set("Date", current_http_date())
   }
   if request.meth == Head {
     send_raw_response_async(conn, response, headers, false)
@@ -234,10 +251,10 @@ async fn send_response_and_close_async(
   conn : @http.ServerConnection,
   response : HttpResponse,
 ) -> Unit raise Error {
-  let headers = copy_async_headers(response.headers)
+  let headers = response.headers
   append_cookie_headers(headers, response.cookies)
   if !@mhttp.has_header_case_insensitive(headers, "Date") {
-    headers.set("Date", @mhttp.format_http_date(@async.now() / 1000L))
+    headers.set("Date", current_http_date())
   }
   if !@mhttp.has_header_case_insensitive(headers, "Content-Length") {
     headers.set("Content-Length", response.raw_body.length().to_string())
@@ -399,7 +416,16 @@ async fn handle_request_async(
 ) -> Unit raise Error {
   let request_path = @mhttp.request_target_path(request.path)
   let strict_websocket_upgrade = is_websocket_upgrade_request(request)
-  let websocket_like_request = looks_like_websocket_handshake_request(request)
+  // Skip expensive WebSocket handshake inspection when no WS routes exist
+  let has_ws_routes = !app.ws_static_routes.is_empty() ||
+    !app.ws_dynamic_routes.is_empty()
+  let websocket_like_request = if strict_websocket_upgrade {
+    true
+  } else if has_ws_routes {
+    looks_like_websocket_handshake_request(request)
+  } else {
+    false
+  }
   if websocket_like_request {
     let websocket_max_message_bytes = resolve_native_websocket_max_message_bytes(
       options,
@@ -431,16 +457,24 @@ async fn handle_request_async(
     }
   }
   let http_method_text = request_method_to_string(request.meth)
-  let max_request_body_bytes = resolve_native_max_request_body_bytes(options)
-  let request_body_read_timeout_ms = resolve_native_request_body_read_timeout_ms(
-    options,
-  )
-  let request_body = match
-    read_request_body_with_policy_async(
-      request, body_reader, conn, max_request_body_bytes, request_body_read_timeout_ms,
-    ) {
-    Body(request_body) => request_body
-    RequestRejected => return
+  // Skip body reading for methods that typically have no body,
+  // unless Content-Length indicates a body is present (for size limit enforcement)
+  let has_body_hint = request_content_length(request) is Some(len) && len > 0
+  let request_body : Bytes = if !has_body_hint &&
+    request.meth is (Get | Head | Delete | Options | Trace) {
+    b""
+  } else {
+    let max_request_body_bytes = resolve_native_max_request_body_bytes(options)
+    let request_body_read_timeout_ms = resolve_native_request_body_read_timeout_ms(
+      options,
+    )
+    match
+      read_request_body_with_policy_async(
+        request, body_reader, conn, max_request_body_bytes, request_body_read_timeout_ms,
+      ) {
+      Body(request_body) => request_body
+      RequestRejected => return
+    }
   }
   let (params, handler) = match
     app.lookup_http_route(http_method_text, request_path) {

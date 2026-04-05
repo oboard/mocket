@@ -1,0 +1,57 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/rabbita"
+
+import {
+  "moonbit-community/rabbita/cmd",
+  "moonbit-community/rabbita/html",
+  "moonbit-community/rabbita/sub",
+  "moonbit-community/rabbita/url",
+}
+
+// Values
+pub fn[A, E : Error] attempt((Result[A, E]) -> @cmd.Cmd, async () -> A raise E) -> @cmd.Cmd
+
+pub fn batch(Array[@cmd.Cmd]) -> @cmd.Cmd
+
+pub fn[Model, Msg] cell(model~ : Model, update~ : (@cmd.Dispatch[Msg], Msg, Model) -> (@cmd.Cmd, Model), view~ : (@cmd.Dispatch[Msg], Model) -> @html.Html, subscriptions? : (@cmd.Dispatch[Msg], Model) -> @sub.Sub) -> Cell
+
+pub fn[Model, Msg] cell_with_dispatch(model~ : Model, update~ : (@cmd.Dispatch[Msg], Msg, Model) -> (@cmd.Cmd, Model), view~ : (@cmd.Dispatch[Msg], Model) -> @html.Html, subscriptions? : (@cmd.Dispatch[Msg], Model) -> @sub.Sub) -> (@cmd.Dispatch[Msg], Cell)
+
+pub fn delay(@cmd.Cmd, Int) -> @cmd.Cmd
+
+pub fn effect(async () -> Unit noraise) -> @cmd.Cmd
+
+pub fn new(Cell) -> App
+
+pub let none : @cmd.Cmd
+
+pub fn[A] perform((A) -> @cmd.Cmd, async () -> A noraise) -> @cmd.Cmd
+
+pub fn render_to_string(Cell) -> String
+
+pub fn[Model, Msg] simple_cell(model~ : Model, update~ : (Msg, Model) -> Model, view~ : (@cmd.Dispatch[Msg], Model) -> @html.Html) -> Cell
+
+pub fn[Model, Msg] simple_cell_with_dispatch(model~ : Model, update~ : (Msg, Model) -> Model, view~ : (@cmd.Dispatch[Msg], Model) -> @html.Html, subscriptions? : (@cmd.Dispatch[Msg], Model) -> @sub.Sub) -> (@cmd.Dispatch[Msg], Cell)
+
+pub fn static_cell(@html.Html) -> Cell
+
+// Errors
+
+// Types and methods
+type App
+pub fn App::mount(Self, String) -> Unit
+pub fn App::with_init(Self, @cmd.Cmd) -> Unit
+pub fn App::with_route(Self, url_changed? : (@url.Url) -> @cmd.Cmd, url_request? : (@url.UrlRequest) -> @cmd.Cmd) -> Unit
+
+type Cell
+pub fn Cell::view(Self) -> @html.Html
+
+// Type aliases
+pub using @cmd {type Cmd}
+
+pub using @cmd {type Dispatch}
+
+pub using @html {type Html}
+
+// Traits
+

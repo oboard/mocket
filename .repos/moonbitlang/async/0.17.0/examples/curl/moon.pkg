@@ -1,0 +1,14 @@
+import {
+  "moonbitlang/core/env",
+  "moonbitlang/async",
+  "moonbitlang/async/http",
+  "moonbitlang/async/stdio",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/io",
+}
+
+supported_targets = "+native"
+
+options(
+  "is-main": true,
+)

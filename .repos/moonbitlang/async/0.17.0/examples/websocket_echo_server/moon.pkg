@@ -1,0 +1,12 @@
+import {
+  "moonbitlang/async/socket",
+  "moonbitlang/async/http",
+  "moonbitlang/async/websocket",
+  "moonbitlang/async",
+}
+
+supported_targets = "+native"
+
+options(
+  "is-main": true,
+)

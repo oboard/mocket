@@ -1,0 +1,355 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/rabbita/svg"
+
+import {
+  "moonbit-community/rabbita/html",
+  "moonbit-community/rabbita/internal/runtime",
+}
+
+// Values
+pub fn a(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn animate(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn animate_motion(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn animate_transform(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn circle(id? : String, class? : String, style? : Array[String], cx~ : Int, cy~ : Int, r~ : Int, fill? : String, stroke? : String, stroke_width? : Int, fill_opacity? : Int, transform? : String, opacity? : String, attrs? : Attrs) -> Svg
+
+pub fn clip_path(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn defs(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn desc(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn ellipse(id? : String, class? : String, style? : Array[String], cx~ : Int, cy~ : Int, rx~ : Int, ry~ : Int, fill? : String, stroke? : String, stroke_width? : Int, transform? : String, opacity? : String, attrs? : Attrs) -> Svg
+
+pub fn fe_blend(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_color_matrix(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_component_transfer(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn fe_composite(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_convolve_matrix(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_diffuse_lighting(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn fe_displacement_map(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_distant_light(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_drop_shadow(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_flood(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_func_a(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_func_b(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_func_g(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_func_r(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_gaussian_blur(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_image(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_merge(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn fe_merge_node(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_morphology(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_offset(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_point_light(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_specular_lighting(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn fe_spot_light(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_tile(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn fe_turbulence(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn filter(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn foreign_object(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn g(id? : String, class? : String, style? : Array[String], fill? : String, stroke? : String, transform? : String, opacity? : String, attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn image(id? : String, class? : String, style? : Array[String], href~ : String, x~ : Int, y~ : Int, width? : Int, height? : Int, preserve_aspect_ratio? : String, transform? : String, opacity? : String, attrs? : Attrs) -> Svg
+
+pub fn line(id? : String, class? : String, style? : Array[String], x1~ : Int, y1~ : Int, x2~ : Int, y2~ : Int, fill? : String, stroke? : String, stroke_width? : Int, stroke_linecap? : String, transform? : String, opacity? : String, attrs? : Attrs) -> Svg
+
+pub fn linear_gradient(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn marker(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn mask(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn metadata(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn mpath(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn node(String, Attrs, Array[Svg], ns? : String) -> Svg
+
+pub fn path(id? : String, class? : String, style? : Array[String], d~ : String, fill? : String, stroke? : String, stroke_width? : Int, transform? : String, opacity? : String, attrs? : Attrs) -> Svg
+
+pub fn pattern(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn polygon(id? : String, class? : String, style? : Array[String], points~ : Array[(Int, Int)], fill? : String, stroke? : String, stroke_width? : Int, stroke_linecap? : String, transform? : String, opacity? : String, attrs? : Attrs) -> Svg
+
+pub fn polyline(id? : String, class? : String, style? : Array[String], points~ : Array[(Int, Int)], path_length? : Int, fill? : String, stroke? : String, stroke_width? : Int, stroke_linecap? : String, transform? : String, opacity? : String, attrs? : Attrs) -> Svg
+
+pub fn radial_gradient(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn rect(id? : String, class? : String, style? : Array[String], x~ : Int, y~ : Int, width~ : Int, height~ : Int, rx? : Int, ry? : Int, fill? : String, stroke? : String, stroke_width? : Int, transform? : String, opacity? : String, attrs? : Attrs) -> Svg
+
+pub fn script(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn set(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn stop(id? : String, class? : String, style? : Array[String], attrs? : Attrs) -> Svg
+
+pub fn svg(id? : String, class? : String, style? : Array[String], width? : Int, height? : Int, view_box? : String, xmlns? : String, attrs? : Attrs, Array[Svg]) -> @html.Html
+
+pub fn svg_style(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn svg_text(id? : String, class? : String, style? : Array[String], x~ : Int, y~ : Int, text~ : String, dx? : Int, dy? : Int, rotate? : String, length_adjust? : String, text_length? : Int, fill? : String, stroke? : String, stroke_width? : Int, transform? : String, opacity? : String, attrs? : Attrs) -> Svg
+
+pub fn svg_use(id? : String, class? : String, style? : Array[String], href~ : String, x~ : Int, y~ : Int, width? : Int, height? : Int, stroke? : String, stroke_width? : Int, fill? : String, fill_opacity? : Int, transform? : String, opacity? : String, attrs? : Attrs) -> Svg
+
+pub fn switch(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn symbol(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn text(String) -> Svg
+
+pub fn text_path(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn title(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn tspan(id? : String, class? : String, style? : Array[String], attrs? : Attrs, Array[Svg]) -> Svg
+
+pub fn view(id? : String, class? : String, style? : Array[String], view_box? : String, zoom_and_pan? : String, preserve_aspect_ratio? : String, attrs? : Attrs) -> Svg
+
+// Errors
+
+// Types and methods
+type Attrs
+pub fn Attrs::accumulate(Self, String) -> Self
+pub fn Attrs::additive(Self, String) -> Self
+pub fn Attrs::alignment_baseline(Self, String) -> Self
+pub fn Attrs::amplitude(Self, String) -> Self
+pub fn Attrs::attribute_name(Self, String) -> Self
+pub fn Attrs::attribute_type(Self, String) -> Self
+pub fn Attrs::autofocus(Self, String) -> Self
+pub fn Attrs::azimuth(Self, String) -> Self
+pub fn Attrs::base_frequency(Self, String) -> Self
+pub fn Attrs::base_profile(Self, String) -> Self
+pub fn Attrs::baseline_shift(Self, String) -> Self
+pub fn Attrs::begin(Self, String) -> Self
+pub fn Attrs::bias(Self, String) -> Self
+pub fn Attrs::build() -> Self
+pub fn Attrs::by(Self, String) -> Self
+pub fn Attrs::calc_mode(Self, String) -> Self
+pub fn Attrs::class(Self, String) -> Self
+pub fn Attrs::clip(Self, String) -> Self
+pub fn Attrs::clip_path(Self, String) -> Self
+pub fn Attrs::clip_path_units(Self, String) -> Self
+pub fn Attrs::clip_rule(Self, String) -> Self
+pub fn Attrs::color(Self, String) -> Self
+pub fn Attrs::color_interpolation(Self, String) -> Self
+pub fn Attrs::color_interpolation_filters(Self, String) -> Self
+pub fn Attrs::crossorigin(Self, String) -> Self
+pub fn Attrs::cursor(Self, String) -> Self
+pub fn Attrs::cx(Self, String) -> Self
+pub fn Attrs::cy(Self, String) -> Self
+pub fn Attrs::d(Self, String) -> Self
+pub fn Attrs::data_set(Self, String, String) -> Self
+pub fn Attrs::decoding(Self, String) -> Self
+pub fn Attrs::diffuse_constant(Self, String) -> Self
+pub fn Attrs::direction(Self, String) -> Self
+pub fn Attrs::display(Self, String) -> Self
+pub fn Attrs::divisor(Self, String) -> Self
+pub fn Attrs::dominant_baseline(Self, String) -> Self
+pub fn Attrs::dur(Self, String) -> Self
+pub fn Attrs::dx(Self, String) -> Self
+pub fn Attrs::dy(Self, String) -> Self
+pub fn Attrs::edge_mode(Self, String) -> Self
+pub fn Attrs::elevation(Self, String) -> Self
+pub fn Attrs::end(Self, String) -> Self
+pub fn Attrs::exponent(Self, String) -> Self
+pub fn Attrs::fetchpriority(Self, String) -> Self
+pub fn Attrs::fill(Self, String) -> Self
+pub fn Attrs::fill_opacity(Self, String) -> Self
+pub fn Attrs::fill_rule(Self, String) -> Self
+pub fn Attrs::filter(Self, String) -> Self
+pub fn Attrs::filter_units(Self, String) -> Self
+pub fn Attrs::flood_color(Self, String) -> Self
+pub fn Attrs::flood_opacity(Self, String) -> Self
+pub fn Attrs::font_family(Self, String) -> Self
+pub fn Attrs::font_size(Self, String) -> Self
+pub fn Attrs::font_size_adjust(Self, String) -> Self
+pub fn Attrs::font_stretch(Self, String) -> Self
+pub fn Attrs::font_style(Self, String) -> Self
+pub fn Attrs::font_variant(Self, String) -> Self
+pub fn Attrs::font_weight(Self, String) -> Self
+pub fn Attrs::fr(Self, String) -> Self
+pub fn Attrs::from(Self, String) -> Self
+pub fn Attrs::fx(Self, String) -> Self
+pub fn Attrs::fy(Self, String) -> Self
+pub fn Attrs::glyph_orientation_horizontal(Self, String) -> Self
+pub fn Attrs::glyph_orientation_vertical(Self, String) -> Self
+pub fn Attrs::gradient_transform(Self, String) -> Self
+pub fn Attrs::gradient_units(Self, String) -> Self
+pub fn Attrs::height(Self, String) -> Self
+pub fn Attrs::href(Self, String) -> Self
+pub fn Attrs::hreflang(Self, String) -> Self
+pub fn Attrs::id(Self, String) -> Self
+pub fn Attrs::image_rendering(Self, String) -> Self
+pub fn Attrs::in2(Self, String) -> Self
+pub fn Attrs::in_(Self, String) -> Self
+pub fn Attrs::inner_html(Self, String) -> Self
+pub fn Attrs::intercept(Self, String) -> Self
+pub fn Attrs::k1(Self, String) -> Self
+pub fn Attrs::k2(Self, String) -> Self
+pub fn Attrs::k3(Self, String) -> Self
+pub fn Attrs::k4(Self, String) -> Self
+pub fn Attrs::kernel_matrix(Self, String) -> Self
+pub fn Attrs::kernel_unit_length(Self, String) -> Self
+pub fn Attrs::key_points(Self, String) -> Self
+pub fn Attrs::key_splines(Self, String) -> Self
+pub fn Attrs::key_times(Self, String) -> Self
+pub fn Attrs::lang(Self, String) -> Self
+pub fn Attrs::length_adjust(Self, String) -> Self
+pub fn Attrs::letter_spacing(Self, String) -> Self
+pub fn Attrs::lighting_color(Self, String) -> Self
+pub fn Attrs::limiting_cone_angle(Self, String) -> Self
+pub fn Attrs::marker_end(Self, String) -> Self
+pub fn Attrs::marker_height(Self, String) -> Self
+pub fn Attrs::marker_mid(Self, String) -> Self
+pub fn Attrs::marker_start(Self, String) -> Self
+pub fn Attrs::marker_units(Self, String) -> Self
+pub fn Attrs::marker_width(Self, String) -> Self
+pub fn Attrs::mask(Self, String) -> Self
+pub fn Attrs::mask_content_units(Self, String) -> Self
+pub fn Attrs::mask_units(Self, String) -> Self
+pub fn Attrs::max(Self, String) -> Self
+pub fn Attrs::media(Self, String) -> Self
+pub fn Attrs::method_(Self, String) -> Self
+pub fn Attrs::min(Self, String) -> Self
+pub fn Attrs::mode(Self, String) -> Self
+pub fn Attrs::num_octaves(Self, String) -> Self
+pub fn Attrs::offset(Self, String) -> Self
+pub fn Attrs::opacity(Self, String) -> Self
+pub fn Attrs::operator(Self, String) -> Self
+pub fn Attrs::order(Self, String) -> Self
+pub fn Attrs::orient(Self, String) -> Self
+pub fn Attrs::origin(Self, String) -> Self
+pub fn Attrs::overflow(Self, String) -> Self
+pub fn Attrs::paint_order(Self, String) -> Self
+pub fn Attrs::path(Self, String) -> Self
+pub fn Attrs::path_length(Self, String) -> Self
+pub fn Attrs::pattern_content_units(Self, String) -> Self
+pub fn Attrs::pattern_transform(Self, String) -> Self
+pub fn Attrs::pattern_units(Self, String) -> Self
+pub fn Attrs::ping(Self, String) -> Self
+pub fn Attrs::pointer_events(Self, String) -> Self
+pub fn Attrs::points(Self, String) -> Self
+pub fn Attrs::points_at_x(Self, String) -> Self
+pub fn Attrs::points_at_y(Self, String) -> Self
+pub fn Attrs::points_at_z(Self, String) -> Self
+pub fn Attrs::preserve_alpha(Self, String) -> Self
+pub fn Attrs::preserve_aspect_ratio(Self, String) -> Self
+pub fn Attrs::primitive_units(Self, String) -> Self
+pub fn Attrs::r(Self, String) -> Self
+pub fn Attrs::radius(Self, String) -> Self
+pub fn Attrs::ref_x(Self, String) -> Self
+pub fn Attrs::ref_y(Self, String) -> Self
+pub fn Attrs::referrer_policy(Self, String) -> Self
+pub fn Attrs::rel(Self, String) -> Self
+pub fn Attrs::repeat_count(Self, String) -> Self
+pub fn Attrs::repeat_dur(Self, String) -> Self
+pub fn Attrs::required_extensions(Self, String) -> Self
+pub fn Attrs::required_features(Self, String) -> Self
+pub fn Attrs::restart(Self, String) -> Self
+pub fn Attrs::result(Self, String) -> Self
+pub fn Attrs::rotate(Self, String) -> Self
+pub fn Attrs::rx(Self, String) -> Self
+pub fn Attrs::ry(Self, String) -> Self
+pub fn Attrs::scale(Self, String) -> Self
+pub fn Attrs::seed(Self, String) -> Self
+pub fn Attrs::shape_rendering(Self, String) -> Self
+pub fn Attrs::side(Self, String) -> Self
+pub fn Attrs::slope(Self, String) -> Self
+pub fn Attrs::spacing(Self, String) -> Self
+pub fn Attrs::specular_constant(Self, String) -> Self
+pub fn Attrs::specular_exponent(Self, String) -> Self
+pub fn Attrs::spread_method(Self, String) -> Self
+pub fn Attrs::start_offset(Self, String) -> Self
+pub fn Attrs::std_deviation(Self, String) -> Self
+pub fn Attrs::stitch_tiles(Self, String) -> Self
+pub fn Attrs::stop_color(Self, String) -> Self
+pub fn Attrs::stop_opacity(Self, String) -> Self
+pub fn Attrs::stroke(Self, String) -> Self
+pub fn Attrs::stroke_dasharray(Self, String) -> Self
+pub fn Attrs::stroke_dashoffset(Self, String) -> Self
+pub fn Attrs::stroke_linecap(Self, String) -> Self
+pub fn Attrs::stroke_linejoin(Self, String) -> Self
+pub fn Attrs::stroke_miterlimit(Self, String) -> Self
+pub fn Attrs::stroke_opacity(Self, String) -> Self
+pub fn Attrs::stroke_width(Self, String) -> Self
+pub fn Attrs::style(Self, String, String) -> Self
+pub fn Attrs::style_attr(Self, String) -> Self
+pub fn Attrs::surface_scale(Self, String) -> Self
+pub fn Attrs::system_language(Self, String) -> Self
+pub fn Attrs::tabindex(Self, String) -> Self
+pub fn Attrs::table_values(Self, String) -> Self
+pub fn Attrs::target(Self, String) -> Self
+pub fn Attrs::target_x(Self, String) -> Self
+pub fn Attrs::target_y(Self, String) -> Self
+pub fn Attrs::text_anchor(Self, String) -> Self
+pub fn Attrs::text_decoration(Self, String) -> Self
+pub fn Attrs::text_length(Self, String) -> Self
+pub fn Attrs::text_overflow(Self, String) -> Self
+pub fn Attrs::text_rendering(Self, String) -> Self
+pub fn Attrs::to(Self, String) -> Self
+pub fn Attrs::transform(Self, String) -> Self
+pub fn Attrs::transform_origin(Self, String) -> Self
+pub fn Attrs::type_(Self, String) -> Self
+pub fn Attrs::unicode_bidi(Self, String) -> Self
+pub fn Attrs::values(Self, String) -> Self
+pub fn Attrs::vector_effect(Self, String) -> Self
+pub fn Attrs::view_box(Self, String) -> Self
+pub fn Attrs::visibility(Self, String) -> Self
+pub fn Attrs::white_space(Self, String) -> Self
+pub fn Attrs::width(Self, String) -> Self
+pub fn Attrs::word_spacing(Self, String) -> Self
+pub fn Attrs::writing_mode(Self, String) -> Self
+pub fn Attrs::x(Self, String) -> Self
+pub fn Attrs::x1(Self, String) -> Self
+pub fn Attrs::x2(Self, String) -> Self
+pub fn Attrs::x_channel_selector(Self, String) -> Self
+pub fn Attrs::y(Self, String) -> Self
+pub fn Attrs::y1(Self, String) -> Self
+pub fn Attrs::y2(Self, String) -> Self
+pub fn Attrs::y_channel_selector(Self, String) -> Self
+pub fn Attrs::z(Self, String) -> Self
+
+#alias(T)
+pub(all) struct Svg(@runtime.VNode)
+pub fn Svg::from_vnode(@runtime.VNode) -> Self
+#deprecated
+pub fn Svg::inner(Self) -> @runtime.VNode
+pub fn Svg::to_html(Self) -> @html.Html
+pub fn Svg::to_virtual_dom(Self) -> @runtime.VNode
+
+// Type aliases
+
+// Traits
+

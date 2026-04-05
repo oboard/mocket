@@ -1,0 +1,14 @@
+import {
+  "moonbitlang/core/random",
+  "moonbitlang/core/env",
+  "moonbitlang/core/buffer",
+  "moonbitlang/core/string",
+  "moonbitlang/async",
+  "moonbitlang/async/socket",
+}
+
+supported_targets = "+native"
+
+options(
+  "is-main": true,
+)

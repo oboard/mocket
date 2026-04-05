@@ -45,18 +45,25 @@ async fn execute_middlewares(
   event : MocketEvent,
   final_handler : HttpHandler,
 ) -> &Responder noraise {
+  // Fast path: no middleware registered
+  if middlewares.is_empty() {
+    return final_handler(event)
+  }
   // Filter middlewares matching the request path
   let matched_middlewares = []
   let request_path = event.req.path()
-  middlewares.each(middleware => {
-    let (base_path, middleware) = middleware
+  for mw in middlewares {
+    let (base_path, middleware) = mw
     // Empty base_path means global middleware;
     // otherwise check if the request path matches the scope
     if base_path == "" || @mhttp.path_scope_matches(base_path, request_path) {
       matched_middlewares.push(middleware)
     }
-  })
-
+  }
+  // Fast path: no middleware matched this path
+  if matched_middlewares.is_empty() {
+    return final_handler(event)
+  }
   // Build middleware chain recursively (onion model)
   execute_middleware_chain(matched_middlewares, 0, event, final_handler)
 }

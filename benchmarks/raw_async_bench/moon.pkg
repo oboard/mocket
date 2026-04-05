@@ -4,4 +4,6 @@ import {
   "moonbitlang/async/socket",
 }
 
-options("is-main": true)
+options(
+  "is-main": true,
+)

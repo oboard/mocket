@@ -1,0 +1,10 @@
+import {
+  "moonbitlang/core/string",
+  "moonbitlang/core/env",
+  "moonbitlang/async",
+  "moonbitlang/async/stdio",
+}
+
+options(
+  "is-main": true,
+)

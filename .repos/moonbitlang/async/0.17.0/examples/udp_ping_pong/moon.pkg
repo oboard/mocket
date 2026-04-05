@@ -1,0 +1,11 @@
+import {
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/async",
+  "moonbitlang/async/socket",
+}
+
+supported_targets = "+native"
+
+options(
+  "is-main": true,
+)

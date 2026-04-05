@@ -1,0 +1,826 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/rabbita/dom"
+
+import {
+  "moonbit-community/rabbita/js",
+}
+
+// Values
+pub const DOM_KEY_LOCATION_LEFT : Int = 0x01
+
+pub const DOM_KEY_LOCATION_NUMPAD : Int = 0x03
+
+pub const DOM_KEY_LOCATION_RIGHT : Int = 0x02
+
+pub const DOM_KEY_LOCATION_STANDARD : Int = 0x00
+
+pub fn[E, R] default_exception_handler(E) -> R
+
+pub fn document() -> Document
+
+pub let namespace_html : String
+
+pub let namespace_mathml : String
+
+pub let namespace_svg : String
+
+pub fn window() -> Window
+
+// Errors
+
+// Types and methods
+type AnimationEvent
+pub fn AnimationEvent::get_animation_name(Self) -> String
+pub fn AnimationEvent::get_elapsed_time(Self) -> Double
+pub fn AnimationEvent::get_pseudo_element(Self) -> String
+pub impl IsEvent for AnimationEvent
+pub impl @js.Cast for AnimationEvent
+
+type AudioTrackList
+
+type BeforeUnloadEvent
+pub impl IsEvent for BeforeUnloadEvent
+pub impl @js.Cast for BeforeUnloadEvent
+
+type Blob
+
+type BlobEvent
+pub fn BlobEvent::get_data(Self) -> Blob
+pub fn BlobEvent::get_timecode(Self) -> Double
+pub fn BlobEvent::new() -> Self
+pub impl IsEvent for BlobEvent
+pub impl @js.Cast for BlobEvent
+
+type CSSRule
+
+type CSSStyleDeclaration
+pub fn CSSStyleDeclaration::get_css_float(Self) -> String
+pub fn CSSStyleDeclaration::get_css_text(Self) -> String
+pub fn CSSStyleDeclaration::get_length(Self) -> Int
+pub fn CSSStyleDeclaration::get_parent_rule(Self) -> CSSRule?
+pub fn CSSStyleDeclaration::get_property_priority(Self, String) -> String
+pub fn CSSStyleDeclaration::get_property_value(Self, String) -> String
+pub fn CSSStyleDeclaration::item(Self, Int) -> String
+pub fn CSSStyleDeclaration::op_get(Self, String) -> String
+pub fn CSSStyleDeclaration::op_set(Self, String, String) -> Unit
+pub fn CSSStyleDeclaration::remove_property(Self, String) -> String
+pub fn CSSStyleDeclaration::set_css_float(Self, String) -> Unit
+pub fn CSSStyleDeclaration::set_css_text(Self, String) -> Unit
+pub fn CSSStyleDeclaration::set_property(Self, String, String) -> Unit
+pub fn CSSStyleDeclaration::set_property_with_priority(Self, String, String, String) -> Unit
+pub impl @js.Cast for CSSStyleDeclaration
+
+type CanvasGradient
+pub fn CanvasGradient::add_color_stop(Self, Double, String) -> Unit
+pub impl @js.Cast for CanvasGradient
+
+type CanvasLineCap
+
+type CanvasLineJoin
+
+type CanvasPattern
+pub fn CanvasPattern::set_transform(Self, @js.Optional[DOMMatrix2DInit]) -> Unit
+pub impl @js.Cast for CanvasPattern
+
+type CanvasRenderingContext2D
+pub fn CanvasRenderingContext2D::arc(Self, Double, Double, Double, Double, Double, anticlockwise? : Bool) -> Unit
+pub fn CanvasRenderingContext2D::arc_to(Self, Double, Double, Double, Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::begin_path(Self) -> Unit
+pub fn CanvasRenderingContext2D::bezier_curve_to(Self, Double, Double, Double, Double, Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::clear_rect(Self, Double, Double, Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::clip(Self, fill_rule? : String) -> Unit
+pub fn CanvasRenderingContext2D::clip_with_path(Self, Path2D, fill_rule? : String) -> Unit
+pub fn CanvasRenderingContext2D::close_path(Self) -> Unit
+pub fn CanvasRenderingContext2D::create_image_data(Self, Double, Double, settings? : @js.Optional[ImageDataSettings]) -> ImageData
+pub fn CanvasRenderingContext2D::create_image_data_with_data(Self, ImageData) -> ImageData
+pub fn CanvasRenderingContext2D::create_linear_gradient(Self, Double, Double, Double, Double) -> CanvasGradient
+pub fn CanvasRenderingContext2D::create_pattern(Self, @js.Union7[HTMLImageElement, SVGImageElement, HTMLVideoElement, HTMLCanvasElement, ImageBitmap, OffscreenCanvas, VideoFrame], String) -> CanvasPattern
+pub fn CanvasRenderingContext2D::create_radial_gradient(Self, Double, Double, Double, Double, Double, Double) -> CanvasGradient
+pub fn CanvasRenderingContext2D::draw_image(Self, @js.Union7[HTMLImageElement, SVGImageElement, HTMLVideoElement, HTMLCanvasElement, ImageBitmap, OffscreenCanvas, VideoFrame], Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::draw_image_with_size(Self, @js.Union7[HTMLImageElement, SVGImageElement, HTMLVideoElement, HTMLCanvasElement, ImageBitmap, OffscreenCanvas, VideoFrame], Double, Double, Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::draw_image_with_src_and_dst_size(Self, @js.Union7[HTMLImageElement, SVGImageElement, HTMLVideoElement, HTMLCanvasElement, ImageBitmap, OffscreenCanvas, VideoFrame], Double, Double, Double, Double, Double, Double, Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::ellipse(Self, Double, Double, Double, Double, Double, Double, Double, anticlockwise? : Bool) -> Unit
+pub fn CanvasRenderingContext2D::fill(Self, fill_rule? : String) -> Unit
+pub fn CanvasRenderingContext2D::fill_path(Self, Path2D, fill_rule? : String) -> Unit
+pub fn CanvasRenderingContext2D::fill_rect(Self, Double, Double, Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::fill_text(Self, String, Double, Double, max_width? : @js.Optional[Double]) -> Unit
+pub fn CanvasRenderingContext2D::get_fill_style(Self) -> @js.Union3[String, CanvasGradient, CanvasPattern]
+pub fn CanvasRenderingContext2D::get_font(Self) -> String
+pub fn CanvasRenderingContext2D::get_image_data(Self, Double, Double, Double, Double, settings? : @js.Optional[ImageDataSettings]) -> ImageData
+pub fn CanvasRenderingContext2D::get_image_smoothing_quality(Self) -> String
+pub fn CanvasRenderingContext2D::get_line_cap(Self) -> CanvasLineCap
+pub fn CanvasRenderingContext2D::get_line_join(Self) -> CanvasLineJoin
+pub fn CanvasRenderingContext2D::get_line_with(Self) -> Double
+pub fn CanvasRenderingContext2D::get_stroke_style(Self) -> @js.Union3[String, CanvasGradient, CanvasPattern]
+pub fn CanvasRenderingContext2D::image_smoothing_enabled(Self) -> Bool
+pub fn CanvasRenderingContext2D::is_context_lost(Self) -> Bool
+pub fn CanvasRenderingContext2D::is_point_in_path(Self, Double, Double, fill_rule? : String) -> Bool
+pub fn CanvasRenderingContext2D::is_point_in_path_with_path(Self, Path2D, Double, Double, fill_rule? : String) -> Bool
+pub fn CanvasRenderingContext2D::is_point_in_stroke(Self, Double, Double) -> Bool
+pub fn CanvasRenderingContext2D::is_point_in_stroke_with_path(Self, Path2D, Double, Double) -> Bool
+pub fn CanvasRenderingContext2D::line_to(Self, Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::move_to(Self, Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::put_image_data(Self, ImageData, Int, Int) -> Unit
+pub fn CanvasRenderingContext2D::put_image_data_with_dirty(Self, ImageData, Int, Int, Int, Int, Int, Int) -> Unit
+pub fn CanvasRenderingContext2D::quardratic_curve_to(Self, Double, Double, Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::rect(Self, Double, Double, Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::reset(Self) -> Unit
+pub fn CanvasRenderingContext2D::reset_transform(Self) -> Unit
+pub fn CanvasRenderingContext2D::restore(Self) -> Unit
+pub fn CanvasRenderingContext2D::rotate(Self, Double) -> Unit
+pub fn CanvasRenderingContext2D::round_rect(Self, Double, Double, Double, Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::save(Self) -> Unit
+pub fn CanvasRenderingContext2D::scale(Self, Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::set_fill_style(Self, @js.Union3[String, CanvasGradient, CanvasPattern]) -> Unit
+pub fn CanvasRenderingContext2D::set_font(Self, String) -> Unit
+pub fn CanvasRenderingContext2D::set_image_smoothing_quality(Self, String) -> Unit
+pub fn CanvasRenderingContext2D::set_line_cap(Self, CanvasLineCap) -> Unit
+pub fn CanvasRenderingContext2D::set_line_join(Self, CanvasLineJoin) -> Unit
+pub fn CanvasRenderingContext2D::set_line_width(Self, Double) -> Unit
+pub fn CanvasRenderingContext2D::set_stroke_style(Self, @js.Union3[String, CanvasGradient, CanvasPattern]) -> Unit
+pub fn CanvasRenderingContext2D::set_transform(Self, Double, Double, Double, Double, Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::stroke(Self) -> Unit
+pub fn CanvasRenderingContext2D::stroke_rect(Self, Double, Double, Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::stroke_text(Self, String, Double, Double, max_width? : @js.Optional[Double]) -> Unit
+pub fn CanvasRenderingContext2D::stroke_with_path(Self, Path2D) -> Unit
+pub fn CanvasRenderingContext2D::transform(Self, Double, Double, Double, Double, Double, Double) -> Unit
+pub fn CanvasRenderingContext2D::translate(Self, Double, Double) -> Unit
+pub impl @js.Cast for CanvasRenderingContext2D
+
+#external
+pub type Clipboard
+pub fn Clipboard::read_text(Self) -> @js.Promise
+pub fn Clipboard::write_text(Self, String) -> @js.Promise
+
+type ClipboardEvent
+pub fn ClipboardEvent::clipboard_data(Self) -> DataTransfer
+pub impl IsEvent for ClipboardEvent
+pub impl @js.Cast for ClipboardEvent
+
+type CloseEvent
+pub fn CloseEvent::get_code(Self) -> Int
+pub fn CloseEvent::get_reason(Self) -> String
+pub fn CloseEvent::get_was_clean(Self) -> Bool
+pub impl IsEvent for CloseEvent
+pub impl @js.Cast for CloseEvent
+
+type Comment
+pub fn Comment::to_node(Self) -> Node
+pub impl IsEventTarget for Comment
+pub impl IsNode for Comment
+pub impl @js.Cast for Comment
+
+type CompositionEvent
+pub fn CompositionEvent::get_data(Self) -> String
+pub fn CompositionEvent::new() -> Self
+pub impl IsEvent for CompositionEvent
+pub impl IsUIEvent for CompositionEvent
+pub impl @js.Cast for CompositionEvent
+
+type CustomEvent
+pub fn CustomEvent::get_detail(Self) -> @js.Value
+pub fn CustomEvent::new(String, detail? : @js.Optional[@js.Value]) -> Self
+pub impl IsEvent for CustomEvent
+pub impl @js.Cast for CustomEvent
+
+type DOMException
+pub fn DOMException::get_message(Self) -> String
+pub fn DOMException::get_name(Self) -> String
+pub fn DOMException::new() -> Self
+pub fn DOMException::new_with_message(String) -> Self
+pub fn DOMException::new_with_message_and_name(String, String) -> Self
+
+type DOMMatrix
+
+type DOMMatrix2DInit
+
+type DOMRect
+pub fn DOMRect::get_bottom(Self) -> Double
+pub fn DOMRect::get_height(Self) -> Double
+pub fn DOMRect::get_left(Self) -> Double
+pub fn DOMRect::get_right(Self) -> Double
+pub fn DOMRect::get_top(Self) -> Double
+pub fn DOMRect::get_width(Self) -> Double
+pub fn DOMRect::get_x(Self) -> Double
+pub fn DOMRect::get_y(Self) -> Double
+
+type DOMStringMap
+
+type DOMTokenList
+
+type DataTransfer
+pub fn DataTransfer::drop_effect(Self) -> String
+pub fn DataTransfer::effect_allowed(Self) -> String
+pub fn DataTransfer::items(Self) -> DataTransferItemList
+pub fn DataTransfer::set_drog_image(Self, Element, Int, Int) -> Unit
+
+type DataTransferItemList
+pub fn DataTransferItemList::add(Self, String, String) -> Unit
+pub fn DataTransferItemList::clear(Self) -> Unit
+pub fn DataTransferItemList::length(Self) -> Int
+pub fn DataTransferItemList::op_get(Self, Int) -> Unit
+pub fn DataTransferItemList::remove(Self, Int) -> Unit
+
+type Document
+pub fn Document::create_comment(Self, String) -> Comment
+pub fn Document::create_document_fragment(Self) -> DocumentFragment
+pub fn Document::create_element(Self, String) -> Element
+pub fn Document::create_element_ns(Self, String, String, on_namespace_error? : (DOMException) -> Element, on_invalid_character_error? : (DOMException) -> Element) -> Element
+pub fn Document::create_text_node(Self, String) -> Element
+pub fn Document::get_element_by_id(Self, String) -> @js.Nullable[Element]
+pub fn Document::get_elements_by_class_name(Self, String) -> HTMLCollection
+pub fn Document::get_elements_by_name(Self, String) -> NodeList
+pub fn Document::get_elements_by_tag_name(Self, String) -> HTMLCollection
+pub fn Document::get_elements_by_tag_name_ns(Self, String, String) -> HTMLCollection
+pub fn Document::hidden(Self) -> Bool
+pub fn Document::query_selector(Self, String) -> @js.Nullable[Element]
+pub fn Document::query_selector_all(Self, String) -> NodeList
+pub fn Document::to_node(Self) -> Node
+pub impl IsEventTarget for Document
+pub impl @js.Cast for Document
+
+type DocumentFragment
+pub fn DocumentFragment::to_node(Self) -> Node
+pub impl IsEventTarget for DocumentFragment
+pub impl IsNode for DocumentFragment
+pub impl @js.Cast for DocumentFragment
+
+type DragEvent
+pub fn DragEvent::get_data_transfer(Self) -> DataTransfer
+pub impl IsEvent for DragEvent
+pub impl IsMouseEvent for DragEvent
+pub impl IsUIEvent for DragEvent
+pub impl @js.Cast for DragEvent
+
+type EditContext
+
+type Element
+pub impl IsElement for Element
+pub impl IsEventTarget for Element
+pub impl IsNode for Element
+pub impl @js.Cast for Element
+
+type ElementInternals
+
+type Event
+pub impl IsEvent for Event
+pub impl @js.Cast for Event
+
+type EventTarget
+pub impl IsEventTarget for EventTarget
+pub impl @js.Cast for EventTarget
+
+type FocusEvent
+pub fn FocusEvent::related_target(Self) -> EventTarget
+pub impl IsEvent for FocusEvent
+pub impl IsUIEvent for FocusEvent
+pub impl @js.Cast for FocusEvent
+
+type GPUCanvasContext
+
+type HTMLCanvasElement
+pub fn HTMLCanvasElement::get_context(Self, String) -> @js.Union5[CanvasRenderingContext2D, ImageBitmapRenderingContext, WebGLRenderingContext, WebGL2RenderingContext, GPUCanvasContext]
+pub fn HTMLCanvasElement::get_height(Self) -> Int
+pub fn HTMLCanvasElement::get_width(Self) -> Int
+pub impl IsElement for HTMLCanvasElement
+pub impl IsEventTarget for HTMLCanvasElement
+pub impl IsHtmlElement for HTMLCanvasElement
+pub impl IsNode for HTMLCanvasElement
+pub impl @js.Cast for HTMLCanvasElement
+
+type HTMLCollection
+pub fn HTMLCollection::get_length(Self) -> Double
+pub fn HTMLCollection::item(Self, Double) -> @js.Nullable[Element]
+pub fn HTMLCollection::named_item(Self, String) -> @js.Nullable[Element]
+
+type HTMLDialogElement
+pub fn HTMLDialogElement::close(Self, return_value? : @js.Optional[String]) -> Unit
+pub fn HTMLDialogElement::open(Self) -> Bool
+pub fn HTMLDialogElement::request_close(Self, return_value? : @js.Optional[String]) -> Unit
+pub fn HTMLDialogElement::return_value(Self) -> String
+pub fn HTMLDialogElement::show(Self) -> Unit
+pub fn HTMLDialogElement::show_modal(Self) -> Unit
+pub impl IsElement for HTMLDialogElement
+pub impl IsEventTarget for HTMLDialogElement
+pub impl IsHtmlElement for HTMLDialogElement
+pub impl IsNode for HTMLDialogElement
+pub impl @js.Cast for HTMLDialogElement
+
+type HTMLElement
+pub impl IsElement for HTMLElement
+pub impl IsEventTarget for HTMLElement
+pub impl IsHtmlElement for HTMLElement
+pub impl IsNode for HTMLElement
+pub impl @js.Cast for HTMLElement
+
+type HTMLImageElement
+pub fn HTMLImageElement::get_alt(Self) -> String
+pub fn HTMLImageElement::get_complete(Self) -> Bool
+pub fn HTMLImageElement::get_cross_origin(Self) -> String
+pub fn HTMLImageElement::get_current_src(Self) -> String
+pub fn HTMLImageElement::get_decoding(Self) -> String
+pub fn HTMLImageElement::get_height(Self) -> Double
+pub fn HTMLImageElement::get_is_map(Self) -> Bool
+pub fn HTMLImageElement::get_loading(Self) -> String
+pub fn HTMLImageElement::get_natural_height(Self) -> Double
+pub fn HTMLImageElement::get_natural_width(Self) -> Double
+pub fn HTMLImageElement::get_referrer_policy(Self) -> String
+pub fn HTMLImageElement::get_sizes(Self) -> String
+pub fn HTMLImageElement::get_src(Self) -> String
+pub fn HTMLImageElement::get_srcset(Self) -> String
+pub fn HTMLImageElement::get_use_map(Self) -> String
+pub fn HTMLImageElement::get_width(Self) -> Double
+pub fn HTMLImageElement::get_x(Self) -> Double
+pub fn HTMLImageElement::get_y(Self) -> Double
+pub fn HTMLImageElement::new() -> Self
+pub fn HTMLImageElement::new_with_size(Double, Double) -> Self
+pub fn HTMLImageElement::set_alt(Self, String) -> Unit
+pub fn HTMLImageElement::set_cross_origin(Self, String) -> Unit
+pub fn HTMLImageElement::set_decoding(Self, String) -> Unit
+pub fn HTMLImageElement::set_height(Self, Double) -> Unit
+pub fn HTMLImageElement::set_is_map(Self, Bool) -> Unit
+pub fn HTMLImageElement::set_loading(Self, String) -> Unit
+pub fn HTMLImageElement::set_natural_height(Self, Double) -> Unit
+pub fn HTMLImageElement::set_natural_width(Self, Double) -> Unit
+pub fn HTMLImageElement::set_referrer_policy(Self, String) -> Unit
+pub fn HTMLImageElement::set_sizes(Self, String) -> Unit
+pub fn HTMLImageElement::set_src(Self, String) -> Unit
+pub fn HTMLImageElement::set_srcset(Self, String) -> Unit
+pub fn HTMLImageElement::set_use_map(Self, String) -> Unit
+pub fn HTMLImageElement::set_width(Self, Double) -> Unit
+pub impl IsElement for HTMLImageElement
+pub impl IsEventTarget for HTMLImageElement
+pub impl IsHtmlElement for HTMLImageElement
+pub impl IsNode for HTMLImageElement
+pub impl @js.Cast for HTMLImageElement
+
+type HTMLInputElement
+pub fn HTMLInputElement::value(Self) -> String
+pub impl IsElement for HTMLInputElement
+pub impl IsEventTarget for HTMLInputElement
+pub impl IsHtmlElement for HTMLInputElement
+pub impl IsNode for HTMLInputElement
+pub impl @js.Cast for HTMLInputElement
+
+type HTMLMediaElement
+pub impl IsElement for HTMLMediaElement
+pub impl IsEventTarget for HTMLMediaElement
+pub impl IsHTMLMediaElement for HTMLMediaElement
+pub impl IsHtmlElement for HTMLMediaElement
+pub impl IsNode for HTMLMediaElement
+pub impl @js.Cast for HTMLMediaElement
+
+type HTMLSelectElement
+pub fn HTMLSelectElement::value(Self) -> String
+
+type HTMLVideoElement
+pub impl IsElement for HTMLVideoElement
+pub impl IsEventTarget for HTMLVideoElement
+pub impl IsHTMLMediaElement for HTMLVideoElement
+pub impl IsHtmlElement for HTMLVideoElement
+pub impl IsNode for HTMLVideoElement
+pub impl @js.Cast for HTMLVideoElement
+
+type ImageBitmap
+pub impl @js.Cast for ImageBitmap
+
+type ImageBitmapRenderingContext
+
+type ImageData
+pub fn ImageData::get_color_space(Self) -> String
+pub fn ImageData::get_data(Self) -> Uint8ClampedArray
+pub fn ImageData::get_height(Self) -> Int
+pub fn ImageData::get_width(Self) -> Int
+pub fn ImageData::new(Int, Int, @js.Optional[ImageDataSettings]) -> Self
+pub fn ImageData::new_with_data(Uint8ClampedArray, Int, Int, settings? : @js.Optional[ImageDataSettings]) -> Self
+
+type ImageDataSettings
+pub fn ImageDataSettings::new(String) -> Self
+
+type InputEvent
+pub fn InputEvent::data(Self) -> String
+pub fn InputEvent::input_type(Self) -> String
+pub fn InputEvent::is_composing(Self) -> Bool
+pub impl IsEvent for InputEvent
+pub impl IsUIEvent for InputEvent
+pub impl @js.Cast for InputEvent
+
+type KeyboardEvent
+pub fn KeyboardEvent::alt_key(Self) -> Bool
+pub fn KeyboardEvent::code(Self) -> String
+pub fn KeyboardEvent::ctrl_key(Self) -> Bool
+pub fn KeyboardEvent::is_composing(Self) -> Bool
+pub fn KeyboardEvent::key(Self) -> String
+pub fn KeyboardEvent::location(Self) -> Int
+pub fn KeyboardEvent::meta_key(Self) -> Bool
+pub fn KeyboardEvent::repeat(Self) -> Bool
+pub fn KeyboardEvent::shift_key(Self) -> Bool
+pub impl IsEvent for KeyboardEvent
+pub impl IsUIEvent for KeyboardEvent
+pub impl @js.Cast for KeyboardEvent
+
+type MediaError
+
+type MediaKeys
+
+type MediaStream
+
+type MouseEvent
+pub impl IsEvent for MouseEvent
+pub impl IsMouseEvent for MouseEvent
+pub impl IsUIEvent for MouseEvent
+pub impl @js.Cast for MouseEvent
+
+#external
+pub type Navigator
+pub fn Navigator::clipboard(Self) -> Clipboard
+
+type Node
+pub impl IsEventTarget for Node
+pub impl IsNode for Node
+pub impl @js.Cast for Node
+
+type NodeList
+pub fn NodeList::get_length(Self) -> Double
+pub fn NodeList::item(Self, Double) -> @js.Nullable[Node]
+
+type OffscreenCanvas
+
+type Path2D
+pub fn Path2D::add_path(Self, Self, transform? : @js.Optional[DOMMatrix2DInit]) -> Unit
+pub fn Path2D::new(path? : @js.Optional[@js.Union2[Self, String]]) -> Self
+
+type RemotePlayback
+
+type SVGAnimatedTransformList
+
+type SVGElement
+pub impl IsElement for SVGElement
+pub impl IsEventTarget for SVGElement
+pub impl IsNode for SVGElement
+pub impl IsSVGElement for SVGElement
+pub impl @js.Cast for SVGElement
+
+type SVGGraphicsElement
+pub impl IsElement for SVGGraphicsElement
+pub impl IsEventTarget for SVGGraphicsElement
+pub impl IsNode for SVGGraphicsElement
+pub impl IsSVGElement for SVGGraphicsElement
+pub impl IsSVGGraphicsElement for SVGGraphicsElement
+pub impl @js.Cast for SVGGraphicsElement
+
+type SVGImageElement
+pub impl IsElement for SVGImageElement
+pub impl IsEventTarget for SVGImageElement
+pub impl IsNode for SVGImageElement
+pub impl IsSVGElement for SVGImageElement
+pub impl @js.Cast for SVGImageElement
+
+type SVGStringList
+
+type StylePropertyMap
+
+type Text
+pub fn Text::to_node(Self) -> Node
+pub impl IsEventTarget for Text
+pub impl IsNode for Text
+pub impl @js.Cast for Text
+
+type TextTrack
+
+type TextTrackList
+
+type TimeRanges
+
+type UIEvent
+pub impl IsEvent for UIEvent
+pub impl IsUIEvent for UIEvent
+pub impl @js.Cast for UIEvent
+
+type Uint8ClampedArray
+
+type VideoFrame
+
+type VideoTrackList
+
+type WebGL2RenderingContext
+
+type WebGLRenderingContext
+
+type WheelEvent
+pub fn WheelEvent::get_delta_mode(Self) -> Int
+pub fn WheelEvent::get_delta_x(Self) -> Double
+pub fn WheelEvent::get_delta_y(Self) -> Double
+pub fn WheelEvent::get_delta_z(Self) -> Double
+pub impl IsEvent for WheelEvent
+pub impl IsMouseEvent for WheelEvent
+pub impl IsUIEvent for WheelEvent
+pub impl @js.Cast for WheelEvent
+
+type Window
+pub fn Window::alert(Self, String) -> Unit
+pub fn Window::cancel_animation_frame(Self, Double) -> Unit
+pub fn Window::clear_interval(Self, Int) -> Unit
+pub fn Window::confirm(Self, String) -> Bool
+pub fn Window::current_url(Self) -> String
+pub fn Window::history_go_back(Self) -> Unit
+pub fn Window::history_go_forward(Self) -> Unit
+pub fn Window::inner_height(Self) -> Int
+pub fn Window::inner_width(Self) -> Int
+pub fn Window::load_url(Self, String) -> Unit
+pub fn Window::navigator(Self) -> Navigator
+pub fn Window::push_url(Self, String) -> Unit
+pub fn Window::reload_url(Self) -> Unit
+pub fn Window::replace_url(Self, String) -> Unit
+pub fn Window::request_animation_frame(Self, (Double) -> Unit) -> Double
+pub fn Window::scroll_by(Self, Int, Int) -> Unit
+pub fn Window::scroll_to(Self, Int, Int) -> Unit
+pub fn Window::scroll_to_bottom(Self) -> Unit
+pub fn Window::scroll_to_top(Self) -> Unit
+pub fn Window::scroll_x(Self) -> Int
+pub fn Window::scroll_y(Self) -> Int
+pub fn Window::set_interval(Self, () -> Unit, Int) -> Int
+pub fn Window::to_event_target(Self) -> EventTarget
+pub impl IsEventTarget for Window
+pub impl @js.Cast for Window
+
+// Type aliases
+pub type ImageUnion = @js.Union7[HTMLImageElement, SVGImageElement, HTMLVideoElement, HTMLCanvasElement, ImageBitmap, OffscreenCanvas, VideoFrame]
+
+pub type Listener = (Event) -> Unit
+
+pub type PredefinedColorSpace = String
+
+// Traits
+pub trait IsElement : IsNode {
+  as_element(Self) -> Element
+  get_children(Self) -> Array[Element]
+  set_attribute(Self, String, String) -> Unit
+  get_attribute(Self, String) -> String
+  remove_attribute(Self, String) -> Unit
+  set_property(Self, String, @js.Value) -> Unit
+  get_property(Self, String) -> @js.Optional[String]
+  remove_property(Self, String) -> Unit
+  scroll_into_view(Self) -> Unit
+  get_scroll_top(Self) -> Double
+  set_scroll_top(Self, Double) -> Unit
+  get_scroll_left(Self) -> Double
+  set_scroll_left(Self, Double) -> Unit
+  get_scroll_width(Self) -> Double
+  get_scroll_height(Self) -> Double
+  set_inner_html(Self, String) -> Unit
+  get_bounding_client_rect(Self) -> DOMRect
+}
+
+pub trait IsEvent : @js.Cast {
+  target(Self) -> EventTarget
+  current_target(Self) -> @js.Nullable[EventTarget]
+  prevent_default(Self) -> Unit
+  stop_propagation(Self) -> Unit
+  as_event(Self) -> Event
+  to_ui_event(Self) -> UIEvent?
+  to_clipboard_event(Self) -> ClipboardEvent?
+  to_mouse_event(Self) -> MouseEvent?
+  to_input_event(Self) -> InputEvent?
+  to_focus_event(Self) -> FocusEvent?
+  to_keyboard_event(Self) -> KeyboardEvent?
+  to_animation_event(Self) -> AnimationEvent?
+  to_before_unload_event(Self) -> BeforeUnloadEvent?
+  to_blob_event(Self) -> BlobEvent?
+  to_close_event(Self) -> CloseEvent?
+  to_composition_event(Self) -> CompositionEvent?
+  to_custom_event(Self) -> CustomEvent?
+  to_drag_event(Self) -> DragEvent?
+  to_wheel_event(Self) -> WheelEvent?
+}
+
+pub trait IsEventTarget : @js.Cast {
+  as_event_target(Self) -> EventTarget
+  add_event_listener(Self, String, (Event) -> Unit) -> Unit
+  remove_event_listener(Self, String, (Event) -> Unit) -> Unit
+  dispatch_event(Self, Event) -> Unit
+  to_clipboard(Self) -> Clipboard?
+  to_node(Self) -> Node?
+  to_document(Self) -> Document?
+  to_document_fragment(Self) -> DocumentFragment?
+  to_element(Self) -> Element?
+  to_html_element(Self) -> HTMLElement?
+  to_html_canvas_element(Self) -> HTMLCanvasElement?
+  to_html_input_element(Self) -> HTMLInputElement?
+  to_html_dialog_element(Self) -> HTMLDialogElement?
+  to_html_image_element(Self) -> HTMLImageElement?
+  to_html_select_element(Self) -> HTMLSelectElement?
+  to_html_media_element(Self) -> HTMLMediaElement?
+  to_html_video_element(Self) -> HTMLVideoElement?
+  to_text(Self) -> Text?
+  to_comment(Self) -> Comment?
+  to_svg_element(Self) -> SVGElement?
+  to_svg_graphics_element(Self) -> SVGGraphicsElement?
+  to_svg_image_element(Self) -> SVGImageElement?
+  to_window(Self) -> Window?
+}
+
+pub trait IsHTMLMediaElement : IsHtmlElement {
+  as_html_media_element(Self) -> HTMLMediaElement
+  get_audio_tracks(Self) -> AudioTrackList
+  get_autoplay(Self) -> Bool
+  set_autoplay(Self, Bool) -> Unit
+  get_buffered(Self) -> TimeRanges
+  get_controls(Self) -> Bool
+  set_controls(Self, Bool) -> Unit
+  get_controls_list(Self) -> DOMTokenList
+  get_cross_origin(Self) -> String?
+  set_cross_origin(Self, String?) -> Unit
+  get_current_src(Self) -> String
+  get_current_time(Self) -> Double
+  set_current_time(Self, Double) -> Unit
+  get_default_muted(Self) -> Bool
+  set_default_muted(Self, Bool) -> Unit
+  get_default_playback_rate(Self) -> Double
+  set_default_playback_rate(Self, Double) -> Unit
+  get_disable_remote_playback(Self) -> Bool
+  set_disable_remote_playback(Self, Bool) -> Unit
+  get_duration(Self) -> Double
+  get_ended(Self) -> Bool
+  get_error(Self) -> MediaError?
+  get_loop(Self) -> Bool
+  set_loop(Self, Bool) -> Unit
+  get_media_keys(Self) -> MediaKeys?
+  get_muted(Self) -> Bool
+  set_muted(Self, Bool) -> Unit
+  get_network_state(Self) -> Int
+  get_paused(Self) -> Bool
+  get_playback_rate(Self) -> Double
+  set_playback_rate(Self, Double) -> Unit
+  get_played(Self) -> TimeRanges
+  get_preload(Self) -> String
+  set_preload(Self, String) -> Unit
+  get_preserves_pitch(Self) -> Bool
+  set_preserves_pitch(Self, Bool) -> Unit
+  get_ready_state(Self) -> Int
+  get_remote(Self) -> RemotePlayback
+  get_seekable(Self) -> TimeRanges
+  get_seeking(Self) -> Bool
+  get_sink_id(Self) -> String
+  get_src(Self) -> String
+  set_src(Self, String) -> Unit
+  get_src_object(Self) -> @js.Value?
+  set_src_object(Self, @js.Value?) -> Unit
+  get_text_tracks(Self) -> TextTrackList
+  get_video_tracks(Self) -> VideoTrackList
+  get_volume(Self) -> Double
+  set_volume(Self, Double) -> Unit
+  add_text_track(Self, String, String?, String?) -> TextTrack
+  capture_stream(Self) -> MediaStream
+  can_play_type(Self, String) -> String
+  fast_seek(Self, Double) -> Unit
+  load(Self) -> Unit
+  pause(Self) -> Unit
+  seek_to_next_frame(Self) -> Unit
+}
+
+pub trait IsHtmlElement : IsElement {
+  as_html_element(Self) -> HTMLElement
+  get_access_key(Self) -> String
+  set_access_key(Self, String) -> Unit
+  get_access_key_label(Self) -> String
+  get_anchor_element(Self) -> Element?
+  get_attribute_style_map(Self) -> StylePropertyMap
+  get_auto_capitalize(Self) -> String
+  set_auto_capitalize(Self, String) -> Unit
+  get_auto_focus(Self) -> Bool
+  set_auto_focus(Self, Bool) -> Unit
+  get_auto_correct(Self) -> Bool
+  set_auto_correct(Self, Bool) -> Unit
+  get_content_editable(Self) -> String
+  set_content_editable(Self, String) -> Unit
+  get_dataset(Self) -> DOMStringMap
+  get_dir(Self) -> String
+  set_dir(Self, String) -> Unit
+  get_draggable(Self) -> Bool
+  set_draggable(Self, Bool) -> Unit
+  get_edit_context(Self) -> EditContext?
+  set_edit_context(Self, EditContext?) -> Unit
+  get_enter_key_hint(Self) -> String
+  set_enter_key_hint(Self, String) -> Unit
+  get_hidden(Self) -> @js.Value
+  set_hidden(Self, @js.Value) -> Unit
+  get_inert(Self) -> Bool
+  set_inert(Self, Bool) -> Unit
+  get_inner_text(Self) -> String
+  set_inner_text(Self, String) -> Unit
+  get_input_mode(Self) -> String
+  set_input_mode(Self, String) -> Unit
+  get_is_content_editable(Self) -> Bool
+  get_lang(Self) -> String
+  set_lang(Self, String) -> Unit
+  get_nonce(Self) -> String
+  set_nonce(Self, String) -> Unit
+  get_offset_height(Self) -> Double
+  get_offset_left(Self) -> Double
+  get_offset_parent(Self) -> Element?
+  get_offset_top(Self) -> Double
+  get_offset_width(Self) -> Double
+  get_outer_text(Self) -> String
+  set_outer_text(Self, String) -> Unit
+  get_popover(Self) -> String?
+  set_popover(Self, String?) -> Unit
+  get_spellcheck(Self) -> Bool
+  set_spellcheck(Self, Bool) -> Unit
+  get_style(Self) -> CSSStyleDeclaration
+  set_style_declaration(Self, CSSStyleDeclaration) -> Unit
+  get_tab_index(Self) -> Int
+  set_tab_index(Self, Int) -> Unit
+  get_title(Self) -> String
+  set_title(Self, String) -> Unit
+  get_translate(Self) -> Bool
+  set_translate(Self, Bool) -> Unit
+  get_virtual_keyboard_policy(Self) -> String
+  set_virtual_keyboard_policy(Self, String) -> Unit
+  get_writing_suggestions(Self) -> String
+  set_writing_suggestions(Self, String) -> Unit
+  attach_internals(Self) -> ElementInternals
+  blur(Self) -> Unit
+  click(Self) -> Unit
+  focus(Self) -> Unit
+  hide_popover(Self) -> Unit
+  show_popover(Self) -> Unit
+  toggle_popover(Self, Bool?) -> Bool
+}
+
+pub trait IsMouseEvent : IsUIEvent {
+  as_mouse_event(Self) -> MouseEvent
+  get_alt_key(Self) -> Bool
+  get_button(Self) -> Int
+  get_buttons(Self) -> Int
+  get_client_x(Self) -> Int
+  get_client_y(Self) -> Int
+  get_ctrl_key(Self) -> Bool
+  get_meta_key(Self) -> Bool
+  get_movement_x(Self) -> Int
+  get_movement_y(Self) -> Int
+  get_offset_x(Self) -> Int
+  get_offset_y(Self) -> Int
+  get_page_x(Self) -> Int
+  get_page_y(Self) -> Int
+  get_related_target(Self) -> EventTarget
+  get_screen_x(Self) -> Int
+  get_screen_y(Self) -> Int
+  get_shift_key(Self) -> Bool
+  get_x(Self) -> Int
+  get_y(Self) -> Int
+  get_modifier_state(Self) -> Int
+}
+
+pub trait IsNode : IsEventTarget {
+  as_node(Self) -> Node
+  get_node_type(Self) -> Int
+  get_node_name(Self) -> String
+  get_node_value(Self) -> String
+  set_node_value(Self, @js.Nullable[String]) -> Unit
+  get_first_child(Self) -> Node
+  get_last_child(Self) -> Node
+  get_next_sibling(Self) -> @js.Nullable[Node]
+  get_previous_sibling(Self) -> @js.Nullable[Node]
+  get_parent_node(Self) -> @js.Nullable[Node]
+  append_child(Self, Node) -> Unit
+  remove_child(Self, Node) -> Unit
+  replace_child(Self, Node, Node) -> Unit
+  insert_before(Self, Node, @js.Nullable[Node]) -> Unit
+  get_child(Self, Int) -> Node
+  get_child_count(Self) -> Int
+  is_same_node(Self, Node) -> Bool
+}
+
+pub trait IsSVGElement : IsElement {
+  as_svg_element(Self) -> SVGElement
+  get_attribute_style_map(Self) -> StylePropertyMap
+  get_auto_focus(Self) -> Bool
+  set_auto_focus(Self, Bool) -> Unit
+  get_data_set(Self) -> DOMStringMap
+  get_nonce(Self) -> String
+  set_nonce(Self, String) -> Unit
+  get_owner_svg_element(Self) -> SVGElement?
+  get_style(Self) -> CSSStyleDeclaration
+  set_style(Self, CSSStyleDeclaration) -> Unit
+  get_tab_index(Self) -> Int
+  set_tab_index(Self, Int) -> Unit
+  get_viewport_element(Self) -> SVGElement?
+  blur(Self) -> Unit
+  focus(Self) -> Unit
+}
+
+pub trait IsSVGGraphicsElement : IsSVGElement {
+  as_svg_graphics_element(Self) -> SVGGraphicsElement
+  get_required_extensions(Self) -> String
+  get_system_language(Self) -> SVGStringList
+  get_transform(Self) -> SVGAnimatedTransformList
+  get_bbox(Self) -> DOMRect
+  get_ctm(Self) -> DOMMatrix
+  get_screen_ctm(Self) -> DOMMatrix
+}
+
+pub trait IsUIEvent : IsEvent {
+  as_ui_event(Self) -> UIEvent
+}
+

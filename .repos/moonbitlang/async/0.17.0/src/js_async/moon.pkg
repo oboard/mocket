@@ -1,0 +1,20 @@
+import {
+  "moonbitlang/async/internal/coroutine",
+  "moonbitlang/async/internal/event_loop",
+  "moonbitlang/async/io",
+}
+
+import {
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/async",
+} for "test"
+
+options(
+  targets: {
+    "js_async.mbt": [ "js" ],
+    "js_async_test.mbt": [ "js" ],
+    "readable_stream.mbt": [ "js" ],
+    "readable_stream_test.mbt": [ "js" ],
+    "unimplemented.mbt": [ "native", "wasm", "wasm-gc" ],
+  },
+)

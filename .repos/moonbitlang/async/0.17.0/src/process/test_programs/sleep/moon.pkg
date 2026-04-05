@@ -1,0 +1,10 @@
+import {
+  "moonbitlang/core/string",
+  "moonbitlang/core/env",
+  "moonbitlang/async",
+}
+
+options(
+  "is-main": true,
+  "native-stub": [ "stub.c" ],
+)

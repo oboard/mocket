@@ -1,0 +1,56 @@
+import {
+  "moonbitlang/core/deque",
+  "moonbitlang/core/sorted_set",
+  "moonbitlang/core/cmp",
+  "moonbitlang/async/os_error",
+  "moonbitlang/async/internal/coroutine",
+  "moonbitlang/async/internal/fd_util",
+  "moonbitlang/async/internal/c_buffer",
+  "moonbitlang/async/internal/os_string",
+  "moonbitlang/async/internal/time",
+}
+
+import {
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/async",
+  "moonbitlang/async/pipe",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/io",
+} for "test"
+
+import {
+  "moonbitlang/async",
+} for "wbtest"
+
+options(
+  "native-stub": [
+    "epoll.c",
+    "kqueue.c",
+    "iocp.c",
+    "thread_pool.c",
+    "io_unix.c",
+    "io_windows.c",
+    "process.c",
+  ],
+  targets: {
+    "cancel_before_submit_test.mbt": [ "native" ],
+    "event_loop.js.mbt": [ "js" ],
+    "event_loop.mbt": [ "native" ],
+    "fs.mbt": [ "native" ],
+    "io.mbt": [ "native" ],
+    "io_unix.mbt": [ "native" ],
+    "io_windows.mbt": [ "native" ],
+    "missing_close_test.mbt": [ "native" ],
+    "network.mbt": [ "native" ],
+    "network_unix.mbt": [ "native" ],
+    "network_windows.mbt": [ "native" ],
+    "poll.mbt": [ "native" ],
+    "process_unix.mbt": [ "native" ],
+    "process_windows.mbt": [ "native" ],
+    "stdio.mbt": [ "native" ],
+    "thread_pool.mbt": [ "native" ],
+    "timer.mbt": [ "native" ],
+    "unimplemented.mbt": [ "wasm", "wasm-gc" ],
+    "worker_wbtest.mbt": [ "native", "js" ],
+  },
+)

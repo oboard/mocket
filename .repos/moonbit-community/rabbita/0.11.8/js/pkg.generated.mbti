@@ -1,0 +1,211 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/rabbita/js"
+
+import {
+  "moonbitlang/core/json",
+}
+
+// Values
+pub async fn[T] async_all(Array[async () -> T]) -> Array[T]
+
+pub let async_iterator : Symbol
+
+pub fn async_run(async () -> Unit noraise) -> Unit
+
+pub fn async_test(async () -> Unit) -> Unit
+
+pub let globalThis : Value
+
+pub let iterator : Symbol
+
+pub fn require(String, keys? : Array[String]) -> Value
+
+pub fn[T, E : Error] spawn_detach(async () -> T raise E) -> Unit
+
+pub async fn[T, E : Error] suspend(((T) -> Unit, (E) -> Unit) -> Unit) -> T raise E
+
+// Errors
+pub suberror Error_ {
+  Error_(Value)
+}
+pub fn Error_::cause(Self) -> Value?
+pub fn[T] Error_::wrap(() -> Value, map_ok? : (Value) -> T) -> T raise Self
+pub impl Show for Error_
+
+// Types and methods
+type Nullable[_]
+pub fn[T] Nullable::from_option(T?) -> Self[T]
+#deprecated
+pub fn[T] Nullable::get_exn(Self[T]) -> T
+pub fn[T] Nullable::is_null(Self[T]) -> Bool
+pub fn[T] Nullable::null() -> Self[T]
+pub fn[T] Nullable::to_option(Self[T]) -> T?
+pub fn[T] Nullable::unwrap(Self[T]) -> T
+
+pub struct Object(Value)
+pub fn[K, V] Object::extend_iter(Self, Iter[(K, V)]) -> Unit
+pub fn[K, V] Object::extend_iter2(Self, Iter2[K, V]) -> Unit
+pub fn Object::extend_object(Self, Self) -> Self
+pub fn[K, V] Object::from_iter(Iter[(K, V)]) -> Self
+pub fn[K, V] Object::from_iter2(Iter2[K, V]) -> Self
+pub fn Object::from_value(Value) -> Optional[Self]
+pub fn Object::from_value_unchecked(Value) -> Self
+#deprecated
+pub fn Object::inner(Self) -> Value
+pub fn Object::new() -> Self
+pub fn[K, V] Object::op_get(Self, K) -> V
+pub fn[K, V] Object::op_set(Self, K, V) -> Unit
+pub fn Object::to_value(Self) -> Value
+
+type Optional[_]
+pub fn[T] Optional::from_option(T?) -> Self[T]
+#deprecated
+pub fn[T] Optional::get_exn(Self[T]) -> T
+pub fn[T] Optional::is_undefined(Self[T]) -> Bool
+pub fn[T] Optional::to_option(Self[T]) -> T?
+pub fn[T] Optional::undefined() -> Self[T]
+pub fn[T] Optional::unwrap(Self[T]) -> T
+
+#external
+pub type Promise
+pub fn Promise::all(Array[Self]) -> Self
+pub fn[T] Promise::unsafe_new(async () -> T) -> Self
+pub async fn Promise::wait(Self) -> Value
+
+type Symbol
+pub fn Symbol::make() -> Self
+pub fn Symbol::make_with_number(Double) -> Self
+pub fn Symbol::make_with_string(String) -> Self
+pub fn Symbol::make_with_string_js(String) -> Self
+
+type Union2[_, _]
+pub fn[A : Cast, B] Union2::from0(A) -> Self[A, B]
+pub fn[A, B : Cast] Union2::from1(B) -> Self[A, B]
+pub fn[A : Cast, B] Union2::to0(Self[A, B]) -> A?
+pub fn[A, B : Cast] Union2::to1(Self[A, B]) -> B?
+
+type Union3[_, _, _]
+pub fn[A : Cast, B, C] Union3::from0(A) -> Self[A, B, C]
+pub fn[A, B : Cast, C] Union3::from1(B) -> Self[A, B, C]
+pub fn[A, B, C : Cast] Union3::from2(C) -> Self[A, B, C]
+pub fn[A : Cast, B, C] Union3::to0(Self[A, B, C]) -> A?
+pub fn[A, B : Cast, C] Union3::to1(Self[A, B, C]) -> B?
+pub fn[A, B, C : Cast] Union3::to2(Self[A, B, C]) -> C?
+
+type Union4[_, _, _, _]
+pub fn[A : Cast, B, C, D] Union4::from0(A) -> Self[A, B, C, D]
+pub fn[A, B : Cast, C, D] Union4::from1(B) -> Self[A, B, C, D]
+pub fn[A, B, C : Cast, D] Union4::from2(C) -> Self[A, B, C, D]
+pub fn[A, B, C, D : Cast] Union4::from3(D) -> Self[A, B, C, D]
+pub fn[A : Cast, B, C, D] Union4::to0(Self[A, B, C, D]) -> A?
+pub fn[A, B : Cast, C, D] Union4::to1(Self[A, B, C, D]) -> B?
+pub fn[A, B, C : Cast, D] Union4::to2(Self[A, B, C, D]) -> C?
+pub fn[A, B, C, D : Cast] Union4::to3(Self[A, B, C, D]) -> D?
+
+type Union5[_, _, _, _, _]
+pub fn[A : Cast, B, C, D, E] Union5::from0(A) -> Self[A, B, C, D, E]
+pub fn[A, B : Cast, C, D, E] Union5::from1(B) -> Self[A, B, C, D, E]
+pub fn[A, B, C : Cast, D, E] Union5::from2(C) -> Self[A, B, C, D, E]
+pub fn[A, B, C, D : Cast, E] Union5::from3(D) -> Self[A, B, C, D, E]
+pub fn[A, B, C, D, E : Cast] Union5::from4(E) -> Self[A, B, C, D, E]
+pub fn[A : Cast, B, C, D, E] Union5::to0(Self[A, B, C, D, E]) -> A?
+pub fn[A, B : Cast, C, D, E] Union5::to1(Self[A, B, C, D, E]) -> B?
+pub fn[A, B, C : Cast, D, E] Union5::to2(Self[A, B, C, D, E]) -> C?
+pub fn[A, B, C, D : Cast, E] Union5::to3(Self[A, B, C, D, E]) -> D?
+pub fn[A, B, C, D, E : Cast] Union5::to4(Self[A, B, C, D, E]) -> E?
+
+type Union6[_, _, _, _, _, _]
+pub fn[A : Cast, B, C, D, E, F] Union6::from0(A) -> Self[A, B, C, D, E, F]
+pub fn[A, B : Cast, C, D, E, F] Union6::from1(B) -> Self[A, B, C, D, E, F]
+pub fn[A, B, C : Cast, D, E, F] Union6::from2(C) -> Self[A, B, C, D, E, F]
+pub fn[A, B, C, D : Cast, E, F] Union6::from3(D) -> Self[A, B, C, D, E, F]
+pub fn[A, B, C, D, E : Cast, F] Union6::from4(E) -> Self[A, B, C, D, E, F]
+pub fn[A, B, C, D, E, F : Cast] Union6::from5(F) -> Self[A, B, C, D, E, F]
+pub fn[A : Cast, B, C, D, E, F] Union6::to0(Self[A, B, C, D, E, F]) -> A?
+pub fn[A, B : Cast, C, D, E, F] Union6::to1(Self[A, B, C, D, E, F]) -> B?
+pub fn[A, B, C : Cast, D, E, F] Union6::to2(Self[A, B, C, D, E, F]) -> C?
+pub fn[A, B, C, D : Cast, E, F] Union6::to3(Self[A, B, C, D, E, F]) -> D?
+pub fn[A, B, C, D, E : Cast, F] Union6::to4(Self[A, B, C, D, E, F]) -> E?
+pub fn[A, B, C, D, E, F : Cast] Union6::to5(Self[A, B, C, D, E, F]) -> F?
+
+type Union7[_, _, _, _, _, _, _]
+pub fn[A : Cast, B, C, D, E, F, G] Union7::from0(A) -> Self[A, B, C, D, E, F, G]
+pub fn[A, B : Cast, C, D, E, F, G] Union7::from1(B) -> Self[A, B, C, D, E, F, G]
+pub fn[A, B, C : Cast, D, E, F, G] Union7::from2(C) -> Self[A, B, C, D, E, F, G]
+pub fn[A, B, C, D : Cast, E, F, G] Union7::from3(D) -> Self[A, B, C, D, E, F, G]
+pub fn[A, B, C, D, E : Cast, F, G] Union7::from4(E) -> Self[A, B, C, D, E, F, G]
+pub fn[A, B, C, D, E, F : Cast, G] Union7::from5(F) -> Self[A, B, C, D, E, F, G]
+pub fn[A, B, C, D, E, F, G : Cast] Union7::from6(G) -> Self[A, B, C, D, E, F, G]
+pub fn[A : Cast, B, C, D, E, F, G] Union7::to0(Self[A, B, C, D, E, F, G]) -> A?
+pub fn[A, B : Cast, C, D, E, F, G] Union7::to1(Self[A, B, C, D, E, F, G]) -> B?
+pub fn[A, B, C : Cast, D, E, F, G] Union7::to2(Self[A, B, C, D, E, F, G]) -> C?
+pub fn[A, B, C, D : Cast, E, F, G] Union7::to3(Self[A, B, C, D, E, F, G]) -> D?
+pub fn[A, B, C, D, E : Cast, F, G] Union7::to4(Self[A, B, C, D, E, F, G]) -> E?
+pub fn[A, B, C, D, E, F : Cast, G] Union7::to5(Self[A, B, C, D, E, F, G]) -> F?
+pub fn[A, B, C, D, E, F, G : Cast] Union7::to6(Self[A, B, C, D, E, F, G]) -> G?
+
+type Union8[_, _, _, _, _, _, _, _]
+pub fn[A : Cast, B, C, D, E, F, G, H] Union8::from0(A) -> Self[A, B, C, D, E, F, G, H]
+pub fn[A, B : Cast, C, D, E, F, G, H] Union8::from1(B) -> Self[A, B, C, D, E, F, G, H]
+pub fn[A, B, C : Cast, D, E, F, G, H] Union8::from2(C) -> Self[A, B, C, D, E, F, G, H]
+pub fn[A, B, C, D : Cast, E, F, G, H] Union8::from3(D) -> Self[A, B, C, D, E, F, G, H]
+pub fn[A, B, C, D, E : Cast, F, G, H] Union8::from4(E) -> Self[A, B, C, D, E, F, G, H]
+pub fn[A, B, C, D, E, F : Cast, G, H] Union8::from5(F) -> Self[A, B, C, D, E, F, G, H]
+pub fn[A, B, C, D, E, F, G : Cast, H] Union8::from6(G) -> Self[A, B, C, D, E, F, G, H]
+pub fn[A, B, C, D, E, F, G, H : Cast] Union8::from7(H) -> Self[A, B, C, D, E, F, G, H]
+pub fn[A : Cast, B, C, D, E, F, G, H] Union8::to0(Self[A, B, C, D, E, F, G, H]) -> A?
+pub fn[A, B : Cast, C, D, E, F, G, H] Union8::to1(Self[A, B, C, D, E, F, G, H]) -> B?
+pub fn[A, B, C : Cast, D, E, F, G, H] Union8::to2(Self[A, B, C, D, E, F, G, H]) -> C?
+pub fn[A, B, C, D : Cast, E, F, G, H] Union8::to3(Self[A, B, C, D, E, F, G, H]) -> D?
+pub fn[A, B, C, D, E : Cast, F, G, H] Union8::to4(Self[A, B, C, D, E, F, G, H]) -> E?
+pub fn[A, B, C, D, E, F : Cast, G, H] Union8::to5(Self[A, B, C, D, E, F, G, H]) -> F?
+pub fn[A, B, C, D, E, F, G : Cast, H] Union8::to6(Self[A, B, C, D, E, F, G, H]) -> G?
+pub fn[A, B, C, D, E, F, G, H : Cast] Union8::to7(Self[A, B, C, D, E, F, G, H]) -> H?
+
+#external
+pub type Value
+pub fn[Arg, Result] Value::apply(Self, Array[Arg]) -> Result
+pub fn[Arg, Result] Value::apply_with_index(Self, Int, Array[Arg]) -> Result
+pub fn[Arg, Result] Value::apply_with_string(Self, String, Array[Arg]) -> Result
+pub fn[Arg, Result] Value::apply_with_symbol(Self, Symbol, Array[Arg]) -> Result
+pub fn[T] Value::cast(Self) -> T
+pub fn[T] Value::cast_from(T) -> Self
+pub fn Value::extends(Self, Self) -> Self
+pub fn Value::from_json(Json) -> Self raise
+pub fn Value::from_json_string(String) -> Self raise
+pub fn[T] Value::get_with_index(Self, Int) -> T
+pub fn[T] Value::get_with_string(Self, String) -> T
+pub fn[T] Value::get_with_symbol(Self, Symbol) -> T
+pub fn Value::is_bool(Self) -> Bool
+pub fn Value::is_null(Self) -> Bool
+pub fn Value::is_number(Self) -> Bool
+pub fn Value::is_object(Self) -> Bool
+pub fn Value::is_string(Self) -> Bool
+pub fn Value::is_symbol(Self) -> Bool
+pub fn Value::is_undefined(Self) -> Bool
+pub fn[Arg, Result] Value::new(Self, Array[Arg]) -> Result
+pub fn[Arg, Result] Value::new_with_index(Self, Int, Array[Arg]) -> Result
+pub fn[Arg, Result] Value::new_with_string(Self, String, Array[Arg]) -> Result
+pub fn[Arg, Result] Value::new_with_symbol(Self, Symbol, Array[Arg]) -> Result
+pub fn[T] Value::set_with_index(Self, Int, T) -> Unit
+pub fn[T] Value::set_with_string(Self, String, T) -> Unit
+pub fn[T] Value::set_with_symbol(Self, Symbol, T) -> Unit
+pub fn Value::to_json(Self) -> Json raise
+pub fn Value::to_json_string(Self) -> String raise
+pub fn Value::to_string(Self) -> String
+pub impl Show for Value
+pub impl @json.FromJson for Value
+
+// Type aliases
+
+// Traits
+pub(open) trait Cast {
+  into(Value) -> Self?
+  from(Self) -> Value
+}
+pub impl Cast for Bool
+pub impl Cast for Int
+pub impl Cast for Double
+pub impl Cast for String
+pub impl[A : Cast] Cast for Array[A]
+

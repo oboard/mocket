@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/async/semaphore"
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct Semaphore {
+  size : Int
+  // private fields
+
+  fn new(Int, initial_value? : Int) -> Semaphore
+}
+pub async fn Semaphore::acquire(Self) -> Unit
+pub fn Semaphore::new(Int, initial_value? : Int) -> Self
+pub fn Semaphore::release(Self) -> Unit
+pub fn Semaphore::try_acquire(Self) -> Bool
+
+// Type aliases
+
+// Traits
+

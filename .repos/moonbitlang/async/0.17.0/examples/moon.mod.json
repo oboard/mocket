@@ -1,0 +1,16 @@
+{
+  "name": "moonbitlang/async_examples",
+  "version": "0.3.0",
+  "deps": {
+    "moonbitlang/async": {
+      "path": ".."
+    }
+  },
+  "readme": "README.md",
+  "repository": "https://github.com/moonbitlang/async",
+  "license": "Apache-2.0",
+  "keywords": [],
+  "description": "Examples for `moonbitlang/async`",
+  "source": ".",
+  "preferred-target": "native"
+}

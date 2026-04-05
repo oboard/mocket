@@ -3,4 +3,6 @@ import {
   "moonbitlang/async",
 }
 
-options("is-main": true)
+options(
+  "is-main": true,
+)

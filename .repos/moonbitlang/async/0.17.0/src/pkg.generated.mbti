@@ -1,0 +1,91 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/async"
+
+import {
+  "moonbitlang/async/aqueue",
+  "moonbitlang/async/cond_var",
+  "moonbitlang/async/semaphore",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub async fn[X] all(ArrayView[async () -> X], max_concurrent? : Int) -> Array[X]
+
+#callsite(autofill(loc))
+pub async fn[X] any(ArrayView[async () -> X], max_concurrent? : Int, allow_failure? : Bool, loc~ : SourceLoc) -> X
+
+pub fn is_being_cancelled() -> Bool
+
+pub fn is_cancellation_error(Error) -> Bool
+
+pub fn now() -> Int64
+
+pub async fn pause() -> Unit
+
+pub async fn[X] protect_from_cancel(async () -> X, resume_on_cancel? : Bool) -> X
+
+pub async fn[X] retry(RetryMethod, max_retry? : Int, fatal_error? : (Error) -> Bool, async () -> X) -> X
+
+pub async fn sleep(Int) -> Unit
+
+pub async fn[X] with_task_group(async (TaskGroup[X]) -> X) -> X
+
+pub async fn[X] with_timeout(Int, async () -> X, error? : Error) -> X
+
+pub async fn[X] with_timeout_opt(Int, async () -> X) -> X?
+
+// Errors
+pub(all) suberror BreakFromSpawnLoop
+
+pub suberror TimeoutError derive(Show, ToJson)
+
+pub suberror TimerCancelled derive(Show, @debug.Debug)
+
+// Types and methods
+pub struct Lazy[X] {
+  // private fields
+
+  fn[X] new(async () -> X) -> Lazy[X]
+}
+#as_free_fn(lazy_init, deprecated)
+pub fn[X] Lazy::new(async () -> X) -> Self[X]
+pub async fn[X] Lazy::wait(Self[X]) -> X
+
+pub(all) enum RetryMethod {
+  Immediate
+  FixedDelay(Int)
+  ExponentialDelay(initial~ : Int, factor~ : Double, maximum~ : Int)
+}
+
+type Task[X]
+pub fn[X] Task::cancel(Self[X]) -> Unit
+pub fn[X] Task::try_wait(Self[X]) -> X? raise
+pub async fn[X] Task::wait(Self[X]) -> X
+
+type TaskGroup[X]
+pub fn[X] TaskGroup::add_defer(Self[X], async () -> Unit) -> Unit
+pub fn[X] TaskGroup::return_immediately(Self[X], X) -> Unit raise
+pub fn[G, X] TaskGroup::spawn(Self[G], async () -> X, no_wait? : Bool, allow_failure? : Bool) -> Task[X]
+pub fn[X] TaskGroup::spawn_bg(Self[X], async () -> Unit, no_wait? : Bool, allow_failure? : Bool) -> Unit
+pub fn[X] TaskGroup::spawn_loop(Self[X], async () -> Unit, no_wait? : Bool, allow_failure? : Bool, retry? : RetryMethod, max_retry? : Int, fatal_error? : (Error) -> Bool) -> Unit
+
+pub struct Timer {
+  duration : Int
+  // private fields
+
+  fn new(Int) -> Timer
+}
+pub fn Timer::cancel(Self, err? : Error) -> Unit
+pub fn Timer::new(Int) -> Self
+pub fn Timer::refresh(Self) -> Unit
+pub async fn Timer::wait(Self) -> Unit
+
+// Type aliases
+pub using @cond_var {type Cond as CondVar}
+
+pub using @aqueue {type Queue}
+
+pub using @semaphore {type Semaphore}
+
+// Traits
+

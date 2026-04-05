@@ -1,0 +1,16 @@
+import {
+  "moonbit-community/rabbita/internal/runtime" @runtime,
+  "moonbit-community/rabbita/dom",
+  "moonbit-community/rabbita/common",
+  "moonbit-community/rabbita/internal/interface",
+  "moonbit-community/rabbita/cmd",
+  "moonbit-community/rabbita/variant",
+  "moonbitlang/core/debug",
+  "moonbitlang/core/list",
+}
+
+import {
+  "moonbit-community/rabbita",
+} for "test"
+
+supported_targets = "js+native"

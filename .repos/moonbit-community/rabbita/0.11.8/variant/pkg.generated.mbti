@@ -1,0 +1,19 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/rabbita/variant"
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) enum Variant {
+  Boolean(Bool)
+  Integer(Int)
+  Floating(Double)
+  String(String)
+} derive(Compare, Eq, Hash, Show)
+
+// Type aliases
+
+// Traits
+

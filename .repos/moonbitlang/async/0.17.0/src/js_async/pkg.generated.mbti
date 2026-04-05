@@ -1,0 +1,41 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/async/js_async"
+
+import {
+  "moonbitlang/async/io",
+}
+
+// Values
+pub async fn[X] run_promise((AbortSignal) -> Promise[X]) -> X
+
+// Errors
+type JsError
+pub impl Show for JsError
+
+// Types and methods
+#external
+pub type AbortController
+pub fn AbortController::abort(Self) -> Unit
+pub fn AbortController::new() -> Self
+pub fn AbortController::signal(Self) -> AbortSignal
+
+#external
+pub type AbortSignal
+
+type JsReadableStream
+pub fn JsReadableStream::new_pipe() -> (Self, @io.PipeWrite)
+
+#external
+pub type Promise[X]
+pub fn[X] Promise::from_async(async () -> X, abort_signal? : AbortSignal) -> Self[X]
+pub async fn[X] Promise::wait(Self[X], abort_controller? : AbortController) -> X
+
+type ReadableStream
+pub fn ReadableStream::close(Self) -> Unit
+pub fn ReadableStream::from_js(JsReadableStream) -> Self
+pub impl @io.Reader for ReadableStream
+
+// Type aliases
+
+// Traits
+

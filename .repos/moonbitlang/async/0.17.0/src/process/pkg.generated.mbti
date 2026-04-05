@@ -1,0 +1,73 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/async/process"
+
+import {
+  "moonbitlang/async",
+  "moonbitlang/async/io",
+  "moonbitlang/async/pipe",
+  "moonbitlang/async/stdio",
+}
+
+// Values
+pub async fn collect_output(StringView, ArrayView[String], extra_env? : Map[String, String], inherit_env? : Bool, stdin? : &ProcessInput, cwd? : StringView) -> (Int, &@io.Data, &@io.Data)
+
+pub async fn collect_output_merged(StringView, Array[String], extra_env? : Map[String, String], inherit_env? : Bool, stdin? : &ProcessInput, cwd? : StringView) -> (Int, &@io.Data)
+
+pub async fn collect_stderr(StringView, ArrayView[String], extra_env? : Map[String, String], inherit_env? : Bool, stdin? : &ProcessInput, stdout? : &ProcessOutput, cwd? : StringView) -> (Int, &@io.Data)
+
+pub async fn collect_stdout(StringView, ArrayView[String], extra_env? : Map[String, String], inherit_env? : Bool, stdin? : &ProcessInput, stderr? : &ProcessOutput, cwd? : StringView) -> (Int, &@io.Data)
+
+pub fn graceful_cancel(timeout~ : Int) -> CancellationHandler
+
+pub fn hard_cancel() -> CancellationHandler
+
+pub fn read_from_process() -> (ReadFromProcess, &ProcessOutput) raise
+
+pub async fn redirect_from_file(String) -> &ProcessInput
+
+pub async fn redirect_to_file(String, append? : Bool, create? : Int, truncate? : Bool) -> &ProcessOutput
+
+pub async fn run(StringView, ArrayView[String], extra_env? : Map[String, String], inherit_env? : Bool, stdin? : &ProcessInput, stdout? : &ProcessOutput, stderr? : &ProcessOutput, cwd? : StringView, cancel_handler? : CancellationHandler) -> Int
+
+pub async fn[X] spawn(@async.TaskGroup[X], StringView, ArrayView[String], extra_env? : Map[String, String], inherit_env? : Bool, stdin? : &ProcessInput, stdout? : &ProcessOutput, stderr? : &ProcessOutput, cwd? : StringView, cancel_handler? : CancellationHandler, no_wait? : Bool) -> Process
+
+pub async fn spawn_orphan(StringView, ArrayView[String], extra_env? : Map[String, String], inherit_env? : Bool, stdin? : &ProcessInput, stdout? : &ProcessOutput, stderr? : &ProcessOutput, cwd? : StringView) -> Int
+
+pub async fn wait_pid(Int) -> Int
+
+pub fn write_to_process() -> (&ProcessInput, WriteToProcess) raise
+
+// Errors
+
+// Types and methods
+pub(all) struct CancellationHandler(async (Int) -> Unit)
+#deprecated
+pub fn CancellationHandler::inner(Self) -> async (Int) -> Unit
+
+pub struct Process {
+  pid : Int
+  // private fields
+}
+pub fn Process::cancel(Self) -> Unit
+pub fn Process::try_wait(Self) -> Int? raise
+pub async fn Process::wait(Self) -> Int
+
+type ReadFromProcess
+pub fn ReadFromProcess::close(Self) -> Unit
+pub impl @io.Reader for ReadFromProcess
+
+type WriteToProcess
+pub fn WriteToProcess::close(Self) -> Unit
+pub impl @io.Writer for WriteToProcess
+
+// Type aliases
+
+// Traits
+trait ProcessInput
+pub impl ProcessInput for @pipe.PipeRead
+pub impl ProcessInput for @stdio.Input
+
+trait ProcessOutput
+pub impl ProcessOutput for @pipe.PipeWrite
+pub impl ProcessOutput for @stdio.Output
+

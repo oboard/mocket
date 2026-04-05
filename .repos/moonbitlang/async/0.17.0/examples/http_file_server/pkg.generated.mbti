@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/async_examples/http_file_server"
+
+import {
+  "moonbitlang/async/http",
+}
+
+// Values
+pub async fn server_main(@http.Server, path~ : String, log? : (String) -> Unit) -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

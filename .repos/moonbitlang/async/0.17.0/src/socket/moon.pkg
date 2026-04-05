@@ -1,0 +1,32 @@
+import {
+  "moonbitlang/core/string",
+  "moonbitlang/async/os_error",
+  "moonbitlang/async/internal/event_loop",
+  "moonbitlang/async/internal/fd_util",
+  "moonbitlang/async/internal/c_buffer",
+  "moonbitlang/async/io",
+  "moonbitlang/async",
+}
+
+import {
+  "moonbitlang/core/encoding/utf8",
+} for "test"
+
+options(
+  "native-stub": [ "socket.c" ],
+  targets: {
+    "addr.mbt": [ "native" ],
+    "addr_test.mbt": [ "native" ],
+    "addr_utils.mbt": [ "native" ],
+    "connect_burst_test.mbt": [ "native" ],
+    "dual_stack_test.mbt": [ "native" ],
+    "ffi.mbt": [ "native" ],
+    "getsockname_test.mbt": [ "native" ],
+    "happy_eyeball.mbt": [ "native" ],
+    "read_exactly_test.mbt": [ "native" ],
+    "resolve_host_test.mbt": [ "native" ],
+    "reuse_addr_test.mbt": [ "native" ],
+    "tcp.mbt": [ "native" ],
+    "udp.mbt": [ "native" ],
+  },
+)

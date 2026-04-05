@@ -1,0 +1,10 @@
+import {
+  "moonbitlang/core/set",
+  "moonbitlang/core/cmp",
+  "moonbitlang/async/internal/coroutine",
+  "moonbitlang/async/internal/event_loop",
+  "moonbitlang/async/internal/time",
+  "moonbitlang/async/aqueue",
+  "moonbitlang/async/semaphore",
+  "moonbitlang/async/cond_var",
+}
