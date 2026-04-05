@@ -5077,7 +5077,9 @@ async test "serve_async_on_until queue close broadcasts to remaining reused webs
         }
       }
       if stopped_index < 0 {
-        fail("expected exactly one reused websocket client to stop after shutdown signal")
+        fail(
+          "expected exactly one reused websocket client to stop after shutdown signal",
+        )
       }
       stopped_index
     }
@@ -5149,7 +5151,8 @@ async test "serve_async_on_until queue close broadcasts to remaining reused webs
     }
 
     for surviving_index in surviving_indexes {
-      match @async.with_timeout_opt(100, () => try? tasks[surviving_index].wait()) {
+      match
+        @async.with_timeout_opt(100, () => try? tasks[surviving_index].wait()) {
         Some(result) =>
           fail(
             "expected reused websocket server \{surviving_index + 1} to stay alive after one shutdown signal, got \{result}",
@@ -5165,7 +5168,8 @@ async test "serve_async_on_until queue close broadcasts to remaining reused webs
     }
 
     for surviving_index in surviving_indexes {
-      match @async.with_timeout_opt(100, () => try? tasks[surviving_index].wait()) {
+      match
+        @async.with_timeout_opt(100, () => try? tasks[surviving_index].wait()) {
         Some(result) =>
           fail(
             "expected reused websocket server \{surviving_index + 1} to remain alive immediately before queue close, got \{result}",
@@ -5187,7 +5191,8 @@ async test "serve_async_on_until queue close broadcasts to remaining reused webs
     }
 
     for surviving_index in surviving_indexes {
-      match @async.with_timeout_opt(300, () => try? tasks[surviving_index].wait()) {
+      match
+        @async.with_timeout_opt(300, () => try? tasks[surviving_index].wait()) {
         Some(Ok(_)) => ()
         Some(Err(err)) =>
           fail(

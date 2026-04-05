@@ -1,9 +1,13 @@
+/// A single value from a multipart form submission, containing optional filename, content type, and raw data.
+
 ///|
 pub(all) struct MultipartFormValue {
   filename : String?
   content_type : String?
   data : BytesView
 }
+
+/// The main application type that holds route mappings, middleware, and WebSocket handlers.
 
 ///|
 #alias(T)
@@ -30,6 +34,8 @@ fn next_mocket_instance_id() -> String {
   "mocket-\{mocket_instance_counter.val}"
 }
 
+/// Creates a new Mocket application instance with an optional base path prefix.
+
 ///|
 pub fn new(base_path? : String = "") -> Mocket {
   {
@@ -45,6 +51,8 @@ pub fn new(base_path? : String = "") -> Mocket {
 }
 
 ///|
+
+/// The SameSite attribute for cookies, controlling cross-site request behavior.
 
 ///|
 pub(all) enum SameSiteOption {
@@ -70,6 +78,8 @@ pub impl ToJson for SameSiteOption with to_json(self : SameSiteOption) -> Json {
     SameSiteNone => "none"
   }
 }
+
+/// Represents an HTTP cookie with its name, value, and optional attributes.
 
 ///|
 pub(all) struct CookieItem {
@@ -119,6 +129,8 @@ pub impl Show for CookieItem with to_string(self : CookieItem) -> String {
   buf.to_string()
 }
 
+/// Registers a route handler for the given HTTP method and path.
+
 ///|
 pub fn Mocket::on(
   self : Mocket,
@@ -152,10 +164,14 @@ pub fn Mocket::on(
   }
 }
 
+/// Registers a handler for GET requests on the given path.
+
 ///|
 pub fn Mocket::get(self : Mocket, path : String, handler : HttpHandler) -> Unit {
   self.on("GET", path, handler)
 }
+
+/// Registers a handler for POST requests on the given path.
 
 ///|
 pub fn Mocket::post(
@@ -166,6 +182,8 @@ pub fn Mocket::post(
   self.on("POST", path, handler)
 }
 
+/// Registers a handler for PATCH requests on the given path.
+
 ///|
 pub fn Mocket::patch(
   self : Mocket,
@@ -174,6 +192,8 @@ pub fn Mocket::patch(
 ) -> Unit {
   self.on("PATCH", path, handler)
 }
+
+/// Registers a handler for CONNECT requests on the given path.
 
 ///|
 pub fn Mocket::connect(
@@ -184,10 +204,14 @@ pub fn Mocket::connect(
   self.on("CONNECT", path, handler)
 }
 
+/// Registers a handler for PUT requests on the given path.
+
 ///|
 pub fn Mocket::put(self : Mocket, path : String, handler : HttpHandler) -> Unit {
   self.on("PUT", path, handler)
 }
+
+/// Registers a handler for DELETE requests on the given path.
 
 ///|
 pub fn Mocket::delete(
@@ -198,6 +222,8 @@ pub fn Mocket::delete(
   self.on("DELETE", path, handler)
 }
 
+/// Registers a handler for HEAD requests on the given path.
+
 ///|
 pub fn Mocket::head(
   self : Mocket,
@@ -206,6 +232,8 @@ pub fn Mocket::head(
 ) -> Unit {
   self.on("HEAD", path, handler)
 }
+
+/// Registers a handler for OPTIONS requests on the given path.
 
 ///|
 pub fn Mocket::options(
@@ -216,6 +244,8 @@ pub fn Mocket::options(
   self.on("OPTIONS", path, handler)
 }
 
+/// Registers a handler for TRACE requests on the given path.
+
 ///|
 pub fn Mocket::trace(
   self : Mocket,
@@ -225,10 +255,14 @@ pub fn Mocket::trace(
   self.on("TRACE", path, handler)
 }
 
+/// Registers a handler that matches all HTTP methods on the given path.
+
 ///|
 pub fn Mocket::all(self : Mocket, path : String, handler : HttpHandler) -> Unit {
   self.on("*", path, handler)
 }
+
+/// Creates a route group with a shared base path prefix, merging its routes and middleware into the app.
 
 ///|
 // Create route group
@@ -268,6 +302,8 @@ pub fn Mocket::group(
   // Merge middlewares
   self.middlewares.append(group.middlewares)
 }
+
+/// Registers a WebSocket handler for the given path, matched regardless of HTTP method.
 
 ///|
 // Register WebSocket route (method-agnostic, matched by path)

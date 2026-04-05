@@ -1,3 +1,8 @@
+/// Trait for types that can be sent as an HTTP response body.
+///
+/// Implementors define `options` to configure response headers (e.g. Content-Type)
+/// and `output` to write the body bytes into the buffer.
+
 ///|
 pub(open) trait Responder {
   options(Self, res : HttpResponse) -> Unit
@@ -112,10 +117,14 @@ pub impl Responder for Html with output(self, buf) -> Unit {
   buf.write_bytes(@utf8.encode(self.0))
 }
 
+/// Creates an HTML responder from any `Show` value, setting the Content-Type to `text/html`.
+
 ///|
 pub fn html(html : &Show) -> &Responder {
   Html(html.to_string())
 }
+
+/// Creates a plain-text responder from any `Show` value, setting the Content-Type to `text/plain`.
 
 ///|
 pub fn text(text : &Show) -> &Responder {

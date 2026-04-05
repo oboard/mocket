@@ -45,8 +45,5 @@ test "if_none_match_matches checks single, wildcard, list, and weak etag" {
   // no match
   assert_eq(if_none_match_matches("\"aaa\", \"bbb\"", "\"abc\""), false)
   // weak etag in list
-  assert_eq(
-    if_none_match_matches("W/\"aaa\", W/\"abc\"", "\"abc\""),
-    true,
-  )
+  assert_eq(if_none_match_matches("W/\"aaa\", W/\"abc\"", "\"abc\""), true)
 }

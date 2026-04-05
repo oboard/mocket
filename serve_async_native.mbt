@@ -20,7 +20,6 @@ fn copy_async_headers(headers : Map[String, String]) -> Map[String, String] {
   copied
 }
 
-
 ///|
 let ws_serve_runtime_counter : Ref[Int] = Ref::new(0)
 

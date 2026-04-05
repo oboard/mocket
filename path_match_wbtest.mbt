@@ -2,10 +2,7 @@
 test "find_route_for_method hits static route" {
   let app = new()
   app.get("/users", fn(_event) noraise { "users" })
-  inspect(
-    app.find_route_for_method("GET", "/users") is Some(_),
-    content="true",
-  )
+  inspect(app.find_route_for_method("GET", "/users") is Some(_), content="true")
 }
 
 ///|
@@ -41,10 +38,7 @@ test "find_route_for_method dynamic route extracts params" {
 ///|
 test "find_route_for_method dynamic route with multiple params" {
   let app = new()
-  app.get(
-    "/users/:userId/posts/:postId",
-    fn(_event) noraise { "user_post" },
-  )
+  app.get("/users/:userId/posts/:postId", fn(_event) noraise { "user_post" })
   match app.find_route_for_method("GET", "/users/42/posts/99") {
     Some((_, params)) =>
       inspect(params, content="{\"userId\": \"42\", \"postId\": \"99\"}")

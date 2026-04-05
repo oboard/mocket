@@ -191,8 +191,7 @@ pub impl Show for StatusCode with output(self, logger) {
     BadGateway => logger.write_string("BadGateway")
     ServiceUnavailable => logger.write_string("ServiceUnavailable")
     GatewayTimeout => logger.write_string("GatewayTimeout")
-    HttpVersionNotSupported =>
-      logger.write_string("HttpVersionNotSupported")
+    HttpVersionNotSupported => logger.write_string("HttpVersionNotSupported")
     VariantAlsoNegotiates => logger.write_string("VariantAlsoNegotiates")
     InsufficientStorage => logger.write_string("InsufficientStorage")
     LoopDetected => logger.write_string("LoopDetected")

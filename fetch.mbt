@@ -1,3 +1,5 @@
+/// Standard HTTP request methods.
+
 ///|
 pub(all) enum HttpMethod {
   GET
@@ -10,6 +12,8 @@ pub(all) enum HttpMethod {
   TRACE
   CONNECT
 } derive(Eq, Debug)
+
+/// Controls whether credentials (cookies, TLS certificates) are sent with a fetch request.
 
 ///|
 pub(all) enum FetchCredentials {
@@ -26,6 +30,8 @@ pub fn FetchCredentials::to_string(self : FetchCredentials) -> String {
     Include => "include"
   }
 }
+
+/// Controls the CORS mode for a fetch request.
 
 ///|
 pub(all) enum FetchMode {
@@ -44,6 +50,8 @@ pub fn FetchMode::to_string(self : FetchMode) -> String {
     Navigate => "navigate"
   }
 }
+
+/// Error type for fetch operations, wrapping a failure message.
 
 ///|
 pub suberror FetchError {

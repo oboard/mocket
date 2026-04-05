@@ -11,6 +11,8 @@ fn hex_digit(b : Byte) -> Int? {
   }
 }
 
+/// Decodes a percent-encoded URL byte sequence into a UTF-8 string.
+
 ///|
 pub fn url_decode(bytes : BytesView) -> String {
   let len = bytes.length()
@@ -48,6 +50,8 @@ pub fn url_decode(bytes : BytesView) -> String {
     _ => ""
   }
 }
+
+/// Parses URL-encoded form data (e.g. `key=value&foo=bar`) into a map of key-value pairs.
 
 ///|
 pub fn parse_form_data(bytes : BytesView) -> Map[String, String] {
@@ -111,6 +115,8 @@ fn is_unreserved(b : Byte) -> Bool {
   b == b'~'
 }
 
+/// Percent-encodes a string for use in URLs, escaping all characters except unreserved ones.
+
 ///|
 pub fn url_encode(s : String) -> String {
   let bytes = @utf8.encode(s)
@@ -139,6 +145,8 @@ pub fn url_encode(s : String) -> String {
   }
   buf.to_string()
 }
+
+/// Encodes a map of key-value pairs into a URL-encoded form string (e.g. `key=value&foo=bar`).
 
 ///|
 pub fn form_encode(map : Map[String, String]) -> String {
@@ -181,6 +189,8 @@ fn find_boundary(
   }
   -1
 }
+
+/// Parses a multipart/form-data body using the given boundary string into a map of form values.
 
 ///|
 pub fn parse_multipart(

@@ -5,6 +5,7 @@ import {
   "moonbitlang/async/aqueue",
   "moonbitlang/async/http",
   "moonbitlang/core/buffer",
+  "moonbitlang/core/debug",
 }
 
 // Values
@@ -41,13 +42,13 @@ pub fn url_decode(BytesView) -> String
 pub fn url_encode(String) -> String
 
 // Errors
-pub suberror ExecError derive(Show)
+pub suberror ExecError derive(@debug.Debug)
 
 pub suberror FetchError {
   RequestFailed(String)
-} derive(Show)
+} derive(@debug.Debug)
 
-pub suberror IOError derive(Show)
+pub suberror IOError derive(@debug.Debug)
 
 pub suberror NativeServeError {
   InvalidMaxConnections(Int)
@@ -56,9 +57,9 @@ pub suberror NativeServeError {
   InvalidWebSocketMaxMessageBytes(Int)
   InvalidWebSocketOutgoingQueueCapacity(Int)
   InvalidWebSocketReadTimeoutMs(Int)
-} derive(Show, ToJson)
+} derive(ToJson, @debug.Debug)
 
-pub suberror NetworkError derive(Show)
+pub suberror NetworkError derive(@debug.Debug)
 
 // Types and methods
 pub(all) struct CookieItem {
@@ -77,7 +78,7 @@ pub(all) enum FetchCredentials {
   Omit
   SameOrigin
   Include
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn FetchCredentials::to_string(Self) -> String
 
 pub(all) enum FetchMode {
@@ -85,7 +86,7 @@ pub(all) enum FetchMode {
   NoCors
   SameOrigin
   Navigate
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn FetchMode::to_string(Self) -> String
 
 type Html
@@ -101,7 +102,7 @@ pub(all) enum HttpMethod {
   OPTIONS
   TRACE
   CONNECT
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 
 pub(all) struct HttpRequest {
   http_method : String
@@ -195,13 +196,15 @@ pub fn NativeServeOptions::new(max_connections? : Int, max_request_body_bytes? :
 pub(all) enum NativeWebSocketOverflowPolicy {
   DropOldest
   DropLatest
-}
+} derive(Eq, @debug.Debug)
+pub impl Show for NativeWebSocketOverflowPolicy
 
 pub(all) enum SameSiteOption {
   Lax
   Strict
   SameSiteNone
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
+pub impl Show for SameSiteOption
 pub impl ToJson for SameSiteOption
 
 pub(all) struct StaticAssetMeta {
@@ -281,9 +284,10 @@ pub(all) enum StatusCode {
   NotExtended
   NetworkAuthenticationRequired
   Custom(Int)
-} derive(Eq, Show, ToJson)
+} derive(Eq, ToJson, @debug.Debug)
 pub fn StatusCode::from_int(Int) -> Self
 pub fn StatusCode::to_int(Self) -> Int
+pub impl Show for StatusCode
 
 pub enum WebSocketAggregatedMessage {
   Text(String)

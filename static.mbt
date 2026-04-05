@@ -1,3 +1,5 @@
+/// Metadata describing a static asset including its content type, ETag, modification time, and size.
+
 ///|
 pub(all) struct StaticAssetMeta {
   asset_type : String?
@@ -7,6 +9,8 @@ pub(all) struct StaticAssetMeta {
   size : Int64?
   encoding : String?
 }
+
+/// Creates a new `StaticAssetMeta` with optional fields for asset type, ETag, mtime, path, size, and encoding.
 
 ///|
 pub fn StaticAssetMeta::new(
@@ -19,6 +23,8 @@ pub fn StaticAssetMeta::new(
 ) -> Self {
   { asset_type, etag, mtime, path, size, encoding }
 }
+
+/// Trait for providing static file serving capabilities, including asset lookup, content retrieval, and MIME type resolution.
 
 ///|
 pub(open) trait ServeStaticProvider {
@@ -177,6 +183,8 @@ fn if_modified_since_matches(header_value : String, mtime : Int64) -> Bool {
     None => false
   }
 }
+
+/// Mounts a static asset provider at the given path, serving files with ETag/Last-Modified caching and content negotiation.
 
 ///|
 pub fn Mocket::static_assets(

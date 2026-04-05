@@ -46,19 +46,13 @@ test "request_target_query_string returns None for plain paths" {
 test "request_target_query_string extracts query" {
   assert_eq(request_target_query_string("/search?q=hello"), Some("q=hello"))
   assert_eq(request_target_query_string("/?key=val"), Some("key=val"))
-  assert_eq(
-    request_target_query_string("/a/b?x=1&y=2"),
-    Some("x=1&y=2"),
-  )
+  assert_eq(request_target_query_string("/a/b?x=1&y=2"), Some("x=1&y=2"))
 }
 
 ///|
 test "request_target_query_string extracts query before fragment" {
   assert_eq(request_target_query_string("/page?q=1#frag"), Some("q=1"))
-  assert_eq(
-    request_target_query_string("/a?x=1&y=2#z"),
-    Some("x=1&y=2"),
-  )
+  assert_eq(request_target_query_string("/a?x=1&y=2#z"), Some("x=1&y=2"))
 }
 
 ///|

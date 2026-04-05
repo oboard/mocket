@@ -1711,7 +1711,10 @@ test "register_native_ws_connection makes connection resolvable" {
     outgoing,
     NativeWebSocketOverflowPolicy::DropOldest,
   )
-  inspect(resolve_native_ws_connection(connection_id) is Some(_), content="true")
+  inspect(
+    resolve_native_ws_connection(connection_id) is Some(_),
+    content="true",
+  )
   inspect(native_ws_connection_exists(connection_id), content="true")
   cleanup_native_ws_runtime(runtime_id)
 }
@@ -1928,8 +1931,14 @@ test "cleanup_native_ws_runtime removes all connections for runtime" {
   inspect(native_ws_connection_exists("test-cleanup-runtime:1"), content="true")
   inspect(native_ws_connection_exists("test-cleanup-runtime:2"), content="true")
   cleanup_native_ws_runtime(runtime_id)
-  inspect(native_ws_connection_exists("test-cleanup-runtime:1"), content="false")
-  inspect(native_ws_connection_exists("test-cleanup-runtime:2"), content="false")
+  inspect(
+    native_ws_connection_exists("test-cleanup-runtime:1"),
+    content="false",
+  )
+  inspect(
+    native_ws_connection_exists("test-cleanup-runtime:2"),
+    content="false",
+  )
   inspect(native_ws_hubs.get(runtime_id) is Some(_), content="false")
 }
 

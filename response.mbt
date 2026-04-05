@@ -1,3 +1,5 @@
+/// An outgoing HTTP response containing the status code, headers, cookies, and body.
+
 ///|
 pub(all) struct HttpResponse {
   mut status_code : StatusCode
@@ -5,6 +7,8 @@ pub(all) struct HttpResponse {
   cookies : Map[String, CookieItem]
   mut raw_body : Bytes
 }
+
+/// Deserializes the response body into a value of type `T` via the `BodyReader` trait.
 
 ///|
 pub fn[T : BodyReader] HttpResponse::read_body(self : HttpResponse) -> T raise {
@@ -15,6 +19,8 @@ pub fn[T : BodyReader] HttpResponse::read_body(self : HttpResponse) -> T raise {
     raw_body: self.raw_body,
   })
 }
+
+/// Creates a new `HttpResponse` with the given status code and optional headers, cookies, and body.
 
 ///|
 pub fn HttpResponse::new(
@@ -31,6 +37,8 @@ pub fn HttpResponse::new(
   }
 }
 
+/// Sets the response body from any `Responder` and returns the response for chaining.
+
 ///|
 pub fn HttpResponse::body(
   self : HttpResponse,
@@ -42,10 +50,14 @@ pub fn HttpResponse::body(
   self
 }
 
+/// Sets the response body to the JSON representation of the given value.
+
 ///|
 pub fn HttpResponse::json(self : HttpResponse, obj : &ToJson) -> HttpResponse {
   self.body(obj.to_json())
 }
+
+/// Converts this response into a `Responder` trait object for use as a handler return value.
 
 ///|
 pub fn HttpResponse::to_responder(self : HttpResponse) -> &Responder {

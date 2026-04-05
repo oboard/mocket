@@ -37,55 +37,49 @@ test "append_cookie_headers with empty cookies does nothing" {
 test "append_cookie_headers with single cookie sets header" {
   let headers : Map[String, String] = {}
   let cookies : Map[String, CookieItem] = {}
-  cookies.set(
-    "session",
-    {
-      name: "session",
-      value: "abc123",
-      max_age: None,
-      path: None,
-      domain: None,
-      secure: None,
-      http_only: None,
-      same_site: None,
-    },
-  )
+  cookies.set("session", {
+    name: "session",
+    value: "abc123",
+    max_age: None,
+    path: None,
+    domain: None,
+    secure: None,
+    http_only: None,
+    same_site: None,
+  })
   append_cookie_headers(headers, cookies)
-  inspect(headers.get("Set-Cookie"), content=(
-    #|Some("session=abc123")
-  ))
+  inspect(
+    headers.get("Set-Cookie"),
+    content=(
+      #|Some("session=abc123")
+    ),
+  )
 }
 
 ///|
 test "append_cookie_headers with multiple cookies joins with CRLF Set-Cookie" {
   let headers : Map[String, String] = {}
   let cookies : Map[String, CookieItem] = {}
-  cookies.set(
-    "a",
-    {
-      name: "a",
-      value: "1",
-      max_age: None,
-      path: None,
-      domain: None,
-      secure: None,
-      http_only: None,
-      same_site: None,
-    },
-  )
-  cookies.set(
-    "b",
-    {
-      name: "b",
-      value: "2",
-      max_age: None,
-      path: None,
-      domain: None,
-      secure: None,
-      http_only: None,
-      same_site: None,
-    },
-  )
+  cookies.set("a", {
+    name: "a",
+    value: "1",
+    max_age: None,
+    path: None,
+    domain: None,
+    secure: None,
+    http_only: None,
+    same_site: None,
+  })
+  cookies.set("b", {
+    name: "b",
+    value: "2",
+    max_age: None,
+    path: None,
+    domain: None,
+    secure: None,
+    http_only: None,
+    same_site: None,
+  })
   append_cookie_headers(headers, cookies)
   inspect(
     headers.get("Set-Cookie"),
@@ -199,28 +193,13 @@ test "next_native_request_body_chunk_size returns remaining + 1 when remaining <
 
 ///|
 test "native_request_body_chunk_exceeds_limit returns true when chunk exceeds remaining" {
-  inspect(
-    native_request_body_chunk_exceeds_limit(100, 90, 11),
-    content="true",
-  )
-  inspect(
-    native_request_body_chunk_exceeds_limit(100, 100, 1),
-    content="true",
-  )
+  inspect(native_request_body_chunk_exceeds_limit(100, 90, 11), content="true")
+  inspect(native_request_body_chunk_exceeds_limit(100, 100, 1), content="true")
 }
 
 ///|
 test "native_request_body_chunk_exceeds_limit returns false when chunk fits" {
-  inspect(
-    native_request_body_chunk_exceeds_limit(100, 90, 10),
-    content="false",
-  )
-  inspect(
-    native_request_body_chunk_exceeds_limit(100, 0, 100),
-    content="false",
-  )
-  inspect(
-    native_request_body_chunk_exceeds_limit(100, 50, 1),
-    content="false",
-  )
+  inspect(native_request_body_chunk_exceeds_limit(100, 90, 10), content="false")
+  inspect(native_request_body_chunk_exceeds_limit(100, 0, 100), content="false")
+  inspect(native_request_body_chunk_exceeds_limit(100, 50, 1), content="false")
 }

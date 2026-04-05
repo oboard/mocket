@@ -1,3 +1,5 @@
+/// An incoming HTTP request containing the method, URL, headers, and body.
+
 ///|
 pub(all) struct HttpRequest {
   http_method : String
@@ -6,20 +8,33 @@ pub(all) struct HttpRequest {
   mut raw_body : Bytes
 }
 
+/// Trait for types that can be deserialized from an HTTP request body.
+///
+/// Implement `from_request` to define how the raw request bytes are converted
+/// into the target type.
+
 ///|
 pub(open) trait BodyReader {
   from_request(req : HttpRequest) -> Self raise
 }
+
+/// Returns the path component of the request URL, excluding query string and fragment.
 
 ///|
 pub fn HttpRequest::path(self : HttpRequest) -> String {
   request_target_path(self.url)
 }
 
+/// Returns the raw query string from the request URL, or `None` if absent.
+
 ///|
 pub fn HttpRequest::query_string(self : HttpRequest) -> String? {
   request_target_query_string(self.url)
 }
+
+/// Parses the query string into a map of key-value pairs.
+///
+/// Returns an empty map when no query string is present.
 
 ///|
 pub fn HttpRequest::query_params(self : HttpRequest) -> Map[String, String] {
@@ -29,10 +44,14 @@ pub fn HttpRequest::query_params(self : HttpRequest) -> Map[String, String] {
   }
 }
 
+/// Looks up a single query parameter by key, returning `None` if not found.
+
 ///|
 pub fn HttpRequest::get_query(self : HttpRequest, key : String) -> String? {
   self.query_params().get(key)
 }
+
+/// Deserializes the request body into a value of type `T` via the `BodyReader` trait.
 
 ///|
 pub fn[T : BodyReader] HttpRequest::body(self : HttpRequest) -> T raise {
