@@ -3952,6 +3952,42 @@ async test "serve_async keeps websocket subscriptions across events" {
 }
 
 ///|
+async test "serve_async lets close handlers publish to remaining websocket subscribers" {
+  let app = new()
+  app.ws("/hub", event => {
+    match event {
+      Open(peer) => peer.subscribe("room")
+      Message(peer, Text("publish")) => peer.publish("room", "fanout")
+      Close(peer) => peer.publish("room", "left")
+      _ => ()
+    }
+  })
+  with_test_server(app, port => {
+    let client1 = @websocket.connect("ws://127.0.0.1:\{port}/hub")
+    defer client1.close()
+    let client2 = @websocket.connect("ws://127.0.0.1:\{port}/hub")
+    defer client2.close()
+
+    client1.send_text("publish")
+    inspect(client1.recv().read_all().text(), content="fanout")
+    inspect(client2.recv().read_all().text(), content="fanout")
+
+    client1.send_close()
+    match @async.with_timeout_opt(300, () => client2.recv().read_all().text()) {
+      Some(message) => inspect(message, content="left")
+      None => fail("timed out waiting for close handler fanout")
+    }
+
+    client2.send_text("publish")
+    inspect(client2.recv().read_all().text(), content="fanout")
+    client2.send_close()
+  }) catch {
+    SocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
 async test "serve_async isolates websocket channels per app" {
   let app1 = new()
   let app2 = new()
