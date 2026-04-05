@@ -701,12 +701,10 @@ async test "serve_async_on keeps close-handler mutations isolated across reused 
         let mut late_runtime_count = 0
         for runtime_id in runtime_ids {
           let room_count = native_ws_channel_member_count_in_runtime(
-            runtime_id,
-            "room",
+            runtime_id, "room",
           )
           let late_count = native_ws_channel_member_count_in_runtime(
-            runtime_id,
-            "late",
+            runtime_id, "late",
           )
           room_members += room_count
           late_members += late_count
@@ -745,8 +743,7 @@ async test "serve_async_on keeps close-handler mutations isolated across reused 
       let mut room_members = 0
       for runtime_id in runtime_ids {
         room_members += native_ws_channel_member_count_in_runtime(
-          runtime_id,
-          "room",
+          runtime_id, "room",
         )
       }
       guard room_members == 2 else { raise WebSocketLifecycleServerNotReady }
@@ -773,7 +770,9 @@ async test "serve_async_on keeps close-handler mutations isolated across reused 
         raise WebSocketLifecycleServerNotReady
       }
       let surviving_runtime_id = runtime_ids[0]
-      guard native_ws_channel_member_count_in_runtime(surviving_runtime_id, "room") ==
+      guard native_ws_channel_member_count_in_runtime(
+          surviving_runtime_id, "room",
+        ) ==
         1 &&
         native_ws_channel_member_count_in_runtime(surviving_runtime_id, "late") ==
         0 else {
@@ -790,6 +789,87 @@ async test "serve_async_on keeps close-handler mutations isolated across reused 
       @async.with_timeout_opt(200, () => ignore(try? task1.wait())),
       Some(()),
     )
+    assert_eq(
+      @async.with_timeout_opt(200, () => ignore(try? task2.wait())),
+      Some(()),
+    )
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      guard native_ws_runtime_ids_for_app(app).is_empty() else {
+        raise WebSocketLifecycleServerNotReady
+      }
+    })
+  }) catch {
+    WebSocketLifecycleSocketBindUnavailable => return
+    err => raise err
+  }
+}
+
+///|
+async test "serve_async_on cancellation stays isolated across reused app runtimes" {
+  let app = new()
+  app.get("/__ws_lifecycle_ready", _ => "ready")
+  app.ws("/hub", event => {
+    match event {
+      Open(peer) => peer.subscribe("room")
+      Message(peer, Text("publish")) => peer.publish("room", "fanout")
+      _ => ()
+    }
+  })
+
+  @async.with_task_group(group => {
+    let server1 = allocate_websocket_lifecycle_server()
+    let server2 = allocate_websocket_lifecycle_server()
+    let port1 = server1.addr.port()
+    let port2 = server2.addr.port()
+    let task1 = group.spawn(no_wait=true, () => app.serve_async_on(server1))
+    let task2 = group.spawn(no_wait=true, () => app.serve_async_on(server2))
+    wait_until_websocket_lifecycle_ready(port1)
+    wait_until_websocket_lifecycle_ready(port2)
+
+    let client1 = @websocket.connect("ws://127.0.0.1:\{port1}/hub")
+    defer client1.close()
+    let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
+    defer client2.close()
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      let runtime_ids = native_ws_runtime_ids_for_app(app)
+      guard runtime_ids.length() == 2 else {
+        raise WebSocketLifecycleServerNotReady
+      }
+      let mut room_members = 0
+      for runtime_id in runtime_ids {
+        room_members += native_ws_channel_member_count_in_runtime(
+          runtime_id, "room",
+        )
+      }
+      guard room_members == 2 else { raise WebSocketLifecycleServerNotReady }
+    })
+
+    task1.cancel()
+    assert_eq(
+      @async.with_timeout_opt(200, () => ignore(try? task1.wait())),
+      Some(()),
+    )
+
+    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      let runtime_ids = native_ws_runtime_ids_for_app(app)
+      guard runtime_ids.length() == 1 else {
+        raise WebSocketLifecycleServerNotReady
+      }
+      let surviving_runtime_id = runtime_ids[0]
+      guard native_ws_channel_member_count_in_runtime(
+          surviving_runtime_id, "room",
+        ) ==
+        1 else {
+        raise WebSocketLifecycleServerNotReady
+      }
+    })
+
+    client2.send_text("publish")
+    inspect(client2.recv().read_all().text(), content="fanout")
+
+    task2.cancel()
     assert_eq(
       @async.with_timeout_opt(200, () => ignore(try? task2.wait())),
       Some(()),
