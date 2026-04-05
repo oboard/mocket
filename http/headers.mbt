@@ -1,7 +1,12 @@
+/// Compares two HTTP header names for equality using case-insensitive matching.
+
 ///|
 pub fn header_name_matches(left : String, right : String) -> Bool {
   left.to_lower() == right.to_lower()
 }
+
+/// Returns the original key from the headers map that matches the given header name
+/// case-insensitively, or `None` if no match is found.
 
 ///|
 pub fn find_header_key_case_insensitive(
@@ -17,6 +22,9 @@ pub fn find_header_key_case_insensitive(
   None
 }
 
+/// Retrieves the value of a header by name using case-insensitive lookup, or
+/// `None` if the header is not present.
+
 ///|
 pub fn get_header_case_insensitive(
   headers : Map[String, String],
@@ -28,6 +36,9 @@ pub fn get_header_case_insensitive(
   }
 }
 
+/// Returns `true` if the headers map contains a header matching the given name
+/// case-insensitively.
+
 ///|
 pub fn has_header_case_insensitive(
   headers : Map[String, String],
@@ -35,6 +46,10 @@ pub fn has_header_case_insensitive(
 ) -> Bool {
   get_header_case_insensitive(headers, header_name) is Some(_)
 }
+
+/// Sets a header value using case-insensitive key matching. If a header with the
+/// same name already exists (regardless of case), the existing entry is replaced;
+/// otherwise the new key-value pair is inserted.
 
 ///|
 pub fn set_header_case_insensitive(
@@ -52,6 +67,9 @@ pub fn set_header_case_insensitive(
   }
 }
 
+/// Sets a header value only if no header with the same name (case-insensitive)
+/// already exists in the map.
+
 ///|
 pub fn set_missing_header_case_insensitive(
   headers : Map[String, String],
@@ -62,6 +80,9 @@ pub fn set_missing_header_case_insensitive(
     headers.set(header_name, value)
   }
 }
+
+/// Merges all headers from the source map into the target map using
+/// case-insensitive key matching, overwriting existing entries on conflict.
 
 ///|
 pub fn merge_headers_case_insensitive(

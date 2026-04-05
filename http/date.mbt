@@ -31,6 +31,9 @@ fn positive_mod_i64(lhs : Int64, rhs : Int64) -> Int64 {
   }
 }
 
+/// Converts a day count since the Unix epoch (1970-01-01) into a civil calendar
+/// date as a `(year, month, day)` tuple.
+
 ///|
 pub fn civil_from_days(days_since_epoch : Int64) -> (Int, Int, Int) {
   let z = days_since_epoch + 719_468L
@@ -47,6 +50,9 @@ pub fn civil_from_days(days_since_epoch : Int64) -> (Int, Int, Int) {
   let year = (year_base + year_offset).to_int()
   (year, month, day)
 }
+
+/// Converts a civil calendar date `(year, month, day)` into the number of days
+/// since the Unix epoch (1970-01-01).
 
 ///|
 pub fn days_from_civil(year : Int, month : Int, day : Int) -> Int64 {
@@ -68,10 +74,16 @@ pub fn days_from_civil(year : Int, month : Int, day : Int) -> Int64 {
   (era * 146_097 + day_of_era - 719_468).to_int64()
 }
 
+/// Returns `true` if the given year is a leap year according to the Gregorian
+/// calendar.
+
 ///|
 pub fn is_leap_year(year : Int) -> Bool {
   year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
 }
+
+/// Returns the number of days in the given month of the given year, accounting
+/// for leap years in February.
 
 ///|
 pub fn days_in_month(year : Int, month : Int) -> Int {
@@ -110,6 +122,9 @@ fn http_month_number(month : StringView) -> Int? {
     _ => None
   }
 }
+
+/// Parses a numeric substring from an HTTP date string into an integer, returning
+/// `None` if the text is not a valid integer.
 
 ///|
 pub fn parse_http_date_part(text : StringView) -> Int? {
@@ -151,6 +166,9 @@ fn http_month_name(month : Int) -> String {
   }
 }
 
+/// Formats a Unix epoch timestamp (in seconds) as an HTTP-date string in the
+/// RFC 7231 preferred format, e.g. `"Sun, 06 Nov 1994 08:49:37 GMT"`.
+
 ///|
 pub fn format_http_date(epoch_seconds : Int64) -> String {
   let days_since_epoch = floor_div_i64(epoch_seconds, HTTP_SECONDS_PER_DAY)
@@ -161,6 +179,9 @@ pub fn format_http_date(epoch_seconds : Int64) -> String {
   let (year, month, day) = civil_from_days(days_since_epoch)
   "\{http_weekday_name(days_since_epoch)}, \{zero_pad_2(day)} \{http_month_name(month)} \{year} \{zero_pad_2(hour)}:\{zero_pad_2(minute)}:\{zero_pad_2(second)} GMT"
 }
+
+/// Parses an HTTP-date string in RFC 7231 preferred format into a Unix epoch
+/// timestamp (in seconds), returning `None` if the format is invalid.
 
 ///|
 pub fn parse_http_date(http_date : StringView) -> Int64? {

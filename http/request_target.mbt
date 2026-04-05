@@ -1,3 +1,6 @@
+/// Extracts the path component from an HTTP request target by stripping the
+/// query string and fragment portions.
+
 ///|
 pub fn request_target_path(request_target : String) -> String {
   let mut end = request_target.length()
@@ -11,6 +14,9 @@ pub fn request_target_path(request_target : String) -> String {
   }
   request_target[:end].to_string()
 }
+
+/// Extracts the query string from an HTTP request target, excluding the leading
+/// `?` delimiter. Returns `None` if no query string is present.
 
 ///|
 pub fn request_target_query_string(request_target : String) -> String? {
@@ -27,6 +33,10 @@ pub fn request_target_query_string(request_target : String) -> String? {
     None => None
   }
 }
+
+/// Returns `true` if the request path falls within the given scope path. The
+/// root scope `"/"` matches all paths; otherwise the request path must equal or
+/// be a sub-path of the scope (separated by `'/'`).
 
 ///|
 pub fn path_scope_matches(scope_path : String, request_path : String) -> Bool {

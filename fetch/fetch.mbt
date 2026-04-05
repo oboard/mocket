@@ -1,5 +1,7 @@
 ///|
 
+/// Error type for invalid HTTP method strings encountered during request parsing.
+
 ///|
 pub suberror RequestError {
   InvalidHttpMethod(String)
@@ -21,6 +23,9 @@ fn parse_http_method(http_method : String) -> @mocket.HttpMethod raise Error {
   }
 }
 
+/// Sends an HTTP request using the method, URL, headers, and body from the given
+/// `HttpRequest` object, and returns the response.
+
 ///|
 pub async fn request(
   req : @mocket.HttpRequest,
@@ -36,6 +41,9 @@ pub async fn request(
   }
 }
 
+/// Sends an HTTP GET request to the given URL with optional data, headers,
+/// credentials, and mode settings.
+
 ///|
 pub async fn get(
   url : String,
@@ -46,6 +54,9 @@ pub async fn get(
 ) -> @mocket.HttpResponse raise Error {
   @mocket.fetch(url, GET, data?, headers?, credentials?, mode?)
 }
+
+/// Sends an HTTP DELETE request to the given URL with optional data, headers,
+/// credentials, and mode settings.
 
 ///|
 pub async fn delete(
@@ -58,6 +69,9 @@ pub async fn delete(
   @mocket.fetch(url, DELETE, data?, headers?, credentials?, mode?)
 }
 
+/// Sends an HTTP HEAD request to the given URL with optional data, headers,
+/// credentials, and mode settings.
+
 ///|
 pub async fn head(
   url : String,
@@ -68,6 +82,9 @@ pub async fn head(
 ) -> @mocket.HttpResponse raise Error {
   @mocket.fetch(url, HEAD, data?, headers?, credentials?, mode?)
 }
+
+/// Sends an HTTP OPTIONS request to the given URL with optional data, headers,
+/// credentials, and mode settings.
 
 ///|
 pub async fn options(
@@ -80,6 +97,9 @@ pub async fn options(
   @mocket.fetch(url, OPTIONS, data?, headers?, credentials?, mode?)
 }
 
+/// Sends an HTTP TRACE request to the given URL with optional data, headers,
+/// credentials, and mode settings.
+
 ///|
 pub async fn trace(
   url : String,
@@ -90,6 +110,9 @@ pub async fn trace(
 ) -> @mocket.HttpResponse raise Error {
   @mocket.fetch(url, TRACE, data?, headers?, credentials?, mode?)
 }
+
+/// Sends an HTTP CONNECT request to the given URL with optional data, headers,
+/// credentials, and mode settings.
 
 ///|
 pub async fn connect(
@@ -102,6 +125,9 @@ pub async fn connect(
   @mocket.fetch(url, CONNECT, data?, headers?, credentials?, mode?)
 }
 
+/// Sends an HTTP POST request to the given URL with optional data, headers,
+/// credentials, and mode settings.
+
 ///|
 pub async fn post(
   url : String,
@@ -113,6 +139,9 @@ pub async fn post(
   @mocket.fetch(url, POST, data?, headers?, credentials?, mode?)
 }
 
+/// Sends an HTTP PUT request to the given URL with optional data, headers,
+/// credentials, and mode settings.
+
 ///|
 pub async fn put(
   url : String,
@@ -123,6 +152,9 @@ pub async fn put(
 ) -> @mocket.HttpResponse raise Error {
   @mocket.fetch(url, PUT, data?, headers?, credentials?, mode?)
 }
+
+/// Sends an HTTP PATCH request to the given URL with optional data, headers,
+/// credentials, and mode settings.
 
 ///|
 pub async fn patch(

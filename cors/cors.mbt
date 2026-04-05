@@ -1,3 +1,6 @@
+/// Determines whether an incoming request is a CORS preflight request by checking
+/// for the OPTIONS method, an `Origin` header, and an `Access-Control-Request-Method` header.
+
 ///|
 pub fn is_preflight_request(event : @mocket.MocketEvent) -> Bool {
   let origin = event.req.get_header("origin")
@@ -8,6 +11,11 @@ pub fn is_preflight_request(event : @mocket.MocketEvent) -> Bool {
     origin != None &&
     access_control_request_method != None
 }
+
+/// Appends CORS preflight response headers (`Access-Control-Allow-Origin`,
+/// `Access-Control-Allow-Methods`, `Access-Control-Allow-Headers`,
+/// `Access-Control-Max-Age`, and optionally `Access-Control-Allow-Credentials`)
+/// to the event's response.
 
 ///|
 pub fn append_cors_preflight_headers(
@@ -28,6 +36,11 @@ pub fn append_cors_preflight_headers(
   headers["Access-Control-Max-Age"] = max_age.to_string()
 }
 
+/// Appends standard CORS response headers (`Access-Control-Allow-Origin`,
+/// `Access-Control-Allow-Methods`, `Access-Control-Allow-Headers`,
+/// `Access-Control-Expose-Headers`, and optionally `Access-Control-Allow-Credentials`)
+/// to the event's response for non-preflight requests.
+
 ///|
 pub fn append_cors_headers(
   event : @mocket.MocketEvent,
@@ -46,6 +59,10 @@ pub fn append_cors_headers(
     headers["Access-Control-Allow-Credentials"] = "true"
   }
 }
+
+/// Returns a middleware that handles CORS for both preflight and regular requests.
+/// Preflight requests receive an empty 200 response with appropriate headers;
+/// regular requests have CORS headers appended before continuing the middleware chain.
 
 ///|
 pub fn handle_cors(
