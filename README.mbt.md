@@ -5,6 +5,7 @@ These examples are verified by `moon check`. See [README.md](README.md) for the 
 ## Response Helpers
 
 ```mbt
+///|
 test "response helpers" {
   let ok = @crescent.HttpResponse::ok()
   assert_eq(ok.status_code, @crescent.OK)
@@ -26,6 +27,7 @@ test "response helpers" {
 ## Fluent Response Building
 
 ```mbt
+///|
 test "fluent response building" {
   let res = @crescent.HttpResponse::ok()
     .header("X-Custom", "value")
@@ -38,11 +40,13 @@ test "fluent response building" {
 ## Typed JSON Serialization
 
 ```mbt
+///|
 struct User {
   name : String
   age : Int
 } derive(ToJson, FromJson, Eq)
 
+///|
 test "json_value sets content-type and serializes body" {
   let user = User::{ name: "Alice", age: 30 }
   let res = @crescent.HttpResponse::ok().json_value(user)
@@ -50,22 +54,21 @@ test "json_value sets content-type and serializes body" {
     res.headers.get("Content-Type"),
     Some("application/json; charset=utf-8"),
   )
-  assert_eq(
-    @utf8.decode(res.raw_body),
-    "{\"name\":\"Alice\",\"age\":30}",
-  )
+  assert_eq(@utf8.decode(res.raw_body), "{\"name\":\"Alice\",\"age\":30}")
 }
 ```
 
 ## HttpMethod Enum
 
 ```mbt
+///|
 test "HttpMethod round-trip" {
   let meth : @crescent.HttpMethod = @crescent.Post
   assert_eq(meth.to_method_string(), "POST")
   assert_eq(@crescent.HttpMethod::from_string("POST"), @crescent.Post)
 }
 
+///|
 test "HttpMethod pattern matching" {
   let req = @crescent.HttpRequest::new_request(@crescent.Get, "/", {}, b"")
   let label = match req.http_method {
@@ -80,11 +83,13 @@ test "HttpMethod pattern matching" {
 ## JSON Parsing
 
 ```mbt
+///|
 struct CreateUser {
   name : String
   age : Int
 } derive(FromJson)
 
+///|
 test "json parsing from request body" {
   let req = @crescent.HttpRequest::new_request(
     @crescent.Post,
@@ -97,6 +102,7 @@ test "json parsing from request body" {
   assert_eq(user.age, 25)
 }
 
+///|
 test "try_json returns Result" {
   let req = @crescent.HttpRequest::new_request(
     @crescent.Post,
@@ -112,6 +118,7 @@ test "try_json returns Result" {
 ## Parameter Extraction
 
 ```mbt
+///|
 test "param and param_int" {
   let event = @crescent.MocketEvent::{
     req: @crescent.HttpRequest::new_request(@crescent.Get, "/", {}, b""),
@@ -123,6 +130,7 @@ test "param and param_int" {
   assert_eq(event.param("missing"), None)
 }
 
+///|
 test "require_param raises on missing" {
   let event = @crescent.MocketEvent::{
     req: @crescent.HttpRequest::new_request(@crescent.Get, "/", {}, b""),
@@ -137,6 +145,7 @@ test "require_param raises on missing" {
 ## Request Path and Query Caching
 
 ```mbt
+///|
 test "path is cached after first access" {
   let req = @crescent.HttpRequest::new_request(
     @crescent.Get,
@@ -151,6 +160,7 @@ test "path is cached after first access" {
   assert_eq(req.cached_path, Some("/api/users"))
 }
 
+///|
 test "query_params cached and decoded" {
   let req = @crescent.HttpRequest::new_request(
     @crescent.Get,
@@ -167,6 +177,7 @@ test "query_params cached and decoded" {
 ## Route Pattern Compilation
 
 ```mbt
+///|
 test "compiled route matching" {
   let route = @crescent.CompiledRoute::compile("/users/:id/posts/:postId")
   assert_eq(
@@ -176,6 +187,7 @@ test "compiled route matching" {
   assert_eq(route.match_path("/users/42"), None)
 }
 
+///|
 test "static routes are flagged" {
   let static_route = @crescent.CompiledRoute::compile("/api/health")
   assert_true(static_route.is_static)
@@ -187,6 +199,7 @@ test "static routes are flagged" {
 ## Routing and TestClient
 
 ```mbt
+///|
 async test "basic routing with TestClient" {
   let app = @crescent.new()
   app.get_raw("/hello", fn(_) noraise { "Hello, World!" })
@@ -207,10 +220,12 @@ async test "basic routing with TestClient" {
 ## Typed Handlers with Error Mapping
 
 ```mbt
+///|
 struct TodoInput {
   title : String
 } derive(FromJson, ToJson)
 
+///|
 async test "typed handler auto-maps errors" {
   let app = @crescent.new()
   app.post("/todos", event => {
@@ -232,6 +247,7 @@ async test "typed handler auto-maps errors" {
 ## Middleware
 
 ```mbt
+///|
 async test "security headers middleware" {
   let app = @crescent.new()
   app.use_middleware(@crescent.security_headers())
@@ -242,6 +258,7 @@ async test "security headers middleware" {
   assert_eq(res.headers.get("X-Frame-Options"), Some("DENY"))
 }
 
+///|
 async test "request ID middleware" {
   let app = @crescent.new()
   app.use_middleware(@crescent.request_id())
@@ -255,45 +272,46 @@ async test "request ID middleware" {
 ## RESTful Resource
 
 ```mbt
+///|
 struct Item {
   id : Int
   name : String
 } derive(ToJson, FromJson, Eq)
 
+///|
 impl Show for Item with output(self, logger) {
   logger.write_string("Item(\{self.id}, \{self.name})")
 }
 
+///|
 struct CreateItemInput {
   name : String
 } derive(FromJson, ToJson)
 
+///|
 async test "resource CRUD" {
   let items : Array[Item] = [{ id: 1, name: "Alpha" }]
   let app = @crescent.new()
-  app.resource(
-    "/items",
-    {
-      list: Some(_ => @crescent.HttpResponse::ok().json_value(items)),
-      get: Some(event => {
-        let id = event.require_param_int("id")
-        for item in items {
-          if item.id == id {
-            return @crescent.HttpResponse::ok().json_value(item)
-          }
+  app.resource("/items", {
+    list: Some(_ => @crescent.HttpResponse::ok().json_value(items)),
+    get: Some(event => {
+      let id = event.require_param_int("id")
+      for item in items {
+        if item.id == id {
+          return @crescent.HttpResponse::ok().json_value(item)
         }
-        raise @crescent.HttpError::HttpError(@crescent.NotFound, "not found")
-      }),
-      create: Some(event => {
-        let input : CreateItemInput = event.json()
-        let item = Item::{ id: 2, name: input.name }
-        items.push(item)
-        @crescent.HttpResponse::created().json_value(item)
-      }),
-      update: None,
-      delete: None,
-    },
-  )
+      }
+      raise @crescent.HttpError::HttpError(@crescent.NotFound, "not found")
+    }),
+    create: Some(event => {
+      let input : CreateItemInput = event.json()
+      let item = Item::{ id: 2, name: input.name }
+      items.push(item)
+      @crescent.HttpResponse::created().json_value(item)
+    }),
+    update: None,
+    delete: None,
+  })
   let client = @crescent.TestClient::new(app)
 
   // List
@@ -323,6 +341,7 @@ async test "resource CRUD" {
 ## Cookies
 
 ```mbt
+///|
 test "set and format cookie" {
   let res = @crescent.HttpResponse::new(@crescent.OK)
   res.set_cookie(
@@ -339,6 +358,7 @@ test "set and format cookie" {
 ## Redirects
 
 ```mbt
+///|
 test "redirect helpers" {
   let r301 = @crescent.HttpResponse::redirect("/new")
   assert_eq(r301.status_code, @crescent.MovedPermanently)

@@ -1,16 +1,20 @@
 {
   "name": "bobzhang/crescent",
-  "version": "0.6.11",
+  "version": "0.7.0",
   "deps": {
     "moonbitlang/x": "0.4.41",
     "moonbitlang/async": "0.17.0"
   },
   "readme": "README.md",
-  "repository": "https://github.com/oboard/mocket",
+  "repository": "https://github.com/bobzhang/mocket",
   "license": "Apache-2.0",
   "keywords": [
     "http",
-    "server"
+    "server",
+    "web",
+    "framework",
+    "async",
+    "ai-friendly"
   ],
   "description": "Crescent: A web framework for MoonBit.",
   "preferred-target": "native"
