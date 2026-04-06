@@ -6,7 +6,7 @@ struct BenchUser {
 
 ///|
 async fn main {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
 
   // Plain text (baseline, same as mocket_bench)
   app.get("/text", _ => "Hello, World!")

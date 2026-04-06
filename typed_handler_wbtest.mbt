@@ -2,7 +2,7 @@
 async test "wrap_error_handler passes through success" {
   let handler = wrap_error_handler(fn(_event) { "ok" })
   let event = MocketEvent::{
-    req: HttpRequest::new_request(Get, "/", {}, b""),
+    req: HttpRequest::new(Get, "/", {}, raw_body=b""),
     res: HttpResponse::new(OK),
     params: {},
   }
@@ -18,7 +18,7 @@ async test "wrap_error_handler catches HttpError" {
     raise HttpError(BadRequest, "name is required")
   })
   let event = MocketEvent::{
-    req: HttpRequest::new_request(Get, "/", {}, b""),
+    req: HttpRequest::new(Get, "/", {}, raw_body=b""),
     res: HttpResponse::new(OK),
     params: {},
   }
@@ -39,7 +39,7 @@ async test "wrap_error_handler catches JsonDecodeError as 400" {
     "ok"
   })
   let event = MocketEvent::{
-    req: HttpRequest::new_request(Post, "/", {}, b"not valid json"),
+    req: HttpRequest::new(Post, "/", {}, raw_body=b"not valid json"),
     res: HttpResponse::new(OK),
     params: {},
   }
@@ -52,7 +52,7 @@ async test "wrap_error_handler catches JsonDecodeError as 400" {
 async test "wrap_error_handler catches unknown error as 500" {
   let handler = wrap_error_handler(_event => raise NetworkError)
   let event = MocketEvent::{
-    req: HttpRequest::new_request(Get, "/", {}, b""),
+    req: HttpRequest::new(Get, "/", {}, raw_body=b""),
     res: HttpResponse::new(OK),
     params: {},
   }
@@ -65,7 +65,7 @@ async test "wrap_error_handler catches unknown error as 500" {
 async test "wrap_error_handler catches Failure as 500" {
   let handler = wrap_error_handler(_event => fail("something went wrong"))
   let event = MocketEvent::{
-    req: HttpRequest::new_request(Get, "/", {}, b""),
+    req: HttpRequest::new(Get, "/", {}, raw_body=b""),
     res: HttpResponse::new(OK),
     params: {},
   }
@@ -84,7 +84,7 @@ async test "HttpError with NotFound status" {
     raise HttpError(NotFound, "user not found")
   })
   let event = MocketEvent::{
-    req: HttpRequest::new_request(Get, "/", {}, b""),
+    req: HttpRequest::new(Get, "/", {}, raw_body=b""),
     res: HttpResponse::new(OK),
     params: {},
   }

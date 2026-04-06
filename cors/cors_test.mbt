@@ -4,8 +4,11 @@ fn make_event(
   headers : Map[String, String],
 ) -> @crescent.MocketEvent {
   {
-    req: @crescent.HttpRequest::new_request(
-      http_method, "/resource", headers, b"",
+    req: @crescent.HttpRequest::new(
+      http_method,
+      "/resource",
+      headers,
+      raw_body=b"",
     ),
     res: @crescent.HttpResponse::new(OK),
     params: {},
@@ -122,7 +125,7 @@ async fn issue_raw_request_headers(port : Int, request : String) -> String {
 ///|
 async test "handle_cors serves preflight requests through async server" {
   let handler_called = Ref::new(false)
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.use_middleware(
     handle_cors(
       origin="https://frontend.example",
@@ -166,7 +169,7 @@ async test "handle_cors serves preflight requests through async server" {
 
 ///|
 async test "handle_cors decorates normal requests through async server" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.use_middleware(
     handle_cors(
       origin="https://frontend.example",
@@ -209,7 +212,7 @@ async test "handle_cors decorates normal requests through async server" {
 ///|
 async test "handle_cors does not short-circuit non-preflight options" {
   let handler_called = Ref::new(false)
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.use_middleware(
     handle_cors(
       origin="https://frontend.example",
@@ -256,7 +259,7 @@ async test "handle_cors does not short-circuit non-preflight options" {
 
 ///|
 async test "handle_cors accepts mixed-case preflight headers" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.use_middleware(
     handle_cors(
       origin="https://frontend.example",

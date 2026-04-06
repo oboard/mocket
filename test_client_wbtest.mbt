@@ -1,6 +1,6 @@
 ///|
 async test "test client GET returns text" {
-  let app = new()
+  let app = Mocket::new()
   app.get("/hello", fn(_) noraise { "Hello!" })
   let client = TestClient::new(app)
   let res = client.get("/hello")
@@ -10,7 +10,7 @@ async test "test client GET returns text" {
 
 ///|
 async test "test client GET returns json" {
-  let app = new()
+  let app = Mocket::new()
   app.get("/data", fn(_) noraise { ({ "key": "value" } : Json) })
   let client = TestClient::new(app)
   let res = client.get("/data")
@@ -23,7 +23,7 @@ async test "test client GET returns json" {
 
 ///|
 async test "test client POST with body" {
-  let app = new()
+  let app = Mocket::new()
   app.post("/echo", fn(event) noraise {
     let text : String = event.req.body() catch { _ => "error" }
     text
@@ -36,7 +36,7 @@ async test "test client POST with body" {
 
 ///|
 async test "test client route params" {
-  let app = new()
+  let app = Mocket::new()
   app.get("/users/:id", fn(event) noraise { event.param("id").unwrap_or("?") })
   let client = TestClient::new(app)
   let res = client.get("/users/42")
@@ -46,7 +46,7 @@ async test "test client route params" {
 
 ///|
 async test "test client 404 for missing route" {
-  let app = new()
+  let app = Mocket::new()
   app.get("/exists", fn(_) noraise { "ok" })
   let client = TestClient::new(app)
   let res = client.get("/missing")
@@ -55,7 +55,7 @@ async test "test client 404 for missing route" {
 
 ///|
 async test "test client custom not found handler" {
-  let app = new()
+  let app = Mocket::new()
   app.set_not_found_handler(fn(_) noraise {
     HttpResponse::not_found().body("custom 404")
   })
@@ -67,7 +67,7 @@ async test "test client custom not found handler" {
 
 ///|
 async test "test client runs middleware" {
-  let app = new()
+  let app = Mocket::new()
   app.use_middleware(security_headers())
   app.get("/test", fn(_) noraise { "ok" })
   let client = TestClient::new(app)
@@ -79,7 +79,7 @@ async test "test client runs middleware" {
 
 ///|
 async test "test client with error handling handler" {
-  let app = new()
+  let app = Mocket::new()
   app.post("/users", event => {
     let _body : Json = event.req.json()
     "created"
@@ -95,7 +95,7 @@ async test "test client with error handling handler" {
 
 ///|
 async test "test client method not allowed" {
-  let app = new()
+  let app = Mocket::new()
   app.get("/only-get", fn(_) noraise { "ok" })
   let client = TestClient::new(app)
   let res = client.post("/only-get")
@@ -104,7 +104,7 @@ async test "test client method not allowed" {
 
 ///|
 async test "test client PUT and DELETE" {
-  let app = new()
+  let app = Mocket::new()
   app.put("/item", fn(_) noraise { "updated" })
   app.delete("/item", fn(_) noraise { "deleted" })
   let client = TestClient::new(app)
@@ -116,7 +116,7 @@ async test "test client PUT and DELETE" {
 
 ///|
 async test "test client with custom headers" {
-  let app = new()
+  let app = Mocket::new()
   app.get("/auth", fn(event) noraise {
     match event.req.get_header("authorization") {
       Some(token) => "token: " + token
@@ -133,7 +133,7 @@ async test "test client with custom headers" {
 ///|
 async test "test client with path-scoped middleware" {
   let order : Array[String] = []
-  let app = new()
+  let app = Mocket::new()
   app.use_middleware(
     (_event, next) => {
       order.push("api-mw")

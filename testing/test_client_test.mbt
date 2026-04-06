@@ -1,6 +1,6 @@
 ///|
 async test "testing package: GET returns text" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.get_raw("/hello", fn(_) noraise { "Hello!" })
   let client = @testing.TestClient::new(app)
   let res = client.get("/hello")
@@ -10,7 +10,7 @@ async test "testing package: GET returns text" {
 
 ///|
 async test "testing package: POST with json body" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.post("/echo", event => {
     let text : String = event.req.body()
     text
@@ -23,7 +23,7 @@ async test "testing package: POST with json body" {
 
 ///|
 async test "testing package: route params" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.get("/users/:id", event => {
     let id = event.require_param_int("id")
     @crescent.HttpResponse::ok().json_value(id)
@@ -35,7 +35,7 @@ async test "testing package: route params" {
 
 ///|
 async test "testing package: 404 for missing route" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.get_raw("/exists", fn(_) noraise { "ok" })
   let client = @testing.TestClient::new(app)
   let res = client.get("/missing")
@@ -44,7 +44,7 @@ async test "testing package: 404 for missing route" {
 
 ///|
 async test "testing package: middleware runs" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.use_middleware(@crescent.security_headers())
   app.get_raw("/test", fn(_) noraise { "ok" })
   let client = @testing.TestClient::new(app)
@@ -54,7 +54,7 @@ async test "testing package: middleware runs" {
 
 ///|
 async test "testing package: body_json parses typed response" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.get_raw("/data", fn(_) noraise {
     @crescent.HttpResponse::ok().json_value(
       ({ "name": "Alice", "age": 30 } : Json),

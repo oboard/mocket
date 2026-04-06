@@ -46,6 +46,25 @@ pub(all) struct ResourceConfig {
   update : (async (MocketEvent) -> &Responder)?
   /// DELETE /path/:id — delete a resource
   delete : (async (MocketEvent) -> &Responder)?
+
+  fn new(
+    list? : async (MocketEvent) -> &Responder,
+    get? : async (MocketEvent) -> &Responder,
+    create? : async (MocketEvent) -> &Responder,
+    update? : async (MocketEvent) -> &Responder,
+    delete? : async (MocketEvent) -> &Responder,
+  ) -> ResourceConfig
+}
+
+///|
+pub fn ResourceConfig::new(
+  list? : async (MocketEvent) -> &Responder,
+  get? : async (MocketEvent) -> &Responder,
+  create? : async (MocketEvent) -> &Responder,
+  update? : async (MocketEvent) -> &Responder,
+  delete? : async (MocketEvent) -> &Responder,
+) -> ResourceConfig {
+  { list, get, create, update, delete }
 }
 
 /// Registers standard REST routes for a resource.

@@ -18,8 +18,6 @@ pub async fn fetch(String, body? : String, HttpMethod, data? : &Responder, heade
 
 pub fn html(&Show) -> &Responder
 
-pub fn new(base_path? : String) -> Mocket
-
 pub fn parse_cookie(StringView) -> Map[String, CookieItem]
 
 pub fn request_id() -> async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise
@@ -112,8 +110,9 @@ pub(all) struct HttpRequest {
   url : String
   headers : Map[String, String]
   mut raw_body : Bytes
-  mut cached_path : String?
-  mut cached_query_params : Map[String, String]?
+  // private fields
+
+  fn new(HttpMethod, String, Map[String, String], raw_body? : Bytes) -> HttpRequest
 }
 pub fn[T : BodyReader] HttpRequest::body(Self) -> T raise
 pub fn HttpRequest::content_type(Self) -> String?
@@ -123,7 +122,7 @@ pub fn HttpRequest::get_header(Self, String) -> String?
 pub fn HttpRequest::get_query(Self, String) -> String?
 pub fn[T : @json.FromJson] HttpRequest::json(Self) -> T raise
 pub fn HttpRequest::method_string(Self) -> String
-pub fn HttpRequest::new_request(HttpMethod, String, Map[String, String], Bytes) -> Self
+pub fn HttpRequest::new(HttpMethod, String, Map[String, String], raw_body? : Bytes) -> Self
 pub fn HttpRequest::path(Self) -> String
 pub fn HttpRequest::query_params(Self) -> Map[String, String]
 pub fn HttpRequest::query_string(Self) -> String?
@@ -135,6 +134,8 @@ pub(all) struct HttpResponse {
   headers : Map[String, String]
   cookies : Map[String, CookieItem]
   mut raw_body : Bytes
+
+  fn new(StatusCode, headers? : Map[String, String], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> HttpResponse
 }
 pub fn HttpResponse::bad_request() -> Self
 pub fn HttpResponse::body(Self, &Responder) -> Self
@@ -161,15 +162,9 @@ pub fn HttpResponse::unauthorized() -> Self
 pub impl Responder for HttpResponse
 
 pub struct Mocket {
-  base_path : String
-  mappings : Map[(String, String), async (MocketEvent) -> &Responder noraise]
-  middlewares : Array[(String, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise)]
-  static_routes : Map[String, Map[String, async (MocketEvent) -> &Responder noraise]]
-  dynamic_routes : RadixRouter[async (MocketEvent) -> &Responder noraise]
-  ws_static_routes : Map[String, (WebSocketEvent) -> Unit]
-  ws_dynamic_routes : Array[(CompiledRoute, (WebSocketEvent) -> Unit)]
-  ws_runtime_id : String
-  mut not_found_handler : (async (MocketEvent) -> &Responder noraise)?
+  // private fields
+
+  fn new(base_path? : String) -> Mocket
 }
 pub fn Mocket::all(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn Mocket::all_raw(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
@@ -181,8 +176,10 @@ pub async fn Mocket::dispatch(Self, String, String, Map[String, String], Bytes) 
 pub fn Mocket::get(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn Mocket::get_raw(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::group(Self, String, (Self) -> Unit) -> Unit
+pub fn Mocket::has_not_found_handler(Self) -> Bool
 pub fn Mocket::head(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn Mocket::head_raw(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::new(base_path? : String) -> Self
 pub fn Mocket::on(Self, String, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::options(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn Mocket::options_raw(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
@@ -193,6 +190,7 @@ pub fn Mocket::post_raw(Self, String, async (MocketEvent) -> &Responder noraise)
 pub fn Mocket::put(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn Mocket::put_raw(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::resource(Self, String, ResourceConfig) -> Unit
+pub fn Mocket::routes(Self) -> Iter[(String, String)]
 pub async fn Mocket::serve(Self, port~ : Int) -> Unit
 pub fn Mocket::serve_blocking(Self, port~ : Int) -> Unit
 pub async fn Mocket::serve_on(Self, @http.Server) -> Unit
@@ -232,6 +230,8 @@ pub struct NativeServeOptions {
   websocket_overflow_policy : NativeWebSocketOverflowPolicy?
   websocket_read_timeout_ms : Int?
   websocket_max_message_bytes : Int?
+
+  fn new(max_connections? : Int, max_request_body_bytes? : Int, request_body_read_timeout_ms? : Int, websocket_outgoing_queue_capacity? : Int, websocket_overflow_policy? : NativeWebSocketOverflowPolicy, websocket_read_timeout_ms? : Int, websocket_max_message_bytes? : Int) -> NativeServeOptions
 }
 pub fn NativeServeOptions::new(max_connections? : Int, max_request_body_bytes? : Int, request_body_read_timeout_ms? : Int, websocket_outgoing_queue_capacity? : Int, websocket_overflow_policy? : NativeWebSocketOverflowPolicy, websocket_read_timeout_ms? : Int, websocket_max_message_bytes? : Int) -> Self
 
@@ -240,8 +240,6 @@ pub(all) enum NativeWebSocketOverflowPolicy {
   DropLatest
 } derive(Eq, @debug.Debug)
 pub impl Show for NativeWebSocketOverflowPolicy
-
-type RadixNode[T]
 
 type RadixRouter[T]
 pub fn[T] RadixRouter::insert(Self[T], String, CompiledRoute, T) -> Unit
@@ -255,7 +253,10 @@ pub(all) struct ResourceConfig {
   create : (async (MocketEvent) -> &Responder)?
   update : (async (MocketEvent) -> &Responder)?
   delete : (async (MocketEvent) -> &Responder)?
+
+  fn new(list? : async (MocketEvent) -> &Responder, get? : async (MocketEvent) -> &Responder, create? : async (MocketEvent) -> &Responder, update? : async (MocketEvent) -> &Responder, delete? : async (MocketEvent) -> &Responder) -> ResourceConfig
 }
+pub fn ResourceConfig::new(list? : async (MocketEvent) -> &Responder, get? : async (MocketEvent) -> &Responder, create? : async (MocketEvent) -> &Responder, update? : async (MocketEvent) -> &Responder, delete? : async (MocketEvent) -> &Responder) -> Self
 
 pub(all) enum RouteSegment {
   Static(String)

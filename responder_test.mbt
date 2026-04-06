@@ -144,11 +144,11 @@ test "http response responder outputs raw body" {
 ///|
 test "http request responder merges headers" {
   let res = @crescent.HttpResponse::new(@crescent.OK)
-  let req = @crescent.HttpRequest::new_request(
+  let req = @crescent.HttpRequest::new(
     @crescent.Get,
     "/",
     { "X-Forwarded": "proxy" },
-    b"",
+    raw_body=b"",
   )
   let responder : &@crescent.Responder = req
   responder.options(res)
@@ -158,11 +158,11 @@ test "http request responder merges headers" {
 ///|
 test "http request responder outputs raw body" {
   let buf = @buffer.new()
-  let req = @crescent.HttpRequest::new_request(
+  let req = @crescent.HttpRequest::new(
     @crescent.Post,
     "/data",
     {},
-    b"request payload",
+    raw_body=b"request payload",
   )
   let responder : &@crescent.Responder = req
   responder.output(buf)

@@ -18,7 +18,7 @@ struct UserInput {
 
 ///|
 fn main {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
 
   // Custom BodyReader: parse CSV from request body
   app.post("/csv", event => {
@@ -33,7 +33,7 @@ fn main {
   })
 
   // Print Server URL
-  for path in app.mappings.keys() {
+  for path in app.routes() {
     println("\{path.0} http://localhost:4000\{path.1}")
   }
 

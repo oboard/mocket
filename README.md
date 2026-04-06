@@ -14,7 +14,7 @@ Native-first, type-safe, AI-agent friendly.
 
 ```moonbit
 async fn main {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.get("/", _ => "Hello, Crescent!")
   app.serve(port=4000)
 }

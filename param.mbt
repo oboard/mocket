@@ -3,7 +3,7 @@
 /// ```mbt check
 /// test {
 ///   let event = @crescent.MocketEvent::{
-///     req: @crescent.HttpRequest::new_request(@crescent.Get, "/", {}, b""),
+///     req: @crescent.HttpRequest::new(@crescent.Get, "/", {}, raw_body=b""),
 ///     res: @crescent.HttpResponse::new(@crescent.OK),
 ///     params: { "id": "42" },
 ///   }

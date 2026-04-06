@@ -2,19 +2,17 @@
 
 ///|
 pub struct Mocket {
-  base_path : String
-  mappings : Map[(String, String), HttpHandler]
-  middlewares : Array[(String, Middleware)]
-  // Static route cache (exact match routes)
-  static_routes : Map[String, Map[String, HttpHandler]]
-  // Dynamic route cache (radix tree for O(path_length) lookup)
-  dynamic_routes : RadixRouter[HttpHandler]
-  // WebSocket routes (matched by path, method-agnostic)
-  ws_static_routes : Map[String, WebSocketHandler]
-  ws_dynamic_routes : Array[(CompiledRoute, WebSocketHandler)]
-  ws_runtime_id : String
-  // Custom handler for 404 Not Found responses
-  mut not_found_handler : HttpHandler?
+  priv base_path : String
+  priv mappings : Map[(String, String), HttpHandler]
+  priv middlewares : Array[(String, Middleware)]
+  priv static_routes : Map[String, Map[String, HttpHandler]]
+  priv dynamic_routes : RadixRouter[HttpHandler]
+  priv ws_static_routes : Map[String, WebSocketHandler]
+  priv ws_dynamic_routes : Array[(CompiledRoute, WebSocketHandler)]
+  priv ws_runtime_id : String
+  priv mut not_found_handler : HttpHandler?
+
+  fn new(base_path? : String) -> Mocket
 }
 
 ///|
@@ -29,7 +27,7 @@ fn next_mocket_instance_id() -> String {
 /// Creates a new Mocket application instance with an optional base path prefix.
 
 ///|
-pub fn new(base_path? : String = "") -> Mocket {
+pub fn Mocket::new(base_path? : String = "") -> Mocket {
   {
     base_path,
     mappings: {},
@@ -41,6 +39,13 @@ pub fn new(base_path? : String = "") -> Mocket {
     ws_runtime_id: next_mocket_instance_id(),
     not_found_handler: None,
   }
+}
+
+/// Returns an iterator over the registered route keys as `(method, path)` pairs.
+
+///|
+pub fn Mocket::routes(self : Mocket) -> Iter[(String, String)] {
+  self.mappings.keys()
 }
 
 ///|
@@ -286,7 +291,7 @@ pub fn Mocket::group(
   base_path : String,
   configure : (Mocket) -> Unit,
 ) -> Unit {
-  let group = new(base_path=self.base_path + base_path)
+  let group = Mocket::new(base_path=self.base_path + base_path)
   configure(group)
   // Merge routes
   group.mappings.iter().each(i => self.mappings.set(i.0, i.1))
@@ -320,6 +325,13 @@ pub fn Mocket::set_not_found_handler(
   handler : HttpHandler,
 ) -> Unit {
   self.not_found_handler = Some(handler)
+}
+
+/// Returns true if a custom not-found handler has been registered.
+
+///|
+pub fn Mocket::has_not_found_handler(self : Mocket) -> Bool {
+  self.not_found_handler is Some(_)
 }
 
 /// Registers a WebSocket handler for the given path, matched regardless of HTTP method.

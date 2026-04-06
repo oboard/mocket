@@ -13,7 +13,7 @@ let request_id_counter : Ref[Int64] = Ref::new(0L)
 /// The request ID is also accessible in handlers via `event.request_id()`.
 ///
 /// ```
-/// let app = @crescent.new()
+/// let app = @crescent.Mocket::new()
 /// app.use_middleware(@crescent.request_id())
 /// app.get("/", event => {
 ///   let id = event.request_id()

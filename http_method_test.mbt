@@ -27,7 +27,7 @@ test "HttpMethod::from_string handles unknown methods" {
 
 ///|
 test "HttpMethod pattern matching in handlers" {
-  let req = @crescent.HttpRequest::new_request(@crescent.Get, "/", {}, b"")
+  let req = @crescent.HttpRequest::new(@crescent.Get, "/", {}, raw_body=b"")
   let result = match req.http_method {
     @crescent.Get => "get"
     @crescent.Post => "post"

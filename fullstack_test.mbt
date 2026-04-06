@@ -64,7 +64,7 @@ struct ApiErrorDetail {
 
 ///|
 fn build_todo_app() -> @crescent.Mocket {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   // In-memory store
   let todos : Array[Todo] = [
     { id: 1, title: "Learn MoonBit", done: true },
@@ -221,11 +221,11 @@ async test "full-stack: json round-trip preserves all fields" {
   let json_text = @utf8.decode(res.raw_body) catch { _ => "" }
 
   // Deserialize from JSON (frontend → backend)
-  let req = @crescent.HttpRequest::new_request(
+  let req = @crescent.HttpRequest::new(
     @crescent.Post,
     "/",
     {},
-    @utf8.encode(json_text),
+    raw_body=@utf8.encode(json_text),
   )
   let parsed : UserProfile = req.json()
   assert_eq(parsed, profile)
@@ -233,7 +233,7 @@ async test "full-stack: json round-trip preserves all fields" {
 
 ///|
 async test "full-stack: nested json with optional fields" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.post("/api/profile", event => {
     let profile : UserProfile = event.req.json()
     // Echo back with modification
@@ -260,7 +260,7 @@ async test "full-stack: nested json with optional fields" {
 ///|
 async test "full-stack: middleware chain with typed handlers" {
   let log : Array[String] = []
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   // Logging middleware
   app.use_middleware((event, next) => {
     log.push("before: \{event.req.http_method} \{event.req.url}")
@@ -283,7 +283,7 @@ async test "full-stack: middleware chain with typed handlers" {
 
 ///|
 async test "full-stack: event.json() shorthand parses request body" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.post("/api/todos", event => {
     // Use event.json() shorthand instead of event.req.json()
     let input : CreateTodo = event.json()
@@ -302,7 +302,7 @@ async test "full-stack: event.json() shorthand parses request body" {
 
 ///|
 async test "full-stack: require_param_int simplifies typed handlers" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.get("/api/todos/:id", event => {
     // Use require_param_int instead of match + raise boilerplate
     let id = event.require_param_int("id")
@@ -322,7 +322,7 @@ async test "full-stack: require_param_int simplifies typed handlers" {
 
 ///|
 async test "full-stack: require_param for string params" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.get("/api/users/:name/profile", event => {
     let name = event.require_param("name")
     @crescent.HttpResponse::ok().json_value(UserProfile::{

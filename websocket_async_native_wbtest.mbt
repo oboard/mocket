@@ -175,7 +175,7 @@ async test "serve_on clears websocket runtime state on cancellation" {
   let initial_hub_count = native_ws_hub_count()
   let initial_connection_hub_count = native_ws_connection_hub_count()
 
-  let app = new()
+  let app = Mocket::new()
   app.get("/__ws_lifecycle_ready", _ => "ready")
   app.ws("/hub", event => {
     match event {
@@ -227,7 +227,7 @@ async test "serve_on_until clears websocket runtime state on shutdown signal" {
   let initial_hub_count = native_ws_hub_count()
   let initial_connection_hub_count = native_ws_connection_hub_count()
 
-  let app = new()
+  let app = Mocket::new()
   app.get("/__ws_lifecycle_ready", _ => "ready")
   app.ws("/hub", event => {
     match event {
@@ -293,7 +293,7 @@ async test "serve_on removes websocket channel subscriptions on close" {
     let server = allocate_websocket_lifecycle_server()
     let port = server.addr.port()
     let channel = "room-close-cleanup-\{port}"
-    let app = new()
+    let app = Mocket::new()
     app.get("/__ws_lifecycle_ready", _ => "ready")
     app.ws("/hub", event => {
       match event {
@@ -351,7 +351,7 @@ async test "serve_on makes closed websocket peers inert after unregister" {
     let server = allocate_websocket_lifecycle_server()
     let port = server.addr.port()
     let channel = "room-stale-peer-\{port}"
-    let app = new()
+    let app = Mocket::new()
     app.get("/__ws_lifecycle_ready", _ => "ready")
     app.ws("/hub", event => {
       match event {
@@ -431,7 +431,7 @@ async test "serve_on closes outgoing queues before close-handler cleanup" {
     let server = allocate_websocket_lifecycle_server()
     let port = server.addr.port()
     let channel = "room-close-order-\{port}"
-    let app = new()
+    let app = Mocket::new()
     app.get("/__ws_lifecycle_ready", _ => "ready")
     app.ws("/hub", event => {
       match event {
@@ -535,7 +535,7 @@ async test "serve_on cleans up subscriptions added during close handler" {
     let port = server.addr.port()
     let primary_channel = "room-close-primary-\{port}"
     let late_channel = "room-close-late-\{port}"
-    let app = new()
+    let app = Mocket::new()
     app.get("/__ws_lifecycle_ready", _ => "ready")
     app.ws("/hub", event => {
       match event {
@@ -612,7 +612,7 @@ async test "serve_on handles unsubscribe then subscribe mutations during close h
     let port = server.addr.port()
     let primary_channel = "room-close-swap-primary-\{port}"
     let late_channel = "room-close-swap-late-\{port}"
-    let app = new()
+    let app = Mocket::new()
     app.get("/__ws_lifecycle_ready", _ => "ready")
     app.ws("/hub", event => {
       match event {
@@ -686,7 +686,7 @@ async test "serve_on keeps close-handler mutations isolated across reused app ru
   let close_room_members : Ref[Int?] = Ref::new(None)
   let close_late_members : Ref[Int?] = Ref::new(None)
   let close_late_runtime_count : Ref[Int?] = Ref::new(None)
-  let app = new()
+  let app = Mocket::new()
   app.get("/__ws_lifecycle_ready", _ => "ready")
   app.ws("/hub", event => {
     match event {
@@ -807,7 +807,7 @@ async test "serve_on keeps close-handler mutations isolated across reused app ru
 
 ///|
 async test "serve_on cancellation stays isolated across reused app runtimes" {
-  let app = new()
+  let app = Mocket::new()
   app.get("/__ws_lifecycle_ready", _ => "ready")
   app.ws("/hub", event => {
     match event {
@@ -888,7 +888,7 @@ async test "serve_on cancellation stays isolated across reused app runtimes" {
 
 ///|
 async test "serve_on_until shutdown stays isolated across reused app runtimes" {
-  let app = new()
+  let app = Mocket::new()
   app.get("/__ws_lifecycle_ready", _ => "ready")
   app.ws("/hub", event => {
     match event {
@@ -995,7 +995,7 @@ async test "serve_on_until shutdown stays isolated across reused app runtimes" {
 
 ///|
 async test "serve_on_until queue close clears reused app websocket runtimes" {
-  let app = new()
+  let app = Mocket::new()
   app.get("/__ws_lifecycle_ready", _ => "ready")
   app.ws("/hub", event => {
     match event {
@@ -1083,7 +1083,7 @@ async test "serve_on_until queue close clears reused app websocket runtimes" {
 
 ///|
 async test "serve_on_until queue close clears remaining reused runtime after cancellation" {
-  let app = new()
+  let app = Mocket::new()
   app.get("/__ws_lifecycle_ready", _ => "ready")
   app.ws("/hub", event => {
     match event {
@@ -1180,7 +1180,7 @@ async test "serve_on_until queue close clears remaining reused runtime after can
 
 ///|
 async test "serve_on_until shutdown signal wakes one reused runtime" {
-  let app = new()
+  let app = Mocket::new()
   app.get("/__ws_lifecycle_ready", _ => "ready")
   app.ws("/hub", event => {
     match event {
@@ -1437,7 +1437,7 @@ async test "serve_on_until shutdown signal wakes one reused runtime" {
 
 ///|
 async test "serve_on_until queue close clears surviving reused runtime after shutdown signal" {
-  let app = new()
+  let app = Mocket::new()
   app.get("/__ws_lifecycle_ready", _ => "ready")
   app.ws("/hub", event => {
     match event {

@@ -20,7 +20,7 @@ async test "resource registers all CRUD routes" {
     { id: 1, name: "Alpha" },
     { id: 2, name: "Beta" },
   ]
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.resource("/api/items", {
     list: Some(_event => @crescent.HttpResponse::ok().json_value(items)),
     get: Some(event => {
@@ -86,7 +86,7 @@ async test "resource registers all CRUD routes" {
 
 ///|
 async test "resource with partial config only registers provided handlers" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.resource("/api/readonly", {
     list: Some(_ => @crescent.HttpResponse::ok().json_value([1, 2, 3])),
     get: None,

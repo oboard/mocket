@@ -7,24 +7,30 @@ pub(all) struct HttpRequest {
   headers : Map[String, String]
   mut raw_body : Bytes
   // Lazily cached parsed path and query params to avoid re-parsing per request
-  mut cached_path : String?
-  mut cached_query_params : Map[String, String]?
+  priv mut cached_path : String?
+  priv mut cached_query_params : Map[String, String]?
+
+  /// Constructor — creates a new HttpRequest.
+  fn new(
+    http_method : HttpMethod,
+    url : String,
+    headers : Map[String, String],
+    raw_body? : Bytes,
+  ) -> HttpRequest
 }
 
-/// Creates a new HttpRequest from an HttpMethod enum.
-
 ///|
-pub fn HttpRequest::new_request(
+pub fn HttpRequest::new(
   http_method : HttpMethod,
   url : String,
   headers : Map[String, String],
-  raw_body : Bytes,
+  raw_body? : Bytes,
 ) -> HttpRequest {
   {
     http_method,
     url,
     headers,
-    raw_body,
+    raw_body: raw_body.unwrap_or(b""),
     cached_path: None,
     cached_query_params: None,
   }
@@ -40,11 +46,11 @@ pub fn HttpRequest::from_method_string(
   headers : Map[String, String],
   raw_body : Bytes,
 ) -> HttpRequest {
-  HttpRequest::new_request(
+  HttpRequest::new(
     HttpMethod::from_string(http_method),
     url,
     headers,
-    raw_body,
+    raw_body~,
   )
 }
 
@@ -199,7 +205,7 @@ pub fn[T : @json.FromJson] HttpRequest::try_json(
 
 ///|
 test "path is cached after first access" {
-  let req = HttpRequest::new_request(Get, "/api/users?q=test", {}, b"")
+  let req = HttpRequest::new(Get, "/api/users?q=test", {}, raw_body=b"")
   assert_eq(req.cached_path, None)
   let path1 = req.path()
   assert_eq(path1, "/api/users")
@@ -211,7 +217,7 @@ test "path is cached after first access" {
 
 ///|
 test "query_params is cached after first access" {
-  let req = HttpRequest::new_request(Get, "/search?q=hello&lang=en", {}, b"")
+  let req = HttpRequest::new(Get, "/search?q=hello&lang=en", {}, raw_body=b"")
   assert_eq(req.cached_query_params, None)
   let params1 = req.query_params()
   assert_eq(params1.get("q"), Some("hello"))
@@ -223,11 +229,11 @@ test "query_params is cached after first access" {
 
 ///|
 test "get_header is case-insensitive" {
-  let req = HttpRequest::new_request(
+  let req = HttpRequest::new(
     Get,
     "/",
     { "X-Test": "value", "content-type": "text/plain" },
-    b"",
+    raw_body=b"",
   )
   assert_eq(req.get_header("x-test"), Some("value"))
   assert_eq(req.get_header("X-TEST"), Some("value"))
@@ -237,11 +243,11 @@ test "get_header is case-insensitive" {
 
 ///|
 test "request target helpers expose path and query" {
-  let req = HttpRequest::new_request(
+  let req = HttpRequest::new(
     Get,
     "/search/moonbit?q=async%20native&lang=en#frag",
     {},
-    b"",
+    raw_body=b"",
   )
   assert_eq(req.path(), "/search/moonbit")
   assert_eq(req.query_string(), Some("q=async%20native&lang=en"))
@@ -293,11 +299,11 @@ pub impl BodyReader for Array[Byte] with from_request(req : HttpRequest) -> Arra
 
 ///|
 test "read_body" {
-  let req = HttpRequest::new_request(
+  let req = HttpRequest::new(
     Post,
     "/",
     Map::new(),
-    b"{\"Hello\":\"World!\"}",
+    raw_body=b"{\"Hello\":\"World!\"}",
   )
   let text : String = req.body()
   let json : Json = req.body()
@@ -325,11 +331,11 @@ impl Show for TryJsonTestUser with output(self, logger) {
 
 ///|
 test "try_json returns Ok on valid json" {
-  let req = HttpRequest::new_request(
+  let req = HttpRequest::new(
     Post,
     "/",
     {},
-    @utf8.encode("{\"name\":\"Alice\",\"age\":30}"),
+    raw_body=@utf8.encode("{\"name\":\"Alice\",\"age\":30}"),
   )
   let result : Result[TryJsonTestUser, String] = req.try_json()
   assert_eq(result, Ok({ name: "Alice", age: 30 }))
@@ -337,18 +343,18 @@ test "try_json returns Ok on valid json" {
 
 ///|
 test "try_json returns Err on invalid json" {
-  let req = HttpRequest::new_request(Post, "/", {}, b"not valid json")
+  let req = HttpRequest::new(Post, "/", {}, raw_body=b"not valid json")
   let result : Result[TryJsonTestUser, String] = req.try_json()
   assert_true(result is Err(_))
 }
 
 ///|
 test "try_json returns Err on wrong schema" {
-  let req = HttpRequest::new_request(
+  let req = HttpRequest::new(
     Post,
     "/",
     {},
-    @utf8.encode("{\"wrong_field\":123}"),
+    raw_body=@utf8.encode("{\"wrong_field\":123}"),
   )
   let result : Result[TryJsonTestUser, String] = req.try_json()
   assert_true(result is Err(_))

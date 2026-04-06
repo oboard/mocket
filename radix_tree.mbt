@@ -8,7 +8,7 @@
 /// - `handler`: the handler registered at this node (if any)
 
 ///|
-struct RadixNode[T] {
+priv struct RadixNode[T] {
   mut handler : T?
   static_children : Map[String, RadixNode[T]]
   mut param_child : (String, RadixNode[T])?

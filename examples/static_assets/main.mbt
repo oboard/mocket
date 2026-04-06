@@ -1,6 +1,6 @@
 ///|
 fn main {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.use_middleware(logger_middleware())
   // Register global middleware
   app.static_assets("/", @static_file.new("./"))
@@ -9,7 +9,7 @@ fn main {
   app.get("/", _ => "Tadaa!")
 
   // Print Server URL
-  for path in app.mappings.keys() {
+  for path in app.routes() {
     println("\{path.0} http://localhost:4000\{path.1}")
   }
 

@@ -1,6 +1,6 @@
 ///|
 async fn main {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.get("/text", fn(_event) noraise { "Hello, World!" })
   app.get("/json", fn(_event) noraise {
     ({ "message": "Hello, World!" } : Json)

@@ -6,6 +6,13 @@ pub(all) struct HttpResponse {
   headers : Map[String, String]
   cookies : Map[String, CookieItem]
   mut raw_body : Bytes
+
+  fn new(
+    status_code : StatusCode,
+    headers? : Map[String, String],
+    cookies? : Map[String, CookieItem],
+    raw_body? : Bytes,
+  ) -> HttpResponse
 }
 
 /// Deserializes the response body into a value of type `T` via the `BodyReader` trait.
@@ -13,7 +20,7 @@ pub(all) struct HttpResponse {
 ///|
 pub fn[T : BodyReader] HttpResponse::read_body(self : HttpResponse) -> T raise {
   T::from_request(
-    HttpRequest::new_request(Other(""), "", self.headers, self.raw_body),
+    HttpRequest::new(Other(""), "", self.headers, raw_body=self.raw_body),
   )
 }
 

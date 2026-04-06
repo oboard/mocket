@@ -31,6 +31,16 @@ pub struct NativeServeOptions {
   websocket_overflow_policy : NativeWebSocketOverflowPolicy?
   websocket_read_timeout_ms : Int?
   websocket_max_message_bytes : Int?
+
+  fn new(
+    max_connections? : Int,
+    max_request_body_bytes? : Int,
+    request_body_read_timeout_ms? : Int,
+    websocket_outgoing_queue_capacity? : Int,
+    websocket_overflow_policy? : NativeWebSocketOverflowPolicy,
+    websocket_read_timeout_ms? : Int,
+    websocket_max_message_bytes? : Int,
+  ) -> NativeServeOptions
 }
 
 ///|

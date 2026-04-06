@@ -1,6 +1,6 @@
 ///|
 async test "request_id middleware generates unique ids" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.use_middleware(@crescent.request_id())
   app.get("/test", event => {
     let id = event.request_id()
@@ -25,7 +25,7 @@ async test "request_id middleware generates unique ids" {
 
 ///|
 async test "request_id middleware preserves existing id" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.use_middleware(@crescent.request_id())
   app.get("/test", event => {
     match event.request_id() {
@@ -41,7 +41,7 @@ async test "request_id middleware preserves existing id" {
 
 ///|
 async test "request_id returns None without middleware" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.get("/test", event => {
     match event.request_id() {
       Some(id) => id

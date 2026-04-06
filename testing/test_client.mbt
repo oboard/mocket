@@ -3,7 +3,7 @@
 /// Construct routes on a `Mocket` app, then use `TestClient` to test them:
 ///
 /// ```
-/// let app = @crescent.new()
+/// let app = @crescent.Mocket::new()
 /// app.get("/hello", _ => "Hello!")
 /// let client = @testing.TestClient::new(app)
 /// let res = client.get("/hello")

@@ -1,25 +1,25 @@
 ///|
 test "custom not found handler is set" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.set_not_found_handler(fn(_event) noraise {
     @crescent.HttpResponse::new(@crescent.NotFound).body("Custom 404")
   })
-  inspect(app.not_found_handler is None, content="false")
+  inspect(app.has_not_found_handler(), content="true")
 }
 
 ///|
 test "not found handler defaults to none" {
-  let app = @crescent.new()
-  inspect(app.not_found_handler is None, content="true")
+  let app = @crescent.Mocket::new()
+  inspect(app.has_not_found_handler(), content="false")
 }
 
 ///|
 test "group merges not found handler" {
-  let app = @crescent.new()
+  let app = @crescent.Mocket::new()
   app.group("/api", fn(group) {
     group.set_not_found_handler(fn(_event) noraise {
       @crescent.HttpResponse::new(@crescent.NotFound).body("API 404")
     })
   })
-  inspect(app.not_found_handler is None, content="false")
+  inspect(app.has_not_found_handler(), content="true")
 }
