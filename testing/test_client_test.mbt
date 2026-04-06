@@ -4,7 +4,7 @@ async test "testing package: GET returns text" {
   app.get_raw("/hello", fn(_) noraise { "Hello!" })
   let client = @testing.TestClient::new(app)
   let res = client.get("/hello")
-  assert_eq(res.status, @crescent.OK)
+  assert_eq(res.status, OK)
   assert_eq(res.body_text(), "Hello!")
 }
 
@@ -17,7 +17,7 @@ async test "testing package: POST with json body" {
   })
   let client = @testing.TestClient::new(app)
   let res = client.post("/echo", body=b"hello world")
-  assert_eq(res.status, @crescent.OK)
+  assert_eq(res.status, OK)
   assert_eq(res.body_text(), "hello world")
 }
 
@@ -30,7 +30,7 @@ async test "testing package: route params" {
   })
   let client = @testing.TestClient::new(app)
   let res = client.get("/users/42")
-  assert_eq(res.status, @crescent.OK)
+  assert_eq(res.status, OK)
 }
 
 ///|
@@ -39,7 +39,7 @@ async test "testing package: 404 for missing route" {
   app.get_raw("/exists", fn(_) noraise { "ok" })
   let client = @testing.TestClient::new(app)
   let res = client.get("/missing")
-  assert_eq(res.status, @crescent.NotFound)
+  assert_eq(res.status, NotFound)
 }
 
 ///|

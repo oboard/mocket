@@ -30,7 +30,7 @@ fn localhost_url(port : Int, path : String) -> String {
 
 ///|
 async fn wait_until_ready(port : Int) -> Unit {
-  @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+  @async.retry(FixedDelay(20), max_retry=50, () => {
     let (response, _body) = @http.get(localhost_url(port, "/__mocket_ready"))
     guard response.code == 200 else { raise ServerNotReady }
   })
@@ -137,7 +137,7 @@ async test "static_file serves head and validates etags" {
 
     let (head_response, head_body) = issue_request(
       port,
-      @http.Head,
+      Head,
       "/assets/hello.txt",
     )
     assert_eq(head_response.code, 200)
@@ -148,7 +148,7 @@ async test "static_file serves head and validates etags" {
 
     let (cached_response, cached_body) = issue_request(
       port,
-      @http.Get,
+      Get,
       "/assets/hello.txt",
       headers={ "If-None-Match": etag },
     )
@@ -160,7 +160,7 @@ async test "static_file serves head and validates etags" {
     let weak_etag = "W/\{etag}"
     let (weak_response, weak_body) = issue_request(
       port,
-      @http.Get,
+      Get,
       "/assets/hello.txt",
       headers={ "If-None-Match": weak_etag },
     )
@@ -169,7 +169,7 @@ async test "static_file serves head and validates etags" {
 
     let (multi_response, multi_body) = issue_request(
       port,
-      @http.Get,
+      Get,
       "/assets/hello.txt",
       headers={ "If-None-Match": "\"miss\", \{etag}" },
     )
@@ -178,7 +178,7 @@ async test "static_file serves head and validates etags" {
 
     let (ims_response, ims_body) = issue_request(
       port,
-      @http.Get,
+      Get,
       "/assets/hello.txt",
       headers={ "If-Modified-Since": last_modified },
     )
@@ -189,7 +189,7 @@ async test "static_file serves head and validates etags" {
 
     let (stale_response, stale_body) = issue_request(
       port,
-      @http.Get,
+      Get,
       "/assets/hello.txt",
       headers={ "If-Modified-Since": "Thu, 01 Jan 1970 00:00:00 GMT" },
     )
@@ -201,7 +201,7 @@ async test "static_file serves head and validates etags" {
 
     let (precedence_response, precedence_body) = issue_request(
       port,
-      @http.Get,
+      Get,
       "/assets/hello.txt",
       headers={
         "If-None-Match": "\"miss\"",

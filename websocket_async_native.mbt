@@ -185,11 +185,11 @@ fn enqueue_native_ws_outgoing_to_connection(
     Ok(true) => ()
     Ok(false) =>
       match connection.overflow_policy {
-        NativeWebSocketOverflowPolicy::DropOldest => {
+        DropOldest => {
           ignore(try? connection.outgoing.try_get())
           ignore(try? connection.outgoing.try_put(message))
         }
-        NativeWebSocketOverflowPolicy::DropLatest => ()
+        DropLatest => ()
       }
     Err(_) => ()
   }
@@ -285,7 +285,7 @@ async fn recv_native_ws_message(
         None => {
           ignore(
             try? ws.send_close(
-              code=@websocket.CloseCode::GoingAway,
+              code=GoingAway,
               reason=NATIVE_WS_READ_TIMEOUT_REASON,
             ),
           )
@@ -363,7 +363,7 @@ async fn read_native_ws_message_contents(
         if native_ws_chunk_exceeds_limit(limit, total, chunk.length()) {
           ignore(
             try? ws.send_close(
-              code=@websocket.CloseCode::MessageTooBig,
+              code=MessageTooBig,
               reason=NATIVE_WS_MESSAGE_TOO_BIG_REASON,
             ),
           )
@@ -380,10 +380,7 @@ async fn read_native_ws_message_contents(
 async fn send_native_ws_shutdown_close(ws : @websocket.Conn) -> Unit {
   ignore(
     try? @async.protect_from_cancel(resume_on_cancel=true, () => {
-      ws.send_close(
-        code=@websocket.CloseCode::GoingAway,
-        reason=NATIVE_WS_SERVER_SHUTDOWN_REASON,
-      )
+      ws.send_close(code=GoingAway, reason=NATIVE_WS_SERVER_SHUTDOWN_REASON)
     }),
   )
 }

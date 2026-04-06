@@ -173,7 +173,7 @@ fn parse_scheme_or_segment_nz_nc(
       }
       [b, .. k] if is_unreserved_byte(b) || is_sub_delim_byte(b) || b == '@' =>
         continue k
-      _ => raise ParseError::InvalidSchemeOrSegment(source)
+      _ => raise InvalidSchemeOrSegment(source)
     }
   }
 }
@@ -216,7 +216,7 @@ pub fn Uri::parse(source : BytesView) -> Uri raise ParseError {
   }
   let source = parse_uri_reference(source, uri)
   if !(source is []) {
-    raise ParseError::Invalid(source)
+    raise Invalid(source)
   }
   uri
 }
@@ -236,12 +236,12 @@ fn parse_scheme(source : BytesView, uri : Uri) -> BytesView raise ParseError {
             uri.scheme = Some(source.slice_until(s))
             return k
           }
-          [_, ..] as s => raise ParseError::InvalidScheme(s)
-          [] => raise ParseError::MissingColon
+          [_, ..] as s => raise InvalidScheme(s)
+          [] => raise MissingColon
         }
       }
-    [_, ..] as s => raise ParseError::InvalidScheme(s)
-    [] => raise ParseError::MissingScheme
+    [_, ..] as s => raise InvalidScheme(s)
+    [] => raise MissingScheme
   }
 }
 
@@ -257,7 +257,7 @@ fn parse_percent_encoding(source : BytesView) -> BytesView raise ParseError {
       | 'a'..='z',
       .. source,
     ] => source
-    [..] => raise ParseError::InvalidPercentEncoding(source)
+    [..] => raise InvalidPercentEncoding(source)
   }
 }
 
@@ -276,7 +276,7 @@ fn parse_userinfo(
       ['%', .. k] => continue parse_percent_encoding(k)
       [b, .. k] if is_unreserved_byte(b) || is_sub_delim_byte(b) || b == ':' =>
         continue k
-      [_, ..] as s => raise ParseError::InvalidHeirPart(s)
+      [_, ..] as s => raise InvalidHeirPart(s)
       [] as s => return s
     }
   }
@@ -292,7 +292,7 @@ fn parse_reg_name(
       ['%', ..] as s => continue parse_percent_encoding(s)
       [b, .. k] if is_unreserved_byte(b) || is_sub_delim_byte(b) => continue k
       _ as s => {
-        authority.host = Host::RegName(source.slice_until(s))
+        authority.host = RegName(source.slice_until(s))
         return s
       }
     }
@@ -312,7 +312,7 @@ fn parse_ipv6_address(
         return k
       }
       [b, .. s] if is_hexdig_byte(b) || b == ':' || b == '.' => continue s
-      _ as s => raise ParseError::InvalidHeirPart(s)
+      _ as s => raise InvalidHeirPart(s)
     }
   }
 }
@@ -457,7 +457,7 @@ fn parse_path_abempty_then_query(
         }
         return s
       }
-      [..] as s => raise ParseError::InvalidSegment(s)
+      [..] as s => raise InvalidSegment(s)
     }
   }
 }
@@ -474,7 +474,7 @@ fn parse_hier_part_then_query(
         ['?', .. k] => parse_query_then_fragment(k, uri)
         ['#', ..] => parse_fragment(k, uri)
         [] => parse_done(k, uri)
-        [..] as s => raise ParseError::Invalid(s)
+        [..] as s => raise Invalid(s)
       }
     _ => parse_path_abempty_then_query(source, uri)
   }
@@ -587,7 +587,7 @@ test "RFC 3986 URI Reference Parsing" {
   assert_eq(uri.scheme, Some("http"))
   assert_eq(
     uri.authority,
-    Some(Authority::{ userinfo: None, host: RegName("example.com"), port: None }),
+    Some({ userinfo: None, host: RegName("example.com"), port: None }),
   )
   assert_eq(uri.path, ["path", "to", "resource"])
   assert_eq(uri.query, Some("query=parameter"))
@@ -610,7 +610,7 @@ test "RFC 3986 Authority with Userinfo and Port" {
   assert_eq(uri.scheme, Some("ftp"))
   assert_eq(
     uri.authority,
-    Some(Authority::{
+    Some({
       userinfo: Some("user:pass"),
       host: RegName("ftp.example.com"),
       port: Some(21),
@@ -632,11 +632,7 @@ test "RFC 3986 IPv6 Literal" {
   assert_eq(uri.scheme, Some("http"))
   assert_eq(
     uri.authority,
-    Some(Authority::{
-      userinfo: None,
-      host: IPv6Address("2001:db8::1"),
-      port: Some(8080),
-    }),
+    Some({ userinfo: None, host: IPv6Address("2001:db8::1"), port: Some(8080) }),
   )
   assert_eq(uri.path, [])
 }
@@ -783,7 +779,7 @@ test "RFC 3986 Absolute URI Parsing" {
   assert_eq(uri.scheme, Some("http"))
   assert_eq(
     uri.authority,
-    Some(Authority::{ userinfo: None, host: RegName("example.com"), port: None }),
+    Some({ userinfo: None, host: RegName("example.com"), port: None }),
   )
   assert_eq(uri.path, ["path", "to", "resource"])
   assert_eq(uri.query, Some("query=parameter"))

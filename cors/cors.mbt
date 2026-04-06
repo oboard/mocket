@@ -7,7 +7,7 @@ pub fn is_preflight_request(event : @crescent.MocketEvent) -> Bool {
   let access_control_request_method = event.req.get_header(
     "access-control-request-method",
   )
-  return event.req.http_method == @crescent.Options &&
+  return event.req.http_method == Options &&
     origin != None &&
     access_control_request_method != None
 }

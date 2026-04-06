@@ -167,12 +167,10 @@ fn resolve_native_websocket_overflow_policy(
   match options.websocket_overflow_policy {
     Some(policy) =>
       match policy {
-        NativeWebSocketOverflowPolicy::DropOldest =>
-          NativeWebSocketOverflowPolicy::DropOldest
-        NativeWebSocketOverflowPolicy::DropLatest =>
-          NativeWebSocketOverflowPolicy::DropLatest
+        DropOldest => DropOldest
+        DropLatest => DropLatest
       }
-    None => NativeWebSocketOverflowPolicy::DropOldest
+    None => DropOldest
   }
 }
 

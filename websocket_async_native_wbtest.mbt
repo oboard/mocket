@@ -30,7 +30,7 @@ fn websocket_lifecycle_url(port : Int, path : String) -> String {
 
 ///|
 async fn wait_until_websocket_lifecycle_ready(port : Int) -> Unit {
-  @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+  @async.retry(FixedDelay(20), max_retry=50, () => {
     let (response, _body) = @http.get(
       websocket_lifecycle_url(port, "/__ws_lifecycle_ready"),
     )
@@ -126,10 +126,7 @@ test "native websocket message limit helpers handle int max boundaries" {
 
 ///|
 test "enqueue_native_ws_outgoing_to_connection drops oldest when configured" {
-  let connection = test_native_ws_connection(
-    2,
-    NativeWebSocketOverflowPolicy::DropOldest,
-  )
+  let connection = test_native_ws_connection(2, DropOldest)
   enqueue_native_ws_outgoing_to_connection(connection, SendText("one"))
   enqueue_native_ws_outgoing_to_connection(connection, SendText("two"))
   enqueue_native_ws_outgoing_to_connection(connection, SendText("three"))
@@ -149,10 +146,7 @@ test "enqueue_native_ws_outgoing_to_connection drops oldest when configured" {
 
 ///|
 test "enqueue_native_ws_outgoing_to_connection drops latest when configured" {
-  let connection = test_native_ws_connection(
-    2,
-    NativeWebSocketOverflowPolicy::DropLatest,
-  )
+  let connection = test_native_ws_connection(2, DropLatest)
   enqueue_native_ws_outgoing_to_connection(connection, SendText("one"))
   enqueue_native_ws_outgoing_to_connection(connection, SendText("two"))
   enqueue_native_ws_outgoing_to_connection(connection, SendText("three"))
@@ -197,7 +191,7 @@ async test "serve_on clears websocket runtime state on cancellation" {
     client.send_text("publish")
     inspect(client.recv().read_all().text(), content="fanout")
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_hub_count() > initial_hub_count &&
         native_ws_connection_hub_count() > initial_connection_hub_count else {
         raise WebSocketLifecycleServerNotReady
@@ -210,7 +204,7 @@ async test "serve_on clears websocket runtime state on cancellation" {
       Some(()),
     )
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_hub_count() == initial_hub_count &&
         native_ws_connection_hub_count() == initial_connection_hub_count else {
         raise WebSocketLifecycleServerNotReady
@@ -252,7 +246,7 @@ async test "serve_on_until clears websocket runtime state on shutdown signal" {
     client.send_text("publish")
     inspect(client.recv().read_all().text(), content="fanout")
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_hub_count() > initial_hub_count &&
         native_ws_connection_hub_count() > initial_connection_hub_count else {
         raise WebSocketLifecycleServerNotReady
@@ -275,7 +269,7 @@ async test "serve_on_until clears websocket runtime state on shutdown signal" {
         )
     }
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_hub_count() == initial_hub_count &&
         native_ws_connection_hub_count() == initial_connection_hub_count else {
         raise WebSocketLifecycleServerNotReady
@@ -310,7 +304,7 @@ async test "serve_on removes websocket channel subscriptions on close" {
     let client2 = @websocket.connect("ws://127.0.0.1:\{port}/hub")
     defer client2.close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_channel_member_count(channel) == 2 else {
         raise WebSocketLifecycleServerNotReady
       }
@@ -318,7 +312,7 @@ async test "serve_on removes websocket channel subscriptions on close" {
 
     client1.send_close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_channel_member_count(channel) == 1 else {
         raise WebSocketLifecycleServerNotReady
       }
@@ -333,7 +327,7 @@ async test "serve_on removes websocket channel subscriptions on close" {
       Some(()),
     )
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_channel_member_count(channel) == 0 else {
         raise WebSocketLifecycleServerNotReady
       }
@@ -383,7 +377,7 @@ async test "serve_on makes closed websocket peers inert after unregister" {
 
     client1.send_close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       match closed_peer.val {
         Some(peer) => {
           guard !native_ws_connection_exists(peer.connection_id) &&
@@ -410,7 +404,7 @@ async test "serve_on makes closed websocket peers inert after unregister" {
       Some(()),
     )
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_channel_member_count(channel) == 0 else {
         raise WebSocketLifecycleServerNotReady
       }
@@ -472,7 +466,7 @@ async test "serve_on closes outgoing queues before close-handler cleanup" {
     let client2 = @websocket.connect("ws://127.0.0.1:\{port}/hub")
     defer client2.close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_channel_member_count(channel) == 2 else {
         raise WebSocketLifecycleServerNotReady
       }
@@ -480,7 +474,7 @@ async test "serve_on closes outgoing queues before close-handler cleanup" {
 
     client1.send_close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard close_connection_id.val is Some(_) &&
         close_saw_registered.val is Some(_) &&
         close_saw_queue_closed.val is Some(_) &&
@@ -493,7 +487,7 @@ async test "serve_on closes outgoing queues before close-handler cleanup" {
     inspect(close_saw_queue_closed.val, content="Some(true)")
     inspect(close_channel_members.val, content="Some(2)")
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       match close_connection_id.val {
         Some(connection_id) => {
           guard !native_ws_connection_exists(connection_id) &&
@@ -514,7 +508,7 @@ async test "serve_on closes outgoing queues before close-handler cleanup" {
       Some(()),
     )
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_channel_member_count(channel) == 0 else {
         raise WebSocketLifecycleServerNotReady
       }
@@ -559,7 +553,7 @@ async test "serve_on cleans up subscriptions added during close handler" {
     let client = @websocket.connect("ws://127.0.0.1:\{port}/hub")
     defer client.close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_channel_member_count(primary_channel) == 1 else {
         raise WebSocketLifecycleServerNotReady
       }
@@ -567,7 +561,7 @@ async test "serve_on cleans up subscriptions added during close handler" {
 
     client.send_close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard close_connection_id.val is Some(_) &&
         close_primary_members.val is Some(_) &&
         close_late_members.val is Some(_) else {
@@ -578,7 +572,7 @@ async test "serve_on cleans up subscriptions added during close handler" {
     inspect(close_primary_members.val, content="Some(1)")
     inspect(close_late_members.val, content="Some(1)")
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       match close_connection_id.val {
         Some(connection_id) => {
           guard !native_ws_connection_exists(connection_id) &&
@@ -637,7 +631,7 @@ async test "serve_on handles unsubscribe then subscribe mutations during close h
     let client = @websocket.connect("ws://127.0.0.1:\{port}/hub")
     defer client.close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_channel_member_count(primary_channel) == 1 else {
         raise WebSocketLifecycleServerNotReady
       }
@@ -645,7 +639,7 @@ async test "serve_on handles unsubscribe then subscribe mutations during close h
 
     client.send_close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard close_connection_id.val is Some(_) &&
         close_primary_members.val is Some(_) &&
         close_late_members.val is Some(_) else {
@@ -656,7 +650,7 @@ async test "serve_on handles unsubscribe then subscribe mutations during close h
     inspect(close_primary_members.val, content="Some(0)")
     inspect(close_late_members.val, content="Some(1)")
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       match close_connection_id.val {
         Some(connection_id) => {
           guard !native_ws_connection_exists(connection_id) &&
@@ -735,7 +729,7 @@ async test "serve_on keeps close-handler mutations isolated across reused app ru
     let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
     defer client2.close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       let runtime_ids = native_ws_runtime_ids_for_app(app)
       guard runtime_ids.length() == 2 else {
         raise WebSocketLifecycleServerNotReady
@@ -751,7 +745,7 @@ async test "serve_on keeps close-handler mutations isolated across reused app ru
 
     client1.send_close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard close_runtime_id.val is Some(_) &&
         close_room_members.val is Some(_) &&
         close_late_members.val is Some(_) &&
@@ -764,7 +758,7 @@ async test "serve_on keeps close-handler mutations isolated across reused app ru
     inspect(close_late_members.val, content="Some(1)")
     inspect(close_late_runtime_count.val, content="Some(1)")
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       let runtime_ids = native_ws_runtime_ids_for_app(app)
       guard runtime_ids.length() == 1 else {
         raise WebSocketLifecycleServerNotReady
@@ -794,7 +788,7 @@ async test "serve_on keeps close-handler mutations isolated across reused app ru
       Some(()),
     )
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_runtime_ids_for_app(app).is_empty() else {
         raise WebSocketLifecycleServerNotReady
       }
@@ -832,7 +826,7 @@ async test "serve_on cancellation stays isolated across reused app runtimes" {
     let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
     defer client2.close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       let runtime_ids = native_ws_runtime_ids_for_app(app)
       guard runtime_ids.length() == 2 else {
         raise WebSocketLifecycleServerNotReady
@@ -852,7 +846,7 @@ async test "serve_on cancellation stays isolated across reused app runtimes" {
       Some(()),
     )
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       let runtime_ids = native_ws_runtime_ids_for_app(app)
       guard runtime_ids.length() == 1 else {
         raise WebSocketLifecycleServerNotReady
@@ -875,7 +869,7 @@ async test "serve_on cancellation stays isolated across reused app runtimes" {
       Some(()),
     )
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_runtime_ids_for_app(app).is_empty() else {
         raise WebSocketLifecycleServerNotReady
       }
@@ -919,7 +913,7 @@ async test "serve_on_until shutdown stays isolated across reused app runtimes" {
     let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
     defer client2.close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       let runtime_ids = native_ws_runtime_ids_for_app(app)
       guard runtime_ids.length() == 2 else {
         raise WebSocketLifecycleServerNotReady
@@ -949,7 +943,7 @@ async test "serve_on_until shutdown stays isolated across reused app runtimes" {
         )
     }
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       let runtime_ids = native_ws_runtime_ids_for_app(app)
       guard runtime_ids.length() == 1 else {
         raise WebSocketLifecycleServerNotReady
@@ -982,7 +976,7 @@ async test "serve_on_until shutdown stays isolated across reused app runtimes" {
         )
     }
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_runtime_ids_for_app(app).is_empty() else {
         raise WebSocketLifecycleServerNotReady
       }
@@ -1025,7 +1019,7 @@ async test "serve_on_until queue close clears reused app websocket runtimes" {
     let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
     defer client2.close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       let runtime_ids = native_ws_runtime_ids_for_app(app)
       guard runtime_ids.length() == 2 else {
         raise WebSocketLifecycleServerNotReady
@@ -1070,7 +1064,7 @@ async test "serve_on_until queue close clears reused app websocket runtimes" {
         )
     }
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_runtime_ids_for_app(app).is_empty() else {
         raise WebSocketLifecycleServerNotReady
       }
@@ -1113,7 +1107,7 @@ async test "serve_on_until queue close clears remaining reused runtime after can
     let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
     defer client2.close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       let runtime_ids = native_ws_runtime_ids_for_app(app)
       guard runtime_ids.length() == 2 else {
         raise WebSocketLifecycleServerNotReady
@@ -1133,7 +1127,7 @@ async test "serve_on_until queue close clears remaining reused runtime after can
       Some(()),
     )
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       let runtime_ids = native_ws_runtime_ids_for_app(app)
       guard runtime_ids.length() == 1 else {
         raise WebSocketLifecycleServerNotReady
@@ -1167,7 +1161,7 @@ async test "serve_on_until queue close clears remaining reused runtime after can
         )
     }
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard native_ws_runtime_ids_for_app(app).is_empty() else {
         raise WebSocketLifecycleServerNotReady
       }
@@ -1210,7 +1204,7 @@ async test "serve_on_until shutdown signal wakes one reused runtime" {
     let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
     defer client2.close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       let runtime_ids = native_ws_runtime_ids_for_app(app)
       guard runtime_ids.length() == 2 else {
         raise WebSocketLifecycleServerNotReady
@@ -1233,14 +1227,7 @@ async test "serve_on_until shutdown signal wakes one reused runtime" {
     })
 
     match client1_after {
-      Some(
-        Err(
-          @websocket.ConnectionClosed(
-            @websocket.CloseCode::GoingAway,
-            Some(reason)
-          )
-        )
-      ) => {
+      Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) => {
         inspect(reason, content="websocket server shutdown")
         match client2_after {
           None => ()
@@ -1266,7 +1253,7 @@ async test "serve_on_until shutdown signal wakes one reused runtime" {
             }
           None => fail("timed out waiting for signaled reused runtime to stop")
         }
-        @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+        @async.retry(FixedDelay(20), max_retry=50, () => {
           let runtime_ids = native_ws_runtime_ids_for_app(app)
           guard runtime_ids.length() == 1 else {
             raise WebSocketLifecycleServerNotReady
@@ -1315,7 +1302,7 @@ async test "serve_on_until shutdown signal wakes one reused runtime" {
               "timed out waiting for the surviving reused runtime to stop after second shutdown signal",
             )
         }
-        @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+        @async.retry(FixedDelay(20), max_retry=50, () => {
           guard native_ws_runtime_ids_for_app(app).is_empty() else {
             raise WebSocketLifecycleServerNotReady
           }
@@ -1335,14 +1322,7 @@ async test "serve_on_until shutdown signal wakes one reused runtime" {
         )
       None =>
         match client2_after {
-          Some(
-            Err(
-              @websocket.ConnectionClosed(
-                @websocket.CloseCode::GoingAway,
-                Some(reason)
-              )
-            )
-          ) => {
+          Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) => {
             inspect(reason, content="websocket server shutdown")
             match @async.with_timeout_opt(200, () => task2.wait()) {
               Some(result) =>
@@ -1356,7 +1336,7 @@ async test "serve_on_until shutdown signal wakes one reused runtime" {
               None =>
                 fail("timed out waiting for signaled reused runtime to stop")
             }
-            @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+            @async.retry(FixedDelay(20), max_retry=50, () => {
               let runtime_ids = native_ws_runtime_ids_for_app(app)
               guard runtime_ids.length() == 1 else {
                 raise WebSocketLifecycleServerNotReady
@@ -1405,7 +1385,7 @@ async test "serve_on_until shutdown signal wakes one reused runtime" {
                   "timed out waiting for the surviving reused runtime to stop after second shutdown signal",
                 )
             }
-            @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+            @async.retry(FixedDelay(20), max_retry=50, () => {
               guard native_ws_runtime_ids_for_app(app).is_empty() else {
                 raise WebSocketLifecycleServerNotReady
               }
@@ -1467,7 +1447,7 @@ async test "serve_on_until queue close clears surviving reused runtime after shu
     let client2 = @websocket.connect("ws://127.0.0.1:\{port2}/hub")
     defer client2.close()
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       let runtime_ids = native_ws_runtime_ids_for_app(app)
       guard runtime_ids.length() == 2 else {
         raise WebSocketLifecycleServerNotReady
@@ -1490,14 +1470,7 @@ async test "serve_on_until queue close clears surviving reused runtime after shu
     })
 
     match client1_after {
-      Some(
-        Err(
-          @websocket.ConnectionClosed(
-            @websocket.CloseCode::GoingAway,
-            Some(reason)
-          )
-        )
-      ) => {
+      Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) => {
         inspect(reason, content="websocket server shutdown")
         match client2_after {
           None => ()
@@ -1523,7 +1496,7 @@ async test "serve_on_until queue close clears surviving reused runtime after shu
             }
           None => fail("timed out waiting for signaled reused runtime to stop")
         }
-        @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+        @async.retry(FixedDelay(20), max_retry=50, () => {
           let runtime_ids = native_ws_runtime_ids_for_app(app)
           guard runtime_ids.length() == 1 else {
             raise WebSocketLifecycleServerNotReady
@@ -1560,7 +1533,7 @@ async test "serve_on_until queue close clears surviving reused runtime after shu
               "timed out waiting for the surviving reused runtime to stop after queue close",
             )
         }
-        @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+        @async.retry(FixedDelay(20), max_retry=50, () => {
           guard native_ws_runtime_ids_for_app(app).is_empty() else {
             raise WebSocketLifecycleServerNotReady
           }
@@ -1580,14 +1553,7 @@ async test "serve_on_until queue close clears surviving reused runtime after shu
         )
       None =>
         match client2_after {
-          Some(
-            Err(
-              @websocket.ConnectionClosed(
-                @websocket.CloseCode::GoingAway,
-                Some(reason)
-              )
-            )
-          ) => {
+          Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) => {
             inspect(reason, content="websocket server shutdown")
             match @async.with_timeout_opt(200, () => task2.wait()) {
               Some(result) =>
@@ -1601,7 +1567,7 @@ async test "serve_on_until queue close clears surviving reused runtime after shu
               None =>
                 fail("timed out waiting for signaled reused runtime to stop")
             }
-            @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+            @async.retry(FixedDelay(20), max_retry=50, () => {
               let runtime_ids = native_ws_runtime_ids_for_app(app)
               guard runtime_ids.length() == 1 else {
                 raise WebSocketLifecycleServerNotReady
@@ -1638,7 +1604,7 @@ async test "serve_on_until queue close clears surviving reused runtime after shu
                   "timed out waiting for the surviving reused runtime to stop after queue close",
                 )
             }
-            @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+            @async.retry(FixedDelay(20), max_retry=50, () => {
               guard native_ws_runtime_ids_for_app(app).is_empty() else {
                 raise WebSocketLifecycleServerNotReady
               }
@@ -1705,12 +1671,7 @@ test "register_native_ws_connection makes connection resolvable" {
   let runtime_id = "test-register"
   let connection_id = "test-register:1"
   let outgoing = @async.Queue::new(kind=Blocking(10))
-  register_native_ws_connection(
-    runtime_id,
-    connection_id,
-    outgoing,
-    NativeWebSocketOverflowPolicy::DropOldest,
-  )
+  register_native_ws_connection(runtime_id, connection_id, outgoing, DropOldest)
   inspect(
     resolve_native_ws_connection(connection_id) is Some(_),
     content="true",
@@ -1724,12 +1685,7 @@ test "unregister_native_ws_connection makes connection unresolvable" {
   let runtime_id = "test-unregister"
   let connection_id = "test-unregister:1"
   let outgoing = @async.Queue::new(kind=Blocking(10))
-  register_native_ws_connection(
-    runtime_id,
-    connection_id,
-    outgoing,
-    NativeWebSocketOverflowPolicy::DropOldest,
-  )
+  register_native_ws_connection(runtime_id, connection_id, outgoing, DropOldest)
   inspect(native_ws_connection_exists(connection_id), content="true")
   unregister_native_ws_connection(connection_id)
   inspect(native_ws_connection_exists(connection_id), content="false")
@@ -1744,12 +1700,7 @@ test "unregister_native_ws_connection removes hub when last connection removed" 
   let runtime_id = "test-unregister-hub-removal"
   let connection_id = "test-unregister-hub-removal:1"
   let outgoing = @async.Queue::new(kind=Blocking(10))
-  register_native_ws_connection(
-    runtime_id,
-    connection_id,
-    outgoing,
-    NativeWebSocketOverflowPolicy::DropOldest,
-  )
+  register_native_ws_connection(runtime_id, connection_id, outgoing, DropOldest)
   inspect(native_ws_hubs.get(runtime_id) is Some(_), content="true")
   unregister_native_ws_connection(connection_id)
   inspect(native_ws_hubs.get(runtime_id) is Some(_), content="false")
@@ -1760,12 +1711,7 @@ test "ws_subscribe adds connection to channel" {
   let runtime_id = "test-subscribe"
   let connection_id = "test-subscribe:1"
   let outgoing = @async.Queue::new(kind=Blocking(10))
-  register_native_ws_connection(
-    runtime_id,
-    connection_id,
-    outgoing,
-    NativeWebSocketOverflowPolicy::DropOldest,
-  )
+  register_native_ws_connection(runtime_id, connection_id, outgoing, DropOldest)
   ws_subscribe(connection_id, "channel-a")
   let channels = snapshot_native_ws_channels(connection_id)
   inspect(channels.length(), content="1")
@@ -1782,12 +1728,7 @@ test "ws_subscribe is idempotent" {
   let runtime_id = "test-subscribe-idempotent"
   let connection_id = "test-subscribe-idempotent:1"
   let outgoing = @async.Queue::new(kind=Blocking(10))
-  register_native_ws_connection(
-    runtime_id,
-    connection_id,
-    outgoing,
-    NativeWebSocketOverflowPolicy::DropOldest,
-  )
+  register_native_ws_connection(runtime_id, connection_id, outgoing, DropOldest)
   ws_subscribe(connection_id, "channel-a")
   ws_subscribe(connection_id, "channel-a")
   let channels = snapshot_native_ws_channels(connection_id)
@@ -1804,12 +1745,7 @@ test "ws_unsubscribe removes connection from channel" {
   let runtime_id = "test-unsubscribe"
   let connection_id = "test-unsubscribe:1"
   let outgoing = @async.Queue::new(kind=Blocking(10))
-  register_native_ws_connection(
-    runtime_id,
-    connection_id,
-    outgoing,
-    NativeWebSocketOverflowPolicy::DropOldest,
-  )
+  register_native_ws_connection(runtime_id, connection_id, outgoing, DropOldest)
   ws_subscribe(connection_id, "channel-a")
   ws_subscribe(connection_id, "channel-b")
   ws_unsubscribe(connection_id, "channel-a")
@@ -1832,12 +1768,7 @@ test "ws_unsubscribe on non-subscribed channel is safe" {
   let runtime_id = "test-unsubscribe-noop"
   let connection_id = "test-unsubscribe-noop:1"
   let outgoing = @async.Queue::new(kind=Blocking(10))
-  register_native_ws_connection(
-    runtime_id,
-    connection_id,
-    outgoing,
-    NativeWebSocketOverflowPolicy::DropOldest,
-  )
+  register_native_ws_connection(runtime_id, connection_id, outgoing, DropOldest)
   ws_unsubscribe(connection_id, "nonexistent-channel")
   let channels = snapshot_native_ws_channels(connection_id)
   inspect(channels.length(), content="0")
@@ -1846,7 +1777,7 @@ test "ws_unsubscribe on non-subscribed channel is safe" {
 
 ///|
 test "decode_native_ws_message decodes text message" {
-  match decode_native_ws_message(@websocket.MessageKind::Text, b"hello") {
+  match decode_native_ws_message(Text, b"hello") {
     Text(s) => inspect(s, content="hello")
     Binary(_) => fail("expected text message")
   }
@@ -1855,7 +1786,7 @@ test "decode_native_ws_message decodes text message" {
 ///|
 test "decode_native_ws_message decodes binary message" {
   let data : Bytes = b"binary data"
-  match decode_native_ws_message(@websocket.MessageKind::Binary, data) {
+  match decode_native_ws_message(Binary, data) {
     Binary(b) => inspect(b == data, content="true")
     Text(_) => fail("expected binary message")
   }
@@ -1863,7 +1794,7 @@ test "decode_native_ws_message decodes binary message" {
 
 ///|
 test "decode_native_ws_message decodes empty text" {
-  match decode_native_ws_message(@websocket.MessageKind::Text, b"") {
+  match decode_native_ws_message(Text, b"") {
     Text(s) => inspect(s, content="")
     Binary(_) => fail("expected text message")
   }
@@ -1871,7 +1802,7 @@ test "decode_native_ws_message decodes empty text" {
 
 ///|
 test "decode_native_ws_message decodes empty binary" {
-  match decode_native_ws_message(@websocket.MessageKind::Binary, b"") {
+  match decode_native_ws_message(Binary, b"") {
     Binary(b) => inspect(b.length(), content="0")
     Text(_) => fail("expected binary message")
   }
@@ -1914,13 +1845,13 @@ test "cleanup_native_ws_runtime removes all connections for runtime" {
     runtime_id,
     "test-cleanup-runtime:1",
     outgoing1,
-    NativeWebSocketOverflowPolicy::DropOldest,
+    DropOldest,
   )
   register_native_ws_connection(
     runtime_id,
     "test-cleanup-runtime:2",
     outgoing2,
-    NativeWebSocketOverflowPolicy::DropOldest,
+    DropOldest,
   )
   ws_subscribe("test-cleanup-runtime:1", "room")
   ws_subscribe("test-cleanup-runtime:2", "room")
@@ -1956,13 +1887,13 @@ test "multiple connections share same hub channel" {
     runtime_id,
     "test-shared-channel:1",
     outgoing1,
-    NativeWebSocketOverflowPolicy::DropOldest,
+    DropOldest,
   )
   register_native_ws_connection(
     runtime_id,
     "test-shared-channel:2",
     outgoing2,
-    NativeWebSocketOverflowPolicy::DropOldest,
+    DropOldest,
   )
   ws_subscribe("test-shared-channel:1", "shared-room")
   ws_subscribe("test-shared-channel:2", "shared-room")

@@ -159,27 +159,23 @@ test "resolve_native_websocket_overflow_policy defaults to DropOldest" {
   let result = resolve_native_websocket_overflow_policy(
     NativeServeOptions::new(),
   )
-  assert_eq(result, NativeWebSocketOverflowPolicy::DropOldest)
+  assert_eq(result, DropOldest)
 }
 
 ///|
 test "resolve_native_websocket_overflow_policy returns DropOldest" {
   let result = resolve_native_websocket_overflow_policy(
-    NativeServeOptions::new(
-      websocket_overflow_policy=NativeWebSocketOverflowPolicy::DropOldest,
-    ),
+    NativeServeOptions::new(websocket_overflow_policy=DropOldest),
   )
-  assert_eq(result, NativeWebSocketOverflowPolicy::DropOldest)
+  assert_eq(result, DropOldest)
 }
 
 ///|
 test "resolve_native_websocket_overflow_policy returns DropLatest" {
   let result = resolve_native_websocket_overflow_policy(
-    NativeServeOptions::new(
-      websocket_overflow_policy=NativeWebSocketOverflowPolicy::DropLatest,
-    ),
+    NativeServeOptions::new(websocket_overflow_policy=DropLatest),
   )
-  assert_eq(result, NativeWebSocketOverflowPolicy::DropLatest)
+  assert_eq(result, DropLatest)
 }
 
 ///|

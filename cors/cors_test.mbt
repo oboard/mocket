@@ -19,7 +19,7 @@ fn make_event(
 test "is_preflight_request requires cors headers and options" {
   inspect(
     is_preflight_request(
-      make_event(@crescent.Options, {
+      make_event(Options, {
         "origin": "https://example.com",
         "access-control-request-method": "PUT",
       }),
@@ -28,13 +28,13 @@ test "is_preflight_request requires cors headers and options" {
   )
   inspect(
     is_preflight_request(
-      make_event(@crescent.Options, { "origin": "https://example.com" }),
+      make_event(Options, { "origin": "https://example.com" }),
     ),
     content="false",
   )
   inspect(
     is_preflight_request(
-      make_event(@crescent.Get, {
+      make_event(Get, {
         "origin": "https://example.com",
         "access-control-request-method": "PUT",
       }),
@@ -75,7 +75,7 @@ fn localhost_url(port : Int, path : String) -> String {
 
 ///|
 async fn wait_until_ready(port : Int) -> Unit {
-  @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+  @async.retry(FixedDelay(20), max_retry=50, () => {
     let (response, _body) = @http.get(localhost_url(port, "/__cors_ready"))
     guard response.code == 200 else { raise ServerNotReady }
   })
@@ -140,7 +140,7 @@ async test "handle_cors serves preflight requests through async server" {
     @crescent.text("unexpected")
   })
   with_test_server(app, port => {
-    let (response, body) = issue_request(port, @http.Options, "/resource", headers={
+    let (response, body) = issue_request(port, Options, "/resource", headers={
       "origin": "https://frontend.example",
       "access-control-request-method": "PATCH",
     })
@@ -181,7 +181,7 @@ async test "handle_cors decorates normal requests through async server" {
   )
   app.get("/resource", _ => "ok")
   with_test_server(app, port => {
-    let (response, body) = issue_request(port, @http.Get, "/resource", headers={
+    let (response, body) = issue_request(port, Get, "/resource", headers={
       "origin": "https://frontend.example",
     })
     assert_eq(response.code, 200)
@@ -227,7 +227,7 @@ async test "handle_cors does not short-circuit non-preflight options" {
     @crescent.text("regular-options")
   })
   with_test_server(app, port => {
-    let (response, body) = issue_request(port, @http.Options, "/resource", headers={
+    let (response, body) = issue_request(port, Options, "/resource", headers={
       "origin": "https://frontend.example",
     })
     assert_eq(response.code, 200)

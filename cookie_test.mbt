@@ -120,7 +120,7 @@ test "parse_complex_cookie_string" {
 ///|
 test "get_cookie supports case-insensitive header lookup and delete_cookie expires values" {
   let req_lower = @crescent.HttpRequest::new(
-    @crescent.Get,
+    Get,
     "/",
     { "cookie": "session=abc123; theme=dark" },
     raw_body=b"",
@@ -131,7 +131,7 @@ test "get_cookie supports case-insensitive header lookup and delete_cookie expir
   }
 
   let req_mixed = @crescent.HttpRequest::new(
-    @crescent.Get,
+    Get,
     "/",
     { "CoOkIe": "theme=dark" },
     raw_body=b"",
@@ -166,7 +166,7 @@ test "cookie_to_string joins cookies and invalid max-age falls back to none" {
       http_only: Some(true),
       same_site: Some(Lax),
     },
-    CookieItem::{
+    {
       name: "theme",
       value: "dark",
       max_age: None,

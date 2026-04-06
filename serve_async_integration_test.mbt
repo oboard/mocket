@@ -133,7 +133,7 @@ fn localhost_url(port : Int, path : String) -> String {
 
 ///|
 async fn wait_until_ready(port : Int) -> Unit {
-  @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+  @async.retry(FixedDelay(20), max_retry=50, () => {
     let (response, _body) = @http.get(localhost_url(port, "/__mocket_ready"))
     guard response.code == 200 else { raise ServerNotReady }
   })
@@ -365,17 +365,17 @@ async fn read_chunked_http_body(client : @socket.Tcp) -> String {
 ///|
 fn websocket_close_code_from_wire(code : UInt) -> @websocket.CloseCode {
   match code {
-    1000 => @websocket.CloseCode::Normal
-    1001 => @websocket.CloseCode::GoingAway
-    1002 => @websocket.CloseCode::ProtocolError
-    1003 => @websocket.CloseCode::UnsupportedData
-    1006 => @websocket.CloseCode::Abnormal
-    1007 => @websocket.CloseCode::InvalidFramePayload
-    1008 => @websocket.CloseCode::PolicyViolation
-    1009 => @websocket.CloseCode::MessageTooBig
-    1010 => @websocket.CloseCode::MissingExtension
-    1011 => @websocket.CloseCode::InternalError
-    _ => @websocket.CloseCode::Other(code.to_uint16())
+    1000 => Normal
+    1001 => GoingAway
+    1002 => ProtocolError
+    1003 => UnsupportedData
+    1006 => Abnormal
+    1007 => InvalidFramePayload
+    1008 => PolicyViolation
+    1009 => MessageTooBig
+    1010 => MissingExtension
+    1011 => InternalError
+    _ => Other(code.to_uint16())
   }
 }
 
@@ -392,7 +392,7 @@ async fn read_raw_websocket_close_frame(
     let reason = if reason == "" { None } else { Some(reason) }
     (websocket_close_code_from_wire(code), reason)
   } else {
-    (@websocket.CloseCode::Normal, None)
+    (Normal, None)
   }
 }
 
@@ -631,14 +631,8 @@ async test "serve keeps invalid websocket opcodes connection-local and stays hea
         @async.with_timeout_opt(200, () => {
           try? ws_client.recv().read_all().binary()
         }) {
-        Some(
-          Err(
-            @websocket.ConnectionClosed(
-              @websocket.CloseCode::ProtocolError,
-              Some(reason)
-            )
-          )
-        ) => inspect(reason, content="Invalid OP code 11")
+        Some(Err(@websocket.ConnectionClosed(ProtocolError, Some(reason)))) =>
+          inspect(reason, content="Invalid OP code 11")
         Some(Err(@websocket.ConnectionClosed(code, reason))) =>
           fail(
             "expected invalid websocket opcode close, got \{code} / \{reason}",
@@ -652,7 +646,7 @@ async test "serve keeps invalid websocket opcodes connection-local and stays hea
         None => fail("timed out waiting for invalid websocket opcode close")
       }
     })
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 0)
@@ -669,7 +663,7 @@ async test "serve keeps invalid websocket opcodes connection-local and stays hea
     healthy_ws_client.send_text("ok")
     inspect(healthy_ws_client.recv().read_all().text(), content="ok")
     healthy_ws_client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 1)
@@ -713,14 +707,8 @@ async test "serve keeps invalid websocket text payloads connection-local and sta
     .end_message()
     match
       @async.with_timeout_opt(200, () => try? client.recv().read_all().binary()) {
-      Some(
-        Err(
-          @websocket.ConnectionClosed(
-            @websocket.CloseCode::InvalidFramePayload,
-            Some(reason)
-          )
-        )
-      ) => inspect(reason, content="Text message is not valid UTF8")
+      Some(Err(@websocket.ConnectionClosed(InvalidFramePayload, Some(reason)))) =>
+        inspect(reason, content="Text message is not valid UTF8")
       Some(Err(@websocket.ConnectionClosed(code, reason))) =>
         fail(
           "expected invalid websocket text payload close, got \{code} / \{reason}",
@@ -733,7 +721,7 @@ async test "serve keeps invalid websocket text payloads connection-local and sta
         )
       None => fail("timed out waiting for invalid websocket text payload close")
     }
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 0)
@@ -750,7 +738,7 @@ async test "serve keeps invalid websocket text payloads connection-local and sta
     healthy_ws_client.send_text("ok")
     inspect(healthy_ws_client.recv().read_all().text(), content="ok")
     healthy_ws_client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 1)
@@ -822,19 +810,19 @@ async test "serve keeps websocket protocol edge failures connection-local and st
 
     expect_bad_ws_frame(
       Bytes::from_array([b'\xc1', b'\x00']),
-      @websocket.CloseCode::MissingExtension,
+      MissingExtension,
       "Reserved bits are not zero",
     )
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
     })
 
     expect_bad_ws_frame(
       Bytes::from_array([b'\x09', b'\x00']),
-      @websocket.CloseCode::ProtocolError,
+      ProtocolError,
       "Control frames must not be fragmented",
     )
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 0)
@@ -851,7 +839,7 @@ async test "serve keeps websocket protocol edge failures connection-local and st
     healthy_ws_client.send_text("ok")
     inspect(healthy_ws_client.recv().read_all().text(), content="ok")
     healthy_ws_client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 3 && closed.val == 3 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 1)
@@ -909,10 +897,10 @@ async test "serve keeps websocket sequencing and control-size failures connectio
         Bytes::from_array([b'\x01', b'\x00']),
         Bytes::from_array([b'\x81', b'\x00']),
       ],
-      @websocket.CloseCode::ProtocolError,
+      ProtocolError,
       "New message within a fragmented message",
     )
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
     })
 
@@ -922,10 +910,10 @@ async test "serve keeps websocket sequencing and control-size failures connectio
           [b'\x89', 126, ..u16_to_bytes(too_long_control_len).to_array()],
         ),
       ],
-      @websocket.CloseCode::MessageTooBig,
+      MessageTooBig,
       "Control frame too long",
     )
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 0)
@@ -942,7 +930,7 @@ async test "serve keeps websocket sequencing and control-size failures connectio
     healthy_ws_client.send_text("ok")
     inspect(healthy_ws_client.recv().read_all().text(), content="ok")
     healthy_ws_client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 3 && closed.val == 3 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 1)
@@ -990,19 +978,19 @@ async test "serve keeps websocket continuation and length-format failures connec
 
     expect_bad_ws_frames(
       [Bytes::from_array([b'\x80', b'\x00'])],
-      @websocket.CloseCode::ProtocolError,
+      ProtocolError,
       "Unexpected continuation frame",
     )
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
     })
 
     expect_bad_ws_frames(
       [Bytes::from_array([b'\x81', 126, b'\x00', b'\x7d'])],
-      @websocket.CloseCode::ProtocolError,
+      ProtocolError,
       "Invalid payload length format",
     )
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
     })
 
@@ -1013,10 +1001,10 @@ async test "serve keeps websocket continuation and length-format failures connec
           b'\xff',
         ]),
       ],
-      @websocket.CloseCode::ProtocolError,
+      ProtocolError,
       "Invalid payload length format",
     )
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 3 && closed.val == 3 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 0)
@@ -1033,7 +1021,7 @@ async test "serve keeps websocket continuation and length-format failures connec
     healthy_ws_client.send_text("ok")
     inspect(healthy_ws_client.recv().read_all().text(), content="ok")
     healthy_ws_client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 4 && closed.val == 4 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 1)
@@ -1072,9 +1060,9 @@ async test "serve echoes websocket close reasons and stays healthy" {
     let (code, reason) = issue_raw_websocket_close(port, "/ws", [
       raw_websocket_close_frame(1000, b"bye"),
     ])
-    assert_eq(code, @websocket.CloseCode::Normal)
+    assert_eq(code, Normal)
     inspect(reason.unwrap_or(""), content="bye")
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 0)
@@ -1091,7 +1079,7 @@ async test "serve echoes websocket close reasons and stays healthy" {
     healthy_ws_client.send_text("ok")
     inspect(healthy_ws_client.recv().read_all().text(), content="ok")
     healthy_ws_client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 1)
@@ -1130,9 +1118,9 @@ async test "serve rejects invalid websocket close reasons and stays healthy" {
     let (code, reason) = issue_raw_websocket_close(port, "/ws", [
       raw_websocket_close_frame(1000, Bytes::from_array([b'\x80'])),
     ])
-    assert_eq(code, @websocket.CloseCode::InvalidFramePayload)
+    assert_eq(code, InvalidFramePayload)
     inspect(reason.unwrap_or(""), content="Invalid UTF8 in close reason")
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 0)
@@ -1149,7 +1137,7 @@ async test "serve rejects invalid websocket close reasons and stays healthy" {
     healthy_ws_client.send_text("ok")
     inspect(healthy_ws_client.recv().read_all().text(), content="ok")
     healthy_ws_client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 1)
@@ -1207,7 +1195,7 @@ async test "serve auto-replies to websocket ping frames without leaking control 
     ws_client.send_text("ok")
     inspect(ws_client.recv().read_all().text(), content="ok")
     ws_client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 1)
@@ -1268,7 +1256,7 @@ async test "serve ignores unsolicited websocket pong frames without leaking cont
     ws_client.send_text("ok")
     inspect(ws_client.recv().read_all().text(), content="ok")
     ws_client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 1)
@@ -1340,9 +1328,9 @@ async test "serve routes fragmented websocket messages while replying to in-flig
 
     http_client.write(raw_websocket_close_frame(1000, b""))
     let (close_code, close_reason) = read_raw_websocket_close_frame(http_client)
-    assert_eq(close_code, @websocket.CloseCode::Normal)
+    assert_eq(close_code, Normal)
     inspect(close_reason.unwrap_or(""), content="")
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
     })
 
@@ -1358,7 +1346,7 @@ async test "serve routes fragmented websocket messages while replying to in-flig
     healthy_ws_client.send_text("ok")
     inspect(healthy_ws_client.recv().read_all().text(), content="ok")
     healthy_ws_client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 2)
@@ -1432,9 +1420,9 @@ async test "serve replies to multiple websocket pings in order without leaking c
 
     http_client.write(raw_websocket_close_frame(1000, b""))
     let (close_code, close_reason) = read_raw_websocket_close_frame(http_client)
-    assert_eq(close_code, @websocket.CloseCode::Normal)
+    assert_eq(close_code, Normal)
     inspect(close_reason.unwrap_or(""), content="")
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 1)
@@ -1451,7 +1439,7 @@ async test "serve replies to multiple websocket pings in order without leaking c
     healthy_ws_client.send_text("fresh")
     inspect(healthy_ws_client.recv().read_all().text(), content="fresh")
     healthy_ws_client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 2 && closed.val == 2 else { raise ServerNotReady }
     })
     assert_eq(messages.val, 2)
@@ -1483,7 +1471,7 @@ async test "serve_on_with enforces max_connections" {
     let first = group.spawn(no_wait=true, () => {
       try? @http.get(localhost_url(port, "/serial"))
     })
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard started.val == 1 else { raise ServerNotReady }
     })
 
@@ -1508,7 +1496,7 @@ async test "serve_on_with enforces max_connections" {
       Err(err) => fail("first limited request failed: \{err}")
     }
 
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard started.val == 2 else { raise ServerNotReady }
     })
     match @async.with_timeout_opt(100, () => second.wait()) {
@@ -2523,7 +2511,7 @@ async test "serve serves static assets from the root mount" {
     let server = allocate_test_server()
     let port = server.addr.port()
     group.spawn_bg(no_wait=true, () => app.serve_on(server))
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       let (response, _body) = @http.get(localhost_url(port, "/"))
       guard response.code == 200 else { raise ServerNotReady }
     })
@@ -2588,7 +2576,7 @@ async test "serve preserves content-encoding for encoded static assets" {
   with_test_server(app, port => {
     let (get_response, get_body) = issue_request(
       port,
-      @http.Get,
+      Get,
       "/assets/hello.txt",
       headers={ "Accept-Encoding": "gzip" },
     )
@@ -2598,7 +2586,7 @@ async test "serve preserves content-encoding for encoded static assets" {
 
     let (head_response, head_body) = issue_request(
       port,
-      @http.Head,
+      Head,
       "/assets/hello.txt",
       headers={ "Accept-Encoding": "gzip" },
     )
@@ -2619,7 +2607,7 @@ async test "serve preserves vary and last-modified on conditional static respons
   with_test_server(app, port => {
     let (get_response, get_body) = issue_request(
       port,
-      @http.Get,
+      Get,
       "/assets/hello.txt",
       headers={ "Accept-Encoding": "gzip" },
     )
@@ -2637,7 +2625,7 @@ async test "serve preserves vary and last-modified on conditional static respons
 
     let (etag_response, etag_body) = issue_request(
       port,
-      @http.Get,
+      Get,
       "/assets/hello.txt",
       headers={ "Accept-Encoding": "gzip", "If-None-Match": etag },
     )
@@ -2649,7 +2637,7 @@ async test "serve preserves vary and last-modified on conditional static respons
 
     let (ims_response, ims_body) = issue_request(
       port,
-      @http.Get,
+      Get,
       "/assets/hello.txt",
       headers={ "Accept-Encoding": "gzip", "If-Modified-Since": last_modified },
     )
@@ -2661,7 +2649,7 @@ async test "serve preserves vary and last-modified on conditional static respons
 
     let (precedence_response, precedence_body) = issue_request(
       port,
-      @http.Get,
+      Get,
       "/assets/hello.txt",
       headers={
         "Accept-Encoding": "gzip",
@@ -2756,11 +2744,7 @@ async test "serve handles head fallback, method not allowed, and options" {
     HttpResponse::new(OK).body("get-body")
   })
   with_test_server(app, port => {
-    let (head_response, head_body) = issue_request(
-      port,
-      @http.Head,
-      "/resource",
-    )
+    let (head_response, head_body) = issue_request(port, Head, "/resource")
     assert_eq(head_response.code, 200)
     assert_eq(head_body, b"")
     inspect(head_response.headers.get("x-reply").unwrap_or(""), content="get")
@@ -2771,7 +2755,7 @@ async test "serve handles head fallback, method not allowed, and options" {
 
     let (override_response, override_body) = issue_request(
       port,
-      @http.Head,
+      Head,
       "/override",
     )
     assert_eq(override_response.code, 200)
@@ -2787,7 +2771,7 @@ async test "serve handles head fallback, method not allowed, and options" {
 
     let (empty_head_response, empty_head_body) = issue_request(
       port,
-      @http.Head,
+      Head,
       "/empty",
     )
     assert_eq(empty_head_response.code, 200)
@@ -2797,11 +2781,7 @@ async test "serve handles head fallback, method not allowed, and options" {
       content="0",
     )
 
-    let (method_response, method_body) = issue_request(
-      port,
-      @http.Put,
-      "/resource",
-    )
+    let (method_response, method_body) = issue_request(port, Put, "/resource")
     assert_eq(method_response.code, 405)
     inspect(
       @utf8.decode(method_body) catch {
@@ -2816,7 +2796,7 @@ async test "serve handles head fallback, method not allowed, and options" {
 
     let (options_response, options_body) = issue_request(
       port,
-      @http.Options,
+      Options,
       "/resource",
     )
     assert_eq(options_response.code, 204)
@@ -2828,7 +2808,7 @@ async test "serve handles head fallback, method not allowed, and options" {
 
     let (missing_response, missing_body) = issue_request(
       port,
-      @http.Delete,
+      Delete,
       "/missing",
     )
     assert_eq(missing_response.code, 404)
@@ -2845,17 +2825,13 @@ async test "serve binds by port and dispatches trace and connect routes" {
   app.trace("/trace", _ => HttpResponse::new(OK).body("trace"))
   app.connect("/connect", _ => HttpResponse::new(OK).body("connect"))
   with_port_bound_test_server(app, port => {
-    let (trace_response, trace_body) = issue_request(
-      port,
-      @http.Trace,
-      "/trace",
-    )
+    let (trace_response, trace_body) = issue_request(port, Trace, "/trace")
     assert_eq(trace_response.code, 200)
     inspect(@utf8.decode(trace_body) catch { _ => "" }, content="trace")
 
     let (connect_response, connect_body) = issue_request(
       port,
-      @http.Connect,
+      Connect,
       "/connect",
     )
     assert_eq(connect_response.code, 200)
@@ -2892,7 +2868,7 @@ async test "serve does not overmatch non-terminal double wildcards" {
 
     let (missing_put_response, missing_put_body) = issue_request(
       port,
-      @http.Put,
+      Put,
       "/files/a/b/raw",
     )
     assert_eq(missing_put_response.code, 404)
@@ -2905,7 +2881,7 @@ async test "serve does not overmatch non-terminal double wildcards" {
 
     let (missing_options_response, missing_options_body) = issue_request(
       port,
-      @http.Options,
+      Options,
       "/files/a/b/raw",
     )
     assert_eq(missing_options_response.code, 404)
@@ -2918,7 +2894,7 @@ async test "serve does not overmatch non-terminal double wildcards" {
 
     let (short_options_response, short_options_body) = issue_request(
       port,
-      @http.Options,
+      Options,
       "/files",
     )
     assert_eq(short_options_response.code, 404)
@@ -2964,7 +2940,7 @@ async test "serve handles websocket text and binary messages" {
     inspect(binary_reply.read_all().text(), content="bytes")
 
     client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard log.contains("open") && log.contains("close") else {
         raise ServerNotReady
       }
@@ -2992,7 +2968,7 @@ async test "serve drops oldest buffered websocket messages on overflow when conf
     app,
     NativeServeOptions::new(
       websocket_outgoing_queue_capacity=2,
-      websocket_overflow_policy=NativeWebSocketOverflowPolicy::DropOldest,
+      websocket_overflow_policy=DropOldest,
     ),
     port => {
       let client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
@@ -3065,7 +3041,7 @@ async test "serve drops latest buffered websocket messages on overflow when conf
     app,
     NativeServeOptions::new(
       websocket_outgoing_queue_capacity=2,
-      websocket_overflow_policy=NativeWebSocketOverflowPolicy::DropLatest,
+      websocket_overflow_policy=DropLatest,
     ),
     port => {
       let client = @websocket.connect("ws://127.0.0.1:\{port}/ws")
@@ -3111,14 +3087,8 @@ async test "serve closes websocket clients after read timeout between messages" 
 
       match
         @async.with_timeout_opt(250, () => try? client.recv().read_all().text()) {
-        Some(
-          Err(
-            @websocket.ConnectionClosed(
-              @websocket.CloseCode::GoingAway,
-              Some(reason)
-            )
-          )
-        ) => inspect(reason, content="websocket read timeout")
+        Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) =>
+          inspect(reason, content="websocket read timeout")
         Some(Err(@websocket.ConnectionClosed(code, reason))) =>
           fail(
             "expected websocket read timeout close code, got \{code} / \{reason}",
@@ -3130,7 +3100,7 @@ async test "serve closes websocket clients after read timeout between messages" 
         None => fail("timed out waiting for websocket read timeout closure")
       }
 
-      @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      @async.retry(FixedDelay(20), max_retry=50, () => {
         guard log.contains("open") && log.contains("close") else {
           raise ServerNotReady
         }
@@ -3176,14 +3146,8 @@ async test "serve closes oversized websocket text messages and stays healthy" {
         @async.with_timeout_opt(300, () => {
           try? oversized_client.recv().read_all().text()
         }) {
-        Some(
-          Err(
-            @websocket.ConnectionClosed(
-              @websocket.CloseCode::MessageTooBig,
-              Some(reason)
-            )
-          )
-        ) => inspect(reason, content="websocket message too big")
+        Some(Err(@websocket.ConnectionClosed(MessageTooBig, Some(reason)))) =>
+          inspect(reason, content="websocket message too big")
         Some(Err(@websocket.ConnectionClosed(code, reason))) =>
           fail(
             "expected oversized websocket text close code, got \{code} / \{reason}",
@@ -3195,7 +3159,7 @@ async test "serve closes oversized websocket text messages and stays healthy" {
         None => fail("timed out waiting for oversized websocket text closure")
       }
 
-      @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      @async.retry(FixedDelay(20), max_retry=50, () => {
         guard log.contains("open") && log.contains("close") else {
           raise ServerNotReady
         }
@@ -3250,14 +3214,8 @@ async test "serve closes oversized websocket binary messages" {
         @async.with_timeout_opt(300, () => {
           try? client.recv().read_all().binary()
         }) {
-        Some(
-          Err(
-            @websocket.ConnectionClosed(
-              @websocket.CloseCode::MessageTooBig,
-              Some(reason)
-            )
-          )
-        ) => inspect(reason, content="websocket message too big")
+        Some(Err(@websocket.ConnectionClosed(MessageTooBig, Some(reason)))) =>
+          inspect(reason, content="websocket message too big")
         Some(Err(@websocket.ConnectionClosed(code, reason))) =>
           fail(
             "expected oversized websocket binary close code, got \{code} / \{reason}",
@@ -3271,7 +3229,7 @@ async test "serve closes oversized websocket binary messages" {
         None => fail("timed out waiting for oversized websocket binary closure")
       }
 
-      @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      @async.retry(FixedDelay(20), max_retry=50, () => {
         guard log.contains("open") && log.contains("close") else {
           raise ServerNotReady
         }
@@ -3327,14 +3285,8 @@ async test "serve treats websocket_max_message_bytes=0 as empty-message only" {
         @async.with_timeout_opt(300, () => {
           try? oversized_client.recv().read_all().text()
         }) {
-        Some(
-          Err(
-            @websocket.ConnectionClosed(
-              @websocket.CloseCode::MessageTooBig,
-              Some(reason)
-            )
-          )
-        ) => inspect(reason, content="websocket message too big")
+        Some(Err(@websocket.ConnectionClosed(MessageTooBig, Some(reason)))) =>
+          inspect(reason, content="websocket message too big")
         Some(Err(@websocket.ConnectionClosed(code, reason))) =>
           fail(
             "expected zero-limit websocket close code, got \{code} / \{reason}",
@@ -3356,14 +3308,8 @@ async test "serve treats websocket_max_message_bytes=0 as empty-message only" {
         @async.with_timeout_opt(300, () => {
           try? oversized_binary_client.recv().read_all().text()
         }) {
-        Some(
-          Err(
-            @websocket.ConnectionClosed(
-              @websocket.CloseCode::MessageTooBig,
-              Some(reason)
-            )
-          )
-        ) => inspect(reason, content="websocket message too big")
+        Some(Err(@websocket.ConnectionClosed(MessageTooBig, Some(reason)))) =>
+          inspect(reason, content="websocket message too big")
         Some(Err(@websocket.ConnectionClosed(code, reason))) =>
           fail(
             "expected zero-limit websocket binary close code, got \{code} / \{reason}",
@@ -3387,7 +3333,7 @@ async test "serve treats websocket_max_message_bytes=0 as empty-message only" {
       inspect(healthy_ws_client.recv().read_all().text(), content="text:0")
       healthy_ws_client.send_close()
 
-      @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      @async.retry(FixedDelay(20), max_retry=50, () => {
         guard log.contains("text:0") &&
           log.contains("binary:0") &&
           log.contains("close") else {
@@ -3440,14 +3386,8 @@ async test "serve enforces websocket_max_message_bytes across multiple reads" {
         @async.with_timeout_opt(300, () => {
           try? oversized_client.recv().read_all().text()
         }) {
-        Some(
-          Err(
-            @websocket.ConnectionClosed(
-              @websocket.CloseCode::MessageTooBig,
-              Some(reason)
-            )
-          )
-        ) => inspect(reason, content="websocket message too big")
+        Some(Err(@websocket.ConnectionClosed(MessageTooBig, Some(reason)))) =>
+          inspect(reason, content="websocket message too big")
         Some(Err(@websocket.ConnectionClosed(code, reason))) =>
           fail(
             "expected multi-read websocket limit close code, got \{code} / \{reason}",
@@ -3459,7 +3399,7 @@ async test "serve enforces websocket_max_message_bytes across multiple reads" {
         None => fail("timed out waiting for multi-read websocket limit closure")
       }
 
-      @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+      @async.retry(FixedDelay(20), max_retry=50, () => {
         guard log.contains("open") && log.contains("close") else {
           raise ServerNotReady
         }
@@ -3557,7 +3497,7 @@ async test "serve accepts padded websocket handshake headers on matched routes" 
       port, "GET /ws HTTP/1.1\r\nHost: localhost\r\nCoNnEcTiOn: keep-alive,\tUpgrade\t\r\nUpGrAdE: \tWebSocket\t\r\nSeC-WeBsOcKeT-KeY: \tdGhlIHNhbXBsZSBub25jZQ==\t\r\nSeC-WeBsOcKeT-VeRsIoN: \t13\t\r\n\r\n",
     )
     assert_true(upgrade_headers.has_prefix("HTTP/1.1 101 "))
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard log.contains("open") && log.contains("close") else {
         raise ServerNotReady
       }
@@ -3597,7 +3537,7 @@ async test "serve rejects invalid websocket handshakes on matched routes and sta
     client.send_text("ok")
     inspect(client.recv().read_all().text(), content="ok")
     client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
     })
 
@@ -3649,7 +3589,7 @@ async test "serve rejects unsupported websocket versions and non-get upgrades" {
     client.send_text("ok")
     inspect(client.recv().read_all().text(), content="ok")
     client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
     })
 
@@ -3704,7 +3644,7 @@ async test "serve closes the connection after rejected websocket upgrades" {
     fresh_client.send_text("ok")
     inspect(fresh_client.recv().read_all().text(), content="ok")
     fresh_client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard opened.val == 1 && closed.val == 1 else { raise ServerNotReady }
     })
 
@@ -3787,7 +3727,7 @@ async test "serve rejects malformed websocket-like requests on websocket routes 
     client.send_text("ok")
     inspect(client.recv().read_all().text(), content="ok")
     client.send_close()
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard ws_opened.val == 1 && ws_closed.val == 1 else {
         raise ServerNotReady
       }
@@ -3851,7 +3791,7 @@ async test "serve honors mixed-case static and websocket upgrade headers" {
       port, "GET /ws HTTP/1.1\r\nHost: localhost\r\nCoNnEcTiOn: Upgrade\r\nUpGrAdE: websocket\r\nSeC-WeBsOcKeT-KeY: dGhlIHNhbXBsZSBub25jZQ==\r\nSeC-WeBsOcKeT-VeRsIoN: 13\r\n\r\n",
     )
     assert_true(upgrade_headers.has_prefix("HTTP/1.1 101 "))
-    @async.retry(@async.FixedDelay(20), max_retry=50, () => {
+    @async.retry(FixedDelay(20), max_retry=50, () => {
       guard log.contains("open") && log.contains("close") else {
         raise ServerNotReady
       }
@@ -4137,14 +4077,8 @@ async test "serve keeps other reused-app servers alive when one server is cancel
     )
     match
       @async.with_timeout_opt(300, () => try? client1.recv().read_all().text()) {
-      Some(
-        Err(
-          @websocket.ConnectionClosed(
-            @websocket.CloseCode::GoingAway,
-            Some(reason)
-          )
-        )
-      ) => inspect(reason, content="websocket server shutdown")
+      Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) =>
+        inspect(reason, content="websocket server shutdown")
       Some(Err(@websocket.ConnectionClosed(code, reason))) =>
         fail(
           "expected cancelled server websocket client to observe going-away close, got \{code} / \{reason}",
@@ -4197,14 +4131,8 @@ async test "serve_on_until sends going-away close to websocket clients on shutdo
     shutdown.put(())
     match
       @async.with_timeout_opt(300, () => try? client.recv().read_all().text()) {
-      Some(
-        Err(
-          @websocket.ConnectionClosed(
-            @websocket.CloseCode::GoingAway,
-            Some(reason)
-          )
-        )
-      ) => inspect(reason, content="websocket server shutdown")
+      Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) =>
+        inspect(reason, content="websocket server shutdown")
       Some(Err(@websocket.ConnectionClosed(code, reason))) =>
         fail(
           "expected websocket shutdown signal to send going-away close, got \{code} / \{reason}",
@@ -4273,14 +4201,8 @@ async test "serve_on_until broadcasts going-away close when the shutdown queue i
 
     match
       @async.with_timeout_opt(300, () => try? client1.recv().read_all().text()) {
-      Some(
-        Err(
-          @websocket.ConnectionClosed(
-            @websocket.CloseCode::GoingAway,
-            Some(reason)
-          )
-        )
-      ) => inspect(reason, content="websocket server shutdown")
+      Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) =>
+        inspect(reason, content="websocket server shutdown")
       Some(Err(@websocket.ConnectionClosed(code, reason))) =>
         fail(
           "expected first websocket client to observe going-away close after queue close, got \{code} / \{reason}",
@@ -4298,14 +4220,8 @@ async test "serve_on_until broadcasts going-away close when the shutdown queue i
 
     match
       @async.with_timeout_opt(300, () => try? client2.recv().read_all().text()) {
-      Some(
-        Err(
-          @websocket.ConnectionClosed(
-            @websocket.CloseCode::GoingAway,
-            Some(reason)
-          )
-        )
-      ) => inspect(reason, content="websocket server shutdown")
+      Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) =>
+        inspect(reason, content="websocket server shutdown")
       Some(Err(@websocket.ConnectionClosed(code, reason))) =>
         fail(
           "expected second websocket client to observe going-away close after queue close, got \{code} / \{reason}",
@@ -4395,14 +4311,8 @@ async test "serve_on_until queue close stops remaining reused websocket servers 
     )
     match
       @async.with_timeout_opt(300, () => try? client1.recv().read_all().text()) {
-      Some(
-        Err(
-          @websocket.ConnectionClosed(
-            @websocket.CloseCode::GoingAway,
-            Some(reason)
-          )
-        )
-      ) => inspect(reason, content="websocket server shutdown")
+      Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) =>
+        inspect(reason, content="websocket server shutdown")
       Some(Err(@websocket.ConnectionClosed(code, reason))) =>
         fail(
           "expected cancelled reused websocket client to observe going-away close, got \{code} / \{reason}",
@@ -4425,14 +4335,8 @@ async test "serve_on_until queue close stops remaining reused websocket servers 
     shutdown.close()
     match
       @async.with_timeout_opt(300, () => try? client2.recv().read_all().text()) {
-      Some(
-        Err(
-          @websocket.ConnectionClosed(
-            @websocket.CloseCode::GoingAway,
-            Some(reason)
-          )
-        )
-      ) => inspect(reason, content="websocket server shutdown")
+      Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) =>
+        inspect(reason, content="websocket server shutdown")
       Some(Err(@websocket.ConnectionClosed(code, reason))) =>
         fail(
           "expected surviving reused websocket client to observe going-away close after queue close, got \{code} / \{reason}",
@@ -4513,14 +4417,7 @@ async test "serve_on_until shutdown signal wakes one reused websocket server" {
     })
 
     match client1_after {
-      Some(
-        Err(
-          @websocket.ConnectionClosed(
-            @websocket.CloseCode::GoingAway,
-            Some(reason)
-          )
-        )
-      ) => {
+      Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) => {
         inspect(reason, content="websocket server shutdown")
         match client2_after {
           None => ()
@@ -4574,14 +4471,8 @@ async test "serve_on_until shutdown signal wakes one reused websocket server" {
           @async.with_timeout_opt(300, () => {
             try? client2.recv().read_all().text()
           }) {
-          Some(
-            Err(
-              @websocket.ConnectionClosed(
-                @websocket.CloseCode::GoingAway,
-                Some(second_reason)
-              )
-            )
-          ) => inspect(second_reason, content="websocket server shutdown")
+          Some(Err(@websocket.ConnectionClosed(GoingAway, Some(second_reason)))) =>
+            inspect(second_reason, content="websocket server shutdown")
           Some(Err(@websocket.ConnectionClosed(code, reason))) =>
             fail(
               "expected surviving reused websocket client to observe going-away close after second shutdown signal, got \{code} / \{reason}",
@@ -4625,14 +4516,7 @@ async test "serve_on_until shutdown signal wakes one reused websocket server" {
         )
       None =>
         match client2_after {
-          Some(
-            Err(
-              @websocket.ConnectionClosed(
-                @websocket.CloseCode::GoingAway,
-                Some(reason)
-              )
-            )
-          ) => {
+          Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) => {
             inspect(reason, content="websocket server shutdown")
             match @async.with_timeout_opt(300, () => try? task2.wait()) {
               Some(Ok(_)) => ()
@@ -4672,12 +4556,7 @@ async test "serve_on_until shutdown signal wakes one reused websocket server" {
                 try? client1.recv().read_all().text()
               }) {
               Some(
-                Err(
-                  @websocket.ConnectionClosed(
-                    @websocket.CloseCode::GoingAway,
-                    Some(second_reason)
-                  )
-                )
+                Err(@websocket.ConnectionClosed(GoingAway, Some(second_reason)))
               ) => inspect(second_reason, content="websocket server shutdown")
               Some(Err(@websocket.ConnectionClosed(code, reason))) =>
                 fail(
@@ -4777,14 +4656,7 @@ async test "serve_on_until queue close stops surviving reused websocket server a
     })
 
     match client1_after {
-      Some(
-        Err(
-          @websocket.ConnectionClosed(
-            @websocket.CloseCode::GoingAway,
-            Some(reason)
-          )
-        )
-      ) => {
+      Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) => {
         inspect(reason, content="websocket server shutdown")
         match client2_after {
           None => ()
@@ -4826,14 +4698,8 @@ async test "serve_on_until queue close stops surviving reused websocket server a
           @async.with_timeout_opt(300, () => {
             try? client2.recv().read_all().text()
           }) {
-          Some(
-            Err(
-              @websocket.ConnectionClosed(
-                @websocket.CloseCode::GoingAway,
-                Some(close_reason)
-              )
-            )
-          ) => inspect(close_reason, content="websocket server shutdown")
+          Some(Err(@websocket.ConnectionClosed(GoingAway, Some(close_reason)))) =>
+            inspect(close_reason, content="websocket server shutdown")
           Some(Err(@websocket.ConnectionClosed(code, reason))) =>
             fail(
               "expected surviving reused websocket client to observe going-away close after queue close, got \{code} / \{reason}",
@@ -4877,14 +4743,7 @@ async test "serve_on_until queue close stops surviving reused websocket server a
         )
       None =>
         match client2_after {
-          Some(
-            Err(
-              @websocket.ConnectionClosed(
-                @websocket.CloseCode::GoingAway,
-                Some(reason)
-              )
-            )
-          ) => {
+          Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) => {
             inspect(reason, content="websocket server shutdown")
             match @async.with_timeout_opt(300, () => try? task2.wait()) {
               Some(Ok(_)) => ()
@@ -4912,12 +4771,7 @@ async test "serve_on_until queue close stops surviving reused websocket server a
                 try? client1.recv().read_all().text()
               }) {
               Some(
-                Err(
-                  @websocket.ConnectionClosed(
-                    @websocket.CloseCode::GoingAway,
-                    Some(close_reason)
-                  )
-                )
+                Err(@websocket.ConnectionClosed(GoingAway, Some(close_reason)))
               ) => inspect(close_reason, content="websocket server shutdown")
               Some(Err(@websocket.ConnectionClosed(code, reason))) =>
                 fail(
@@ -5020,14 +4874,7 @@ async test "serve_on_until queue close broadcasts to remaining reused websocket 
       for i = 0; i < outcomes.length(); i = i + 1 {
         match outcomes[i] {
           None => ()
-          Some(
-            Err(
-              @websocket.ConnectionClosed(
-                @websocket.CloseCode::GoingAway,
-                Some(reason)
-              )
-            )
-          ) => {
+          Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) => {
             if stopped_index >= 0 {
               fail(
                 "expected exactly one reused websocket client to stop after shutdown signal, but client \{stopped_index + 1} and client \{i + 1} both closed",
@@ -5064,14 +4911,8 @@ async test "serve_on_until queue close broadcasts to remaining reused websocket 
       phase : String,
     ) -> Unit raise {
       match outcome {
-        Some(
-          Err(
-            @websocket.ConnectionClosed(
-              @websocket.CloseCode::GoingAway,
-              Some(reason)
-            )
-          )
-        ) => inspect(reason, content="websocket server shutdown")
+        Some(Err(@websocket.ConnectionClosed(GoingAway, Some(reason)))) =>
+          inspect(reason, content="websocket server shutdown")
         Some(Err(@websocket.ConnectionClosed(code, reason))) =>
           fail(
             "expected client \{client_index + 1} to observe going-away close during \{phase}, got \{code} / \{reason}",

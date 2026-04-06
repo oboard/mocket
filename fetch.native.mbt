@@ -23,16 +23,16 @@ fn FetchProtocol::scheme(self : FetchProtocol) -> String {
 ///|
 fn request_method_to_async(http_method : HttpMethod) -> @http.RequestMethod {
   match http_method {
-    Get => @http.Get
-    Post => @http.Post
-    Put => @http.Put
-    Patch => @http.Patch
-    Delete => @http.Delete
-    Head => @http.Head
-    Options => @http.Options
-    Trace => @http.Trace
-    Connect => @http.Connect
-    Other(_) => @http.Get
+    Get => Get
+    Post => Post
+    Put => Put
+    Patch => Patch
+    Delete => Delete
+    Head => Head
+    Options => Options
+    Trace => Trace
+    Connect => Connect
+    Other(_) => Get
   }
 }
 

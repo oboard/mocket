@@ -59,7 +59,7 @@ test "compiled route: mixed parameter and wildcard" {
 test "compiled route: segments are pre-parsed" {
   let route = @crescent.CompiledRoute::compile("/api/:version/users/:id")
   assert_eq(route.segments.length(), 5) // "", "api", ":version", "users", ":id"
-  assert_true(route.segments[0] is @crescent.Static(_))
-  assert_true(route.segments[2] is @crescent.Param(_))
-  assert_true(route.segments[4] is @crescent.Param(_))
+  assert_true(route.segments[0] is Static(_))
+  assert_true(route.segments[2] is Param(_))
+  assert_true(route.segments[4] is Param(_))
 }

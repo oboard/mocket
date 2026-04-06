@@ -171,7 +171,7 @@ pub fn[T : BodyReader] HttpRequest::body(self : HttpRequest) -> T raise {
 /// ```
 
 ///|
-pub fn[T : @json.FromJson] HttpRequest::json(self : HttpRequest) -> T raise {
+pub fn[T : FromJson] HttpRequest::json(self : HttpRequest) -> T raise {
   let text = @utf8.decode(self.raw_body)
   let json = @json.parse(text)
   @json.from_json(json)
@@ -191,7 +191,7 @@ pub fn[T : @json.FromJson] HttpRequest::json(self : HttpRequest) -> T raise {
 /// ```
 
 ///|
-pub fn[T : @json.FromJson] HttpRequest::try_json(
+pub fn[T : FromJson] HttpRequest::try_json(
   self : HttpRequest,
 ) -> Result[T, String] {
   try {

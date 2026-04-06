@@ -3,7 +3,7 @@
 ///|
 pub struct WebSocketPeer {
   priv connection_id : String
-  priv mut subscribed_channels : Array[String]
+  priv subscribed_channels : Array[String]
 
   fn new(connection_id~ : String) -> WebSocketPeer
 }

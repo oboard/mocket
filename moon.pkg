@@ -17,7 +17,7 @@ import {
   "moonbitlang/core/encoding/utf8",
 }
 
-warnings = "-15-29"
+warnings = "-29"
 
 options(
   targets: {

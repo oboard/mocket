@@ -12,7 +12,7 @@ test "not_found helper" {
 
 ///|
 test "error helper creates json body" {
-  let res = @crescent.HttpResponse::error(@crescent.BadRequest, "Invalid input")
+  let res = @crescent.HttpResponse::error(BadRequest, "Invalid input")
   inspect(res.status_code, content="BadRequest")
   inspect(
     res.headers.get("Content-Type"),
