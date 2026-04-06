@@ -1,18 +1,18 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "oboard/mocket/cors"
+package "bobzhang/crescent/cors"
 
 import {
-  "oboard/mocket",
+  "bobzhang/crescent",
 }
 
 // Values
-pub fn append_cors_headers(@mocket.MocketEvent, origin? : String, methods? : String, allow_headers? : String, expose_headers? : String, credentials? : Bool) -> Unit
+pub fn append_cors_headers(@crescent.MocketEvent, origin? : String, methods? : String, allow_headers? : String, expose_headers? : String, credentials? : Bool) -> Unit
 
-pub fn append_cors_preflight_headers(@mocket.MocketEvent, origin? : String, methods? : String, allow_headers? : String, credentials? : Bool, max_age? : Int) -> Unit
+pub fn append_cors_preflight_headers(@crescent.MocketEvent, origin? : String, methods? : String, allow_headers? : String, credentials? : Bool, max_age? : Int) -> Unit
 
-pub fn handle_cors(origin? : String, methods? : String, allow_headers? : String, expose_headers? : String, credentials? : Bool, max_age? : Int) -> async (@mocket.MocketEvent, async () -> &@mocket.Responder noraise) -> &@mocket.Responder noraise
+pub fn handle_cors(origin? : String, methods? : String, allow_headers? : String, expose_headers? : String, credentials? : Bool, max_age? : Int) -> async (@crescent.MocketEvent, async () -> &@crescent.Responder noraise) -> &@crescent.Responder noraise
 
-pub fn is_preflight_request(@mocket.MocketEvent) -> Bool
+pub fn is_preflight_request(@crescent.MocketEvent) -> Bool
 
 // Errors
 

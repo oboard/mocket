@@ -1,17 +1,4 @@
-/// Standard HTTP request methods.
-
-///|
-pub(all) enum HttpMethod {
-  GET
-  POST
-  PUT
-  PATCH
-  DELETE
-  HEAD
-  OPTIONS
-  TRACE
-  CONNECT
-} derive(Eq, Debug)
+// HttpMethod is defined in http_method.mbt
 
 /// Controls whether credentials (cookies, TLS certificates) are sent with a fetch request.
 

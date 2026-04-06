@@ -1,11 +1,11 @@
 ///|
-using @mocket {type HttpResponse}
+using @crescent {type HttpResponse}
 
 ///|
 struct Csv(String)
 
 ///|
-impl @mocket.BodyReader for Csv with from_request(req) -> Csv {
+impl @crescent.BodyReader for Csv with from_request(req) -> Csv {
   let text : String = req.body()
   Csv(text)
 }
@@ -18,7 +18,7 @@ struct UserInput {
 
 ///|
 fn main {
-  let app = @mocket.new()
+  let app = @crescent.new()
 
   // Custom BodyReader: parse CSV from request body
   app.post("/csv", event => {
@@ -27,7 +27,7 @@ fn main {
   })
 
   // Typed JSON: parse body into a struct with derive(FromJson)
-  app.post_json("/json", event => {
+  app.post("/json", event => {
     let user : UserInput = event.req.json()
     HttpResponse::ok().json_value(user)
   })
@@ -38,5 +38,5 @@ fn main {
   }
 
   // Serve
-  app.serve(port=4000)
+  app.serve_blocking(port=4000)
 }

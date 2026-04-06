@@ -128,13 +128,9 @@ fn Mocket::find_route_for_method(
       return Some((handler, {}))
     }
   }
-  if self.dynamic_routes.get(http_method) is Some(routes) {
-    for route in routes {
-      let (route_path, handler) = route
-      if match_path(route_path, path) is Some(params) {
-        return Some((handler, params))
-      }
-    }
+  match self.dynamic_routes.search(http_method, path) {
+    Some((handler, params)) => return Some((handler, params))
+    None => ()
   }
   None
 }
@@ -195,13 +191,9 @@ fn Mocket::find_route(
       return Some((handler, {}))
     }
   }
-  if self.dynamic_routes.get("*") is Some(routes) {
-    for route in routes {
-      let (route_path, handler) = route
-      if match_path(route_path, path) is Some(params) {
-        return Some((handler, params))
-      }
-    }
+  match self.dynamic_routes.search("*", path) {
+    Some((handler, params)) => return Some((handler, params))
+    None => ()
   }
   None
 }
@@ -212,8 +204,8 @@ fn Mocket::find_ws_route(self : Mocket, path : String) -> WebSocketHandler? {
     return Some(handler)
   }
   for route in self.ws_dynamic_routes {
-    let (route_path, handler) = route
-    if match_path(route_path, path) is Some(_) {
+    let (compiled, handler) = route
+    if compiled.match_path(path) is Some(_) {
       return Some(handler)
     }
   }

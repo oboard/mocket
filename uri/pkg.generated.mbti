@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "oboard/mocket/uri"
+package "bobzhang/crescent/uri"
 
 import {
   "moonbitlang/core/debug",

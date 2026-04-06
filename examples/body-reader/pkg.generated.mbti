@@ -1,5 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "oboard/mocket/examples/body-reader"
+package "bobzhang/crescent/examples/body-reader"
+
+import {
+  "moonbitlang/core/json",
+}
 
 // Values
 
@@ -7,6 +11,8 @@ package "oboard/mocket/examples/body-reader"
 
 // Types and methods
 type Csv
+
+type UserInput derive(ToJson, @json.FromJson)
 
 // Type aliases
 

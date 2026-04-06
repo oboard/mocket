@@ -1,7 +1,7 @@
 import {
   "moonbitlang/async",
-  "oboard/mocket",
-  "oboard/mocket/static_file",
+  "bobzhang/crescent",
+  "bobzhang/crescent/static_file",
 }
 
 options(

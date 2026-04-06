@@ -1,6 +1,6 @@
 ///|
 fn main {
-  let app = @mocket.new()
+  let app = @crescent.new()
   app.ws("/ws", event => {
     match event {
       Open(peer) => println("WS open: " + peer.to_string())
@@ -19,5 +19,5 @@ fn main {
     }
   })
   println("WebSocket echo server listening on ws://localhost:8080/ws")
-  app.serve(port=8080)
+  app.serve_blocking(port=8080)
 }

@@ -2,12 +2,12 @@
 /// for the OPTIONS method, an `Origin` header, and an `Access-Control-Request-Method` header.
 
 ///|
-pub fn is_preflight_request(event : @mocket.MocketEvent) -> Bool {
+pub fn is_preflight_request(event : @crescent.MocketEvent) -> Bool {
   let origin = event.req.get_header("origin")
   let access_control_request_method = event.req.get_header(
     "access-control-request-method",
   )
-  return event.req.http_method == "OPTIONS" &&
+  return event.req.http_method == @crescent.Options &&
     origin != None &&
     access_control_request_method != None
 }
@@ -19,7 +19,7 @@ pub fn is_preflight_request(event : @mocket.MocketEvent) -> Bool {
 
 ///|
 pub fn append_cors_preflight_headers(
-  event : @mocket.MocketEvent,
+  event : @crescent.MocketEvent,
   origin? : String = "*",
   methods? : String = "*",
   allow_headers? : String = "*",
@@ -43,7 +43,7 @@ pub fn append_cors_preflight_headers(
 
 ///|
 pub fn append_cors_headers(
-  event : @mocket.MocketEvent,
+  event : @crescent.MocketEvent,
   origin? : String = "*",
   methods? : String = "*",
   allow_headers? : String = "*",
@@ -72,7 +72,7 @@ pub fn handle_cors(
   expose_headers? : String = "*",
   credentials? : Bool = false,
   max_age? : Int = 86400,
-) -> @mocket.Middleware {
+) -> @crescent.Middleware {
   (event, next) => {
     if is_preflight_request(event) {
       append_cors_preflight_headers(
@@ -84,7 +84,7 @@ pub fn handle_cors(
         max_age~,
       )
       // For preflight requests, return empty response without calling next()
-      @mocket.HttpResponse::new(OK).to_responder()
+      @crescent.HttpResponse::new(OK).to_responder()
     } else {
       append_cors_headers(
         event,

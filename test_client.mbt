@@ -3,7 +3,7 @@
 /// Construct routes on a `Mocket` app, then use `TestClient` to test them:
 /// ```
 /// let app = new()
-/// app.get("/hello", fn(_) noraise { "Hello!" })
+/// app.get("/hello", _ => "Hello!")
 /// let client = TestClient::new(app)
 /// let res = client.get("/hello")
 /// assert_eq(res.status, OK)
@@ -106,8 +106,8 @@ pub async fn TestClient::delete(
   self.request("DELETE", path, headers=headers.unwrap_or({}), body=b"")
 }
 
-/// Core request method — constructs a synthetic event, runs the middleware
-/// chain and handler, and returns the response.
+/// Core request method — dispatches a synthetic request through the full
+/// routing + middleware pipeline via the public `dispatch` API.
 
 ///|
 pub async fn TestClient::request(
@@ -117,35 +117,8 @@ pub async fn TestClient::request(
   headers~ : Map[String, String],
   body~ : Bytes,
 ) -> TestResponse {
-  let request_path = @mhttp.request_target_path(path)
-  // Look up route
-  let (params, handler) = match self.app.lookup_http_route(meth, request_path) {
-    Found(matched_handler, matched_params) => (matched_params, matched_handler)
-    MethodNotAllowed(allow) => ({}, method_not_allowed_handler(allow))
-    Options(allow) => ({}, options_handler(allow))
-    NotFound =>
-      match self.app.not_found_handler {
-        Some(handler) => ({}, handler)
-        None => ({}, handle_not_found())
-      }
-  }
-  // Construct event
-  let event = {
-    req: { http_method: meth, url: path, headers, raw_body: body },
-    res: HttpResponse::new(OK),
-    params,
-  }
-  // Execute middleware chain + handler
-  let responder = execute_middlewares(self.app.middlewares, event, handler)
-  // Apply responder to response
-  responder.options(event.res)
-  let buf = @buffer.new()
-  responder.output(buf)
-  event.res.raw_body = buf.to_bytes()
-  // Return test response
-  {
-    status: event.res.status_code,
-    headers: event.res.headers,
-    body_bytes: event.res.raw_body,
-  }
+  let (status, resp_headers, body_bytes) = self.app.dispatch(
+    meth, path, headers, body,
+  )
+  { status, headers: resp_headers, body_bytes }
 }

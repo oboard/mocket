@@ -13,11 +13,13 @@ fn request_method_to_string(meth : @http.RequestMethod) -> String {
   }
 }
 
+/// Copies request headers from the async runtime.
+/// Uses Map::from_iter for efficient bulk construction instead of
+/// per-key insertion.
+
 ///|
 fn copy_async_headers(headers : Map[String, String]) -> Map[String, String] {
-  let copied : Map[String, String] = {}
-  headers.each((key, value) => copied.set(key, value))
-  copied
+  Map::from_iter(headers.iter())
 }
 
 ///|
@@ -217,9 +219,15 @@ async fn send_response_async(
   responder : &Responder,
 ) -> Unit raise Error {
   responder.options(response)
-  let buffer = @buffer.new()
-  responder.output(buffer)
-  response.raw_body = buffer.to_bytes()
+  // Fast path: use output_bytes to avoid buffer allocation when possible
+  match responder.output_bytes() {
+    Some(bytes) => response.raw_body = bytes
+    None => {
+      let buffer = @buffer.new()
+      responder.output(buffer)
+      response.raw_body = buffer.to_bytes()
+    }
+  }
   // Use response headers directly, append cookies in-place
   let headers = response.headers
   append_cookie_headers(headers, response.cookies)
@@ -488,12 +496,12 @@ async fn handle_request_async(
       }
   }
   let event = {
-    req: {
-      http_method: http_method_text,
-      url: request.path,
-      headers: copy_async_headers(request.headers),
-      raw_body: request_body,
-    },
+    req: HttpRequest::from_method_string(
+      http_method_text,
+      request.path,
+      copy_async_headers(request.headers),
+      request_body,
+    ),
     res: HttpResponse::new(OK),
     params,
   }
@@ -541,11 +549,11 @@ async fn wait_for_shutdown_signal(shutdown : @async.Queue[Unit]) -> Unit {
 }
 
 ///|
-pub async fn Mocket::serve_async_on(
+pub async fn Mocket::serve_on(
   self : Mocket,
   server : @http.Server,
 ) -> Unit raise Error {
-  self.serve_async_on_with(server, NativeServeOptions::new())
+  self.serve_on_with(server, NativeServeOptions::new())
 }
 
 ///|
@@ -564,7 +572,7 @@ pub async fn Mocket::serve_async_on(
 /// websocket queue drops the oldest or latest message.
 /// `websocket_read_timeout_ms`, if present, closes websocket connections
 /// after that many milliseconds waiting for the next inbound message.
-pub async fn Mocket::serve_async_on_with(
+pub async fn Mocket::serve_on_with(
   self : Mocket,
   server : @http.Server,
   options : NativeServeOptions,
@@ -579,12 +587,12 @@ pub async fn Mocket::serve_async_on_with(
 /// `shutdown.put(())` wakes one waiter; `shutdown.close()` broadcasts to all waiters.
 /// Shutdown is cancellation-based: active requests and websocket sessions
 /// are aborted rather than drained to completion.
-pub async fn Mocket::serve_async_on_until(
+pub async fn Mocket::serve_on_until(
   self : Mocket,
   server : @http.Server,
   shutdown : @async.Queue[Unit],
 ) -> Unit raise Error {
-  self.serve_async_on_until_with(server, shutdown, NativeServeOptions::new())
+  self.serve_on_until_with(server, shutdown, NativeServeOptions::new())
 }
 
 ///|
@@ -606,7 +614,7 @@ pub async fn Mocket::serve_async_on_until(
 /// websocket queue drops the oldest or latest message.
 /// `websocket_read_timeout_ms`, if present, closes websocket connections
 /// after that many milliseconds waiting for the next inbound message.
-pub async fn Mocket::serve_async_on_until_with(
+pub async fn Mocket::serve_on_until_with(
   self : Mocket,
   server : @http.Server,
   shutdown : @async.Queue[Unit],
@@ -621,11 +629,8 @@ pub async fn Mocket::serve_async_on_until_with(
 }
 
 ///|
-pub async fn Mocket::serve_async(
-  self : Mocket,
-  port~ : Int,
-) -> Unit raise Error {
-  self.serve_async_with(port~, NativeServeOptions::new())
+pub async fn Mocket::serve(self : Mocket, port~ : Int) -> Unit raise Error {
+  self.serve_with(port~, NativeServeOptions::new())
 }
 
 ///|
@@ -644,7 +649,7 @@ pub async fn Mocket::serve_async(
 /// websocket queue drops the oldest or latest message.
 /// `websocket_read_timeout_ms`, if present, closes websocket connections
 /// after that many milliseconds waiting for the next inbound message.
-pub async fn Mocket::serve_async_with(
+pub async fn Mocket::serve_with(
   self : Mocket,
   port~ : Int,
   options : NativeServeOptions,
@@ -658,7 +663,7 @@ pub async fn Mocket::serve_async_with(
   let _ = resolve_native_websocket_read_timeout_ms(options)
   let addr = @socket.Addr::parse("0.0.0.0:\{port}")
   let server = @http.Server::new(addr, reuse_addr=true)
-  self.serve_async_on_with(server, options)
+  self.serve_on_with(server, options)
 }
 
 ///|
@@ -666,12 +671,12 @@ pub async fn Mocket::serve_async_with(
 /// `shutdown.put(())` wakes one waiter; `shutdown.close()` broadcasts to all waiters.
 /// Shutdown is cancellation-based: active requests and websocket sessions
 /// are aborted rather than drained to completion.
-pub async fn Mocket::serve_async_until(
+pub async fn Mocket::serve_until(
   self : Mocket,
   port~ : Int,
   shutdown : @async.Queue[Unit],
 ) -> Unit raise Error {
-  self.serve_async_until_with(port~, shutdown, NativeServeOptions::new())
+  self.serve_until_with(port~, shutdown, NativeServeOptions::new())
 }
 
 ///|
@@ -693,7 +698,7 @@ pub async fn Mocket::serve_async_until(
 /// websocket queue drops the oldest or latest message.
 /// `websocket_read_timeout_ms`, if present, closes websocket connections
 /// after that many milliseconds waiting for the next inbound message.
-pub async fn Mocket::serve_async_until_with(
+pub async fn Mocket::serve_until_with(
   self : Mocket,
   port~ : Int,
   shutdown : @async.Queue[Unit],
@@ -708,5 +713,5 @@ pub async fn Mocket::serve_async_until_with(
   let _ = resolve_native_websocket_read_timeout_ms(options)
   let addr = @socket.Addr::parse("0.0.0.0:\{port}")
   let server = @http.Server::new(addr, reuse_addr=true)
-  self.serve_async_on_until_with(server, shutdown, options)
+  self.serve_on_until_with(server, shutdown, options)
 }

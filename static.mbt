@@ -122,6 +122,11 @@ pub impl Responder for StaticResolvedResponder with output(self, buf) -> Unit {
 }
 
 ///|
+pub impl Responder for StaticResolvedResponder with output_bytes(self) -> Bytes? {
+  self.inner.output_bytes()
+}
+
+///|
 fn static_asset_headers(
   provider : &ServeStaticProvider,
   id : String,
@@ -201,7 +206,7 @@ pub fn Mocket::static_assets(
       }
 
       // Method check
-      if event.req.http_method != "GET" && event.req.http_method != "HEAD" {
+      if event.req.http_method != Get && event.req.http_method != Head {
         if provider.get_fallthrough() {
           return next()
         }
@@ -320,7 +325,7 @@ pub fn Mocket::static_assets(
             _ => meta
           }
           let asset_headers = static_asset_headers(provider, id, meta)
-          if event.req.http_method == "HEAD" {
+          if event.req.http_method == Head {
             let head_headers = copy_headers(event.res.headers)
             asset_headers.each((key, value) => {
               if !@mhttp.has_header_case_insensitive(head_headers, key) {

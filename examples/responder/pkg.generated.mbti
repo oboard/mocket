@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "oboard/mocket/examples/responder"
+package "bobzhang/crescent/examples/responder"
 
 import {
   "moonbitlang/core/json",

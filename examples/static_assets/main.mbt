@@ -1,6 +1,6 @@
 ///|
 fn main {
-  let app = @mocket.new()
+  let app = @crescent.new()
   app.use_middleware(logger_middleware())
   // Register global middleware
   app.static_assets("/", @static_file.new("./"))
@@ -14,11 +14,11 @@ fn main {
   }
 
   // Serve
-  app.serve(port=4000)
+  app.serve_blocking(port=4000)
 }
 
 ///|
-fn logger_middleware() -> @mocket.Middleware {
+fn logger_middleware() -> @crescent.Middleware {
   (event, next) => {
     let start_time = @async.now()
     let res = next()

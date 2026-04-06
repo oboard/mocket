@@ -1,12 +1,7 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "oboard/mocket/examples/route"
-
-import {
-  "oboard/mocket",
-}
+package "bobzhang/crescent/examples/route"
 
 // Values
-pub fn not_found_middleware() -> async (@mocket.MocketEvent, async () -> &@mocket.Responder noraise) -> &@mocket.Responder noraise
 
 // Errors
 

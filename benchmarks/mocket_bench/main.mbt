@@ -1,6 +1,6 @@
 ///|
 async fn main {
-  let app = @mocket.new()
+  let app = @crescent.new()
   app.get("/text", fn(_event) noraise { "Hello, World!" })
   app.get("/json", fn(_event) noraise {
     ({ "message": "Hello, World!" } : Json)
@@ -10,7 +10,7 @@ async fn main {
     ({ "id": id, "name": "User \{id}" } : Json)
   })
   println("Mocket server listening on port 3001")
-  app.serve_async(port=3001) catch {
+  app.serve(port=3001) catch {
     err => println("Server error: \{err}")
   }
 }

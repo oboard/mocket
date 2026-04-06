@@ -1,11 +1,13 @@
 ///|
 fn make_event(
-  http_method : String,
+  http_method : @crescent.HttpMethod,
   headers : Map[String, String],
-) -> @mocket.MocketEvent {
+) -> @crescent.MocketEvent {
   {
-    req: { http_method, url: "/resource", headers, raw_body: b"" },
-    res: @mocket.HttpResponse::new(OK),
+    req: @crescent.HttpRequest::new_request(
+      http_method, "/resource", headers, b"",
+    ),
+    res: @crescent.HttpResponse::new(OK),
     params: {},
   }
 }
@@ -14,7 +16,7 @@ fn make_event(
 test "is_preflight_request requires cors headers and options" {
   inspect(
     is_preflight_request(
-      make_event("OPTIONS", {
+      make_event(@crescent.Options, {
         "origin": "https://example.com",
         "access-control-request-method": "PUT",
       }),
@@ -23,13 +25,13 @@ test "is_preflight_request requires cors headers and options" {
   )
   inspect(
     is_preflight_request(
-      make_event("OPTIONS", { "origin": "https://example.com" }),
+      make_event(@crescent.Options, { "origin": "https://example.com" }),
     ),
     content="false",
   )
   inspect(
     is_preflight_request(
-      make_event("GET", {
+      make_event(@crescent.Get, {
         "origin": "https://example.com",
         "access-control-request-method": "PUT",
       }),
@@ -78,14 +80,14 @@ async fn wait_until_ready(port : Int) -> Unit {
 
 ///|
 async fn with_test_server(
-  app : @mocket.Mocket,
+  app : @crescent.Mocket,
   run_test : async (Int) -> Unit,
 ) -> Unit {
   let server = allocate_test_server()
   let port = server.addr.port()
   app.get("/__cors_ready", _ => "ready")
   @async.with_task_group(group => {
-    group.spawn_bg(no_wait=true, () => app.serve_async_on(server))
+    group.spawn_bg(no_wait=true, () => app.serve_on(server))
     wait_until_ready(port)
     run_test(port)
   })
@@ -120,7 +122,7 @@ async fn issue_raw_request_headers(port : Int, request : String) -> String {
 ///|
 async test "handle_cors serves preflight requests through async server" {
   let handler_called = Ref::new(false)
-  let app = @mocket.new()
+  let app = @crescent.new()
   app.use_middleware(
     handle_cors(
       origin="https://frontend.example",
@@ -132,7 +134,7 @@ async test "handle_cors serves preflight requests through async server" {
   )
   app.options("/resource", _ => {
     handler_called.val = true
-    @mocket.text("unexpected")
+    @crescent.text("unexpected")
   })
   with_test_server(app, port => {
     let (response, body) = issue_request(port, @http.Options, "/resource", headers={
@@ -164,7 +166,7 @@ async test "handle_cors serves preflight requests through async server" {
 
 ///|
 async test "handle_cors decorates normal requests through async server" {
-  let app = @mocket.new()
+  let app = @crescent.new()
   app.use_middleware(
     handle_cors(
       origin="https://frontend.example",
@@ -207,7 +209,7 @@ async test "handle_cors decorates normal requests through async server" {
 ///|
 async test "handle_cors does not short-circuit non-preflight options" {
   let handler_called = Ref::new(false)
-  let app = @mocket.new()
+  let app = @crescent.new()
   app.use_middleware(
     handle_cors(
       origin="https://frontend.example",
@@ -219,7 +221,7 @@ async test "handle_cors does not short-circuit non-preflight options" {
   )
   app.options("/resource", _ => {
     handler_called.val = true
-    @mocket.text("regular-options")
+    @crescent.text("regular-options")
   })
   with_test_server(app, port => {
     let (response, body) = issue_request(port, @http.Options, "/resource", headers={
@@ -254,7 +256,7 @@ async test "handle_cors does not short-circuit non-preflight options" {
 
 ///|
 async test "handle_cors accepts mixed-case preflight headers" {
-  let app = @mocket.new()
+  let app = @crescent.new()
   app.use_middleware(
     handle_cors(
       origin="https://frontend.example",
@@ -264,7 +266,7 @@ async test "handle_cors accepts mixed-case preflight headers" {
       max_age=7200,
     ),
   )
-  app.options("/resource", _ => @mocket.text("unexpected"))
+  app.options("/resource", _ => @crescent.text("unexpected"))
   with_test_server(app, port => {
     let response_headers = issue_raw_request_headers(
       port, "OPTIONS /resource HTTP/1.1\r\nHost: localhost\r\nOrIgIn: https://frontend.example\r\nAcCeSs-CoNtRoL-ReQuEsT-MeThOd: PATCH\r\nConnection: close\r\n\r\n",

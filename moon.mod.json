@@ -1,5 +1,5 @@
 {
-  "name": "oboard/mocket",
+  "name": "bobzhang/crescent",
   "version": "0.6.11",
   "deps": {
     "moonbitlang/x": "0.4.41",
@@ -12,6 +12,6 @@
     "http",
     "server"
   ],
-  "description": "A web framework for MoonBit.",
+  "description": "Crescent: A web framework for MoonBit.",
   "preferred-target": "native"
 }

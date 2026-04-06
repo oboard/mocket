@@ -1,7 +1,7 @@
 import {
   "moonbitlang/async",
-  "oboard/mocket",
-  "oboard/mocket/cors",
+  "bobzhang/crescent",
+  "bobzhang/crescent/cors",
 }
 
 options(

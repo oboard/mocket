@@ -6,7 +6,7 @@ struct BenchUser {
 
 ///|
 async fn main {
-  let app = @mocket.new()
+  let app = @crescent.new()
 
   // Plain text (baseline, same as mocket_bench)
   app.get("/text", _ => "Hello, World!")
@@ -17,17 +17,17 @@ async fn main {
   // JSON using typed json_value
   app.get("/json-typed", _ => {
     let user : BenchUser = { id: 1, name: "Alice" }
-    @mocket.HttpResponse::ok().json_value(user)
+    @crescent.HttpResponse::ok().json_value(user)
   })
 
-  // POST with typed JSON parsing (get_json + req.json)
-  app.post_json("/json-parse", event => {
+  // POST with typed JSON parsing (post + req.json)
+  app.post("/json-parse", event => {
     let user : BenchUser = event.req.json()
-    @mocket.HttpResponse::ok().json_value(user)
+    @crescent.HttpResponse::ok().json_value(user)
   })
 
   println("Mocket typed benchmark on port 3007")
-  app.serve_async(port=3007) catch {
+  app.serve(port=3007) catch {
     err => println("Server error: \{err}")
   }
 }

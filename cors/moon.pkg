@@ -4,7 +4,7 @@ import {
   "moonbitlang/async/os_error",
   "moonbitlang/async/socket",
   "moonbitlang/core/encoding/utf8",
-  "oboard/mocket",
+  "bobzhang/crescent",
 }
 
 warnings = "-29"

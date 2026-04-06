@@ -1,30 +1,30 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "oboard/mocket/fetch"
+package "bobzhang/crescent/fetch"
 
 import {
-  "oboard/mocket",
+  "bobzhang/crescent",
 }
 
 // Values
-pub async fn connect(String, data? : &@mocket.Responder, headers? : Map[String, String], credentials? : @mocket.FetchCredentials, mode? : @mocket.FetchMode) -> @mocket.HttpResponse
+pub async fn connect(String, data? : &@crescent.Responder, headers? : Map[String, String], credentials? : @crescent.FetchCredentials, mode? : @crescent.FetchMode) -> @crescent.HttpResponse
 
-pub async fn delete(String, data? : &@mocket.Responder, headers? : Map[String, String], credentials? : @mocket.FetchCredentials, mode? : @mocket.FetchMode) -> @mocket.HttpResponse
+pub async fn delete(String, data? : &@crescent.Responder, headers? : Map[String, String], credentials? : @crescent.FetchCredentials, mode? : @crescent.FetchMode) -> @crescent.HttpResponse
 
-pub async fn get(String, data? : &@mocket.Responder, headers? : Map[String, String], credentials? : @mocket.FetchCredentials, mode? : @mocket.FetchMode) -> @mocket.HttpResponse
+pub async fn get(String, data? : &@crescent.Responder, headers? : Map[String, String], credentials? : @crescent.FetchCredentials, mode? : @crescent.FetchMode) -> @crescent.HttpResponse
 
-pub async fn head(String, data? : &@mocket.Responder, headers? : Map[String, String], credentials? : @mocket.FetchCredentials, mode? : @mocket.FetchMode) -> @mocket.HttpResponse
+pub async fn head(String, data? : &@crescent.Responder, headers? : Map[String, String], credentials? : @crescent.FetchCredentials, mode? : @crescent.FetchMode) -> @crescent.HttpResponse
 
-pub async fn options(String, data? : &@mocket.Responder, headers? : Map[String, String], credentials? : @mocket.FetchCredentials, mode? : @mocket.FetchMode) -> @mocket.HttpResponse
+pub async fn options(String, data? : &@crescent.Responder, headers? : Map[String, String], credentials? : @crescent.FetchCredentials, mode? : @crescent.FetchMode) -> @crescent.HttpResponse
 
-pub async fn patch(String, data? : &@mocket.Responder, headers? : Map[String, String], credentials? : @mocket.FetchCredentials, mode? : @mocket.FetchMode) -> @mocket.HttpResponse
+pub async fn patch(String, data? : &@crescent.Responder, headers? : Map[String, String], credentials? : @crescent.FetchCredentials, mode? : @crescent.FetchMode) -> @crescent.HttpResponse
 
-pub async fn post(String, data? : &@mocket.Responder, headers? : Map[String, String], credentials? : @mocket.FetchCredentials, mode? : @mocket.FetchMode) -> @mocket.HttpResponse
+pub async fn post(String, data? : &@crescent.Responder, headers? : Map[String, String], credentials? : @crescent.FetchCredentials, mode? : @crescent.FetchMode) -> @crescent.HttpResponse
 
-pub async fn put(String, data? : &@mocket.Responder, headers? : Map[String, String], credentials? : @mocket.FetchCredentials, mode? : @mocket.FetchMode) -> @mocket.HttpResponse
+pub async fn put(String, data? : &@crescent.Responder, headers? : Map[String, String], credentials? : @crescent.FetchCredentials, mode? : @crescent.FetchMode) -> @crescent.HttpResponse
 
-pub async fn request(@mocket.HttpRequest) -> @mocket.HttpResponse
+pub async fn request(@crescent.HttpRequest) -> @crescent.HttpResponse
 
-pub async fn trace(String, data? : &@mocket.Responder, headers? : Map[String, String], credentials? : @mocket.FetchCredentials, mode? : @mocket.FetchMode) -> @mocket.HttpResponse
+pub async fn trace(String, data? : &@crescent.Responder, headers? : Map[String, String], credentials? : @crescent.FetchCredentials, mode? : @crescent.FetchMode) -> @crescent.HttpResponse
 
 // Errors
 pub suberror RequestError {

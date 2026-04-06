@@ -7,11 +7,11 @@ pub struct Mocket {
   middlewares : Array[(String, Middleware)]
   // Static route cache (exact match routes)
   static_routes : Map[String, Map[String, HttpHandler]]
-  // Dynamic route cache (routes with parameters)
-  dynamic_routes : Map[String, Array[(String, HttpHandler)]]
+  // Dynamic route cache (radix tree for O(path_length) lookup)
+  dynamic_routes : RadixRouter[HttpHandler]
   // WebSocket routes (matched by path, method-agnostic)
   ws_static_routes : Map[String, WebSocketHandler]
-  ws_dynamic_routes : Array[(String, WebSocketHandler)]
+  ws_dynamic_routes : Array[(CompiledRoute, WebSocketHandler)]
   ws_runtime_id : String
   // Custom handler for 404 Not Found responses
   mut not_found_handler : HttpHandler?
@@ -35,7 +35,7 @@ pub fn new(base_path? : String = "") -> Mocket {
     mappings: {},
     middlewares: [],
     static_routes: {},
-    dynamic_routes: {},
+    dynamic_routes: RadixRouter::new(),
     ws_static_routes: {},
     ws_dynamic_routes: [],
     ws_runtime_id: next_mocket_instance_id(),
@@ -159,25 +159,29 @@ pub fn Mocket::on(
       new_routes.set(path, handler)
       self.static_routes.set(event, new_routes)
     }
-    // Dynamic path: add to dynamic route list
-  } else if self.dynamic_routes.get(event) is Some(routes) {
-    routes.push((path, handler))
+    // Dynamic path: compile and insert into radix tree
   } else {
-    self.dynamic_routes.set(event, [(path, handler)])
+    let compiled = CompiledRoute::compile(path)
+    self.dynamic_routes.insert(event, compiled, handler)
   }
 }
 
-/// Registers a handler for GET requests on the given path.
+/// Registers a noraise GET handler. For most use cases, prefer `get()` which
+/// provides automatic error handling.
 
 ///|
-pub fn Mocket::get(self : Mocket, path : String, handler : HttpHandler) -> Unit {
+pub fn Mocket::get_raw(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
   self.on("GET", path, handler)
 }
 
-/// Registers a handler for POST requests on the given path.
+/// Registers a noraise POST handler.
 
 ///|
-pub fn Mocket::post(
+pub fn Mocket::post_raw(
   self : Mocket,
   path : String,
   handler : HttpHandler,
@@ -185,10 +189,10 @@ pub fn Mocket::post(
   self.on("POST", path, handler)
 }
 
-/// Registers a handler for PATCH requests on the given path.
+/// Registers a noraise PATCH handler.
 
 ///|
-pub fn Mocket::patch(
+pub fn Mocket::patch_raw(
   self : Mocket,
   path : String,
   handler : HttpHandler,
@@ -196,10 +200,10 @@ pub fn Mocket::patch(
   self.on("PATCH", path, handler)
 }
 
-/// Registers a handler for CONNECT requests on the given path.
+/// Registers a noraise CONNECT handler.
 
 ///|
-pub fn Mocket::connect(
+pub fn Mocket::connect_raw(
   self : Mocket,
   path : String,
   handler : HttpHandler,
@@ -207,17 +211,21 @@ pub fn Mocket::connect(
   self.on("CONNECT", path, handler)
 }
 
-/// Registers a handler for PUT requests on the given path.
+/// Registers a noraise PUT handler.
 
 ///|
-pub fn Mocket::put(self : Mocket, path : String, handler : HttpHandler) -> Unit {
+pub fn Mocket::put_raw(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
   self.on("PUT", path, handler)
 }
 
-/// Registers a handler for DELETE requests on the given path.
+/// Registers a noraise DELETE handler.
 
 ///|
-pub fn Mocket::delete(
+pub fn Mocket::delete_raw(
   self : Mocket,
   path : String,
   handler : HttpHandler,
@@ -225,10 +233,10 @@ pub fn Mocket::delete(
   self.on("DELETE", path, handler)
 }
 
-/// Registers a handler for HEAD requests on the given path.
+/// Registers a noraise HEAD handler.
 
 ///|
-pub fn Mocket::head(
+pub fn Mocket::head_raw(
   self : Mocket,
   path : String,
   handler : HttpHandler,
@@ -236,10 +244,10 @@ pub fn Mocket::head(
   self.on("HEAD", path, handler)
 }
 
-/// Registers a handler for OPTIONS requests on the given path.
+/// Registers a noraise OPTIONS handler.
 
 ///|
-pub fn Mocket::options(
+pub fn Mocket::options_raw(
   self : Mocket,
   path : String,
   handler : HttpHandler,
@@ -247,10 +255,10 @@ pub fn Mocket::options(
   self.on("OPTIONS", path, handler)
 }
 
-/// Registers a handler for TRACE requests on the given path.
+/// Registers a noraise TRACE handler.
 
 ///|
-pub fn Mocket::trace(
+pub fn Mocket::trace_raw(
   self : Mocket,
   path : String,
   handler : HttpHandler,
@@ -258,10 +266,14 @@ pub fn Mocket::trace(
   self.on("TRACE", path, handler)
 }
 
-/// Registers a handler that matches all HTTP methods on the given path.
+/// Registers a noraise handler that matches all HTTP methods.
 
 ///|
-pub fn Mocket::all(self : Mocket, path : String, handler : HttpHandler) -> Unit {
+pub fn Mocket::all_raw(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
   self.on("*", path, handler)
 }
 
@@ -289,17 +301,7 @@ pub fn Mocket::group(
       None => self.static_routes.set(http_method, group_routes)
     }
   })
-  group.dynamic_routes
-  .iter()
-  .each(i => {
-    let event = i.0
-    let routes = i.1
-    if self.dynamic_routes.get(event) is Some(existing_routes) {
-      existing_routes.append(routes)
-    } else {
-      self.dynamic_routes.set(event, routes)
-    }
-  })
+  self.dynamic_routes.merge(group.dynamic_routes)
   group.ws_static_routes.iter().each(i => self.ws_static_routes.set(i.0, i.1))
   self.ws_dynamic_routes.append(group.ws_dynamic_routes)
   // Merge middlewares
@@ -331,10 +333,10 @@ pub fn Mocket::ws(
 ) -> Unit {
   let path = self.base_path + path
   // Static path: cache directly
-  if path.find(":").unwrap_or(-1) == -1 && path.find("*").unwrap_or(-1) == -1 {
+  if !path.contains(":") && !path.contains("*") {
     self.ws_static_routes.set(path, handler)
   } else {
-    // Dynamic path: add to list
-    self.ws_dynamic_routes.push((path, handler))
+    // Dynamic path: compile pattern and add to list
+    self.ws_dynamic_routes.push((CompiledRoute::compile(path), handler))
   }
 }

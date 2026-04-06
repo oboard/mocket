@@ -1,7 +1,7 @@
 // ///|
 
 ///|
-using @mocket {trait ServeStaticProvider, trait Responder}
+using @crescent {trait ServeStaticProvider, trait Responder}
 
 /// A file-system-backed provider for serving static assets. Implements the
 /// `ServeStaticProvider` trait to resolve asset metadata and contents from a
@@ -75,7 +75,7 @@ async fn open_static_asset(path : String) -> @fs.File? noraise {
 pub impl ServeStaticProvider for StaticFileProvider with get_meta(
   self,
   id : String,
-) -> @mocket.StaticAssetMeta? {
+) -> @crescent.StaticAssetMeta? {
   match self.full_path(id) {
     Some(path) =>
       match open_static_asset(path) {
@@ -84,7 +84,7 @@ pub impl ServeStaticProvider for StaticFileProvider with get_meta(
           match (try? file.size(), try? file.mtime()) {
             (Ok(size), Ok((mtime_sec, mtime_nsec))) =>
               Some(
-                @mocket.StaticAssetMeta::new(
+                @crescent.StaticAssetMeta::new(
                   etag=static_asset_etag(mtime_sec, mtime_nsec, size),
                   mtime=mtime_sec,
                   path~,
@@ -126,14 +126,14 @@ pub impl ServeStaticProvider for StaticFileProvider with get_contents(
             _ => {}
           }
           try file.read_all().binary() catch {
-            _ => @mocket.HttpResponse::new(NotFound).body("Not Found")
+            _ => @crescent.HttpResponse::new(NotFound).body("Not Found")
           } noraise {
-            contents => @mocket.HttpResponse::new(OK, headers~).body(contents)
+            contents => @crescent.HttpResponse::new(OK, headers~).body(contents)
           }
         }
-        None => @mocket.HttpResponse::new(NotFound).body("Not Found")
+        None => @crescent.HttpResponse::new(NotFound).body("Not Found")
       }
-    None => @mocket.HttpResponse::new(NotFound).body("Not Found")
+    None => @crescent.HttpResponse::new(NotFound).body("Not Found")
   }
 }
 

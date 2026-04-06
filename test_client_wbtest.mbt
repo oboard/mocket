@@ -80,7 +80,7 @@ async test "test client runs middleware" {
 ///|
 async test "test client with error handling handler" {
   let app = new()
-  app.post_json("/users", event => {
+  app.post("/users", event => {
     let _body : Json = event.req.json()
     "created"
   })

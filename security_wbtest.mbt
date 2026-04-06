@@ -1,12 +1,7 @@
 ///|
 async test "security_headers sets all expected headers" {
   let event = MocketEvent::{
-    req: HttpRequest::{
-      http_method: "GET",
-      url: "/test",
-      headers: {},
-      raw_body: b"",
-    },
+    req: HttpRequest::new_request(Get, "/test", {}, b""),
     res: HttpResponse::new(OK),
     params: {},
   }
@@ -29,12 +24,7 @@ async test "security_headers sets all expected headers" {
 ///|
 async test "security_headers preserves handler response" {
   let event = MocketEvent::{
-    req: HttpRequest::{
-      http_method: "GET",
-      url: "/hello",
-      headers: {},
-      raw_body: b"",
-    },
+    req: HttpRequest::new_request(Get, "/hello", {}, b""),
     res: HttpResponse::new(OK),
     params: {},
   }

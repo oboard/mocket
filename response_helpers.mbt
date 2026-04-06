@@ -2,7 +2,7 @@
 ///
 /// ```mbt check
 /// test {
-///   let res = @mocket.HttpResponse::ok()
+///   let res = @crescent.HttpResponse::ok()
 ///   inspect(res.status_code, content="OK")
 /// }
 /// ```
@@ -65,7 +65,7 @@ pub fn HttpResponse::internal_server_error() -> HttpResponse {
 ///
 /// ```mbt check
 /// test {
-///   let res = @mocket.HttpResponse::error(@mocket.BadRequest, "invalid input")
+///   let res = @crescent.HttpResponse::error(@crescent.BadRequest, "invalid input")
 ///   inspect(res.status_code, content="BadRequest")
 ///   inspect(res.headers.get("Content-Type"), content="Some(\"application/json; charset=utf-8\")")
 /// }

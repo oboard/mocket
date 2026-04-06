@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "oboard/mocket"
+package "bobzhang/crescent"
 
 import {
   "moonbitlang/async/aqueue",
@@ -21,6 +21,8 @@ pub fn html(&Show) -> &Responder
 pub fn new(base_path? : String) -> Mocket
 
 pub fn parse_cookie(StringView) -> Map[String, CookieItem]
+
+pub fn request_id() -> async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise
 
 pub fn security_headers() -> async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise
 
@@ -51,6 +53,14 @@ pub suberror NativeServeError {
 pub suberror NetworkError derive(@debug.Debug)
 
 // Types and methods
+pub(all) struct CompiledRoute {
+  template : String
+  segments : Array[RouteSegment]
+  is_static : Bool
+}
+pub fn CompiledRoute::compile(String) -> Self
+pub fn CompiledRoute::match_path(Self, String) -> Map[String, StringView]?
+
 pub(all) struct CookieItem {
   name : String
   value : String
@@ -82,32 +92,42 @@ type Html
 pub impl Responder for Html
 
 pub(all) enum HttpMethod {
-  GET
-  POST
-  PUT
-  PATCH
-  DELETE
-  HEAD
-  OPTIONS
-  TRACE
-  CONNECT
-} derive(Eq, @debug.Debug)
+  Get
+  Head
+  Post
+  Put
+  Patch
+  Delete
+  Options
+  Trace
+  Connect
+  Other(String)
+} derive(Eq)
+pub fn HttpMethod::from_string(String) -> Self
+pub fn HttpMethod::to_method_string(Self) -> String
+pub impl Show for HttpMethod
 
 pub(all) struct HttpRequest {
-  http_method : String
+  http_method : HttpMethod
   url : String
   headers : Map[String, String]
   mut raw_body : Bytes
+  mut cached_path : String?
+  mut cached_query_params : Map[String, String]?
 }
 pub fn[T : BodyReader] HttpRequest::body(Self) -> T raise
 pub fn HttpRequest::content_type(Self) -> String?
+pub fn HttpRequest::from_method_string(String, String, Map[String, String], Bytes) -> Self
 pub fn HttpRequest::get_cookie(Self, String) -> CookieItem?
 pub fn HttpRequest::get_header(Self, String) -> String?
 pub fn HttpRequest::get_query(Self, String) -> String?
 pub fn[T : @json.FromJson] HttpRequest::json(Self) -> T raise
+pub fn HttpRequest::method_string(Self) -> String
+pub fn HttpRequest::new_request(HttpMethod, String, Map[String, String], Bytes) -> Self
 pub fn HttpRequest::path(Self) -> String
 pub fn HttpRequest::query_params(Self) -> Map[String, String]
 pub fn HttpRequest::query_string(Self) -> String?
+pub fn[T : @json.FromJson] HttpRequest::try_json(Self) -> Result[T, String]
 pub impl Responder for HttpRequest
 
 pub(all) struct HttpResponse {
@@ -145,40 +165,47 @@ pub struct Mocket {
   mappings : Map[(String, String), async (MocketEvent) -> &Responder noraise]
   middlewares : Array[(String, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise)]
   static_routes : Map[String, Map[String, async (MocketEvent) -> &Responder noraise]]
-  dynamic_routes : Map[String, Array[(String, async (MocketEvent) -> &Responder noraise)]]
+  dynamic_routes : RadixRouter[async (MocketEvent) -> &Responder noraise]
   ws_static_routes : Map[String, (WebSocketEvent) -> Unit]
-  ws_dynamic_routes : Array[(String, (WebSocketEvent) -> Unit)]
+  ws_dynamic_routes : Array[(CompiledRoute, (WebSocketEvent) -> Unit)]
   ws_runtime_id : String
   mut not_found_handler : (async (MocketEvent) -> &Responder noraise)?
 }
-pub fn Mocket::all(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::connect(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::delete(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::delete_json(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::get(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::get_json(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::all(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::all_raw(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::connect(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::connect_raw(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::delete(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::delete_raw(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub async fn Mocket::dispatch(Self, String, String, Map[String, String], Bytes) -> (StatusCode, Map[String, String], Bytes)
+pub fn Mocket::get(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::get_raw(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::group(Self, String, (Self) -> Unit) -> Unit
-pub fn Mocket::head(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::head(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::head_raw(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::on(Self, String, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::options(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::patch(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::patch_json(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::post(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::post_json(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::put(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::put_json(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::serve(Self, port~ : Int) -> Unit
-pub async fn Mocket::serve_async(Self, port~ : Int) -> Unit
-pub async fn Mocket::serve_async_on(Self, @http.Server) -> Unit
-pub async fn Mocket::serve_async_on_until(Self, @http.Server, @aqueue.Queue[Unit]) -> Unit
-pub async fn Mocket::serve_async_on_until_with(Self, @http.Server, @aqueue.Queue[Unit], NativeServeOptions) -> Unit
-pub async fn Mocket::serve_async_on_with(Self, @http.Server, NativeServeOptions) -> Unit
-pub async fn Mocket::serve_async_until(Self, port~ : Int, @aqueue.Queue[Unit]) -> Unit
-pub async fn Mocket::serve_async_until_with(Self, port~ : Int, @aqueue.Queue[Unit], NativeServeOptions) -> Unit
-pub async fn Mocket::serve_async_with(Self, port~ : Int, NativeServeOptions) -> Unit
+pub fn Mocket::options(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::options_raw(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::patch(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::patch_raw(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::post(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::post_raw(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::put(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::put_raw(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::resource(Self, String, ResourceConfig) -> Unit
+pub async fn Mocket::serve(Self, port~ : Int) -> Unit
+pub fn Mocket::serve_blocking(Self, port~ : Int) -> Unit
+pub async fn Mocket::serve_on(Self, @http.Server) -> Unit
+pub async fn Mocket::serve_on_until(Self, @http.Server, @aqueue.Queue[Unit]) -> Unit
+pub async fn Mocket::serve_on_until_with(Self, @http.Server, @aqueue.Queue[Unit], NativeServeOptions) -> Unit
+pub async fn Mocket::serve_on_with(Self, @http.Server, NativeServeOptions) -> Unit
+pub async fn Mocket::serve_until(Self, port~ : Int, @aqueue.Queue[Unit]) -> Unit
+pub async fn Mocket::serve_until_with(Self, port~ : Int, @aqueue.Queue[Unit], NativeServeOptions) -> Unit
+pub async fn Mocket::serve_with(Self, port~ : Int, NativeServeOptions) -> Unit
 pub fn Mocket::set_not_found_handler(Self, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::static_assets(Self, String, &ServeStaticProvider) -> Unit
-pub fn Mocket::trace(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::trace(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::trace_raw(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::use_middleware(Self, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise, base_path? : String) -> Unit
 pub fn Mocket::ws(Self, String, (WebSocketEvent) -> Unit) -> Unit
 
@@ -187,9 +214,15 @@ pub(all) struct MocketEvent {
   res : HttpResponse
   params : Map[String, StringView]
 }
+pub fn[T : @json.FromJson] MocketEvent::json(Self) -> T raise
 pub fn MocketEvent::param(Self, String) -> String?
 pub fn MocketEvent::param_int(Self, String) -> Int?
 pub fn MocketEvent::param_int64(Self, String) -> Int64?
+pub fn MocketEvent::request_id(Self) -> String?
+pub fn MocketEvent::require_param(Self, String) -> String raise
+pub fn MocketEvent::require_param_int(Self, String) -> Int raise
+pub fn MocketEvent::require_param_int64(Self, String) -> Int64 raise
+pub fn[T : @json.FromJson] MocketEvent::try_json(Self) -> Result[T, String]
 
 pub struct NativeServeOptions {
   max_connections : Int?
@@ -207,6 +240,29 @@ pub(all) enum NativeWebSocketOverflowPolicy {
   DropLatest
 } derive(Eq, @debug.Debug)
 pub impl Show for NativeWebSocketOverflowPolicy
+
+type RadixNode[T]
+
+type RadixRouter[T]
+pub fn[T] RadixRouter::insert(Self[T], String, CompiledRoute, T) -> Unit
+pub fn[T] RadixRouter::merge(Self[T], Self[T]) -> Unit
+pub fn[T] RadixRouter::new() -> Self[T]
+pub fn[T] RadixRouter::search(Self[T], String, String) -> (T, Map[String, StringView])?
+
+pub(all) struct ResourceConfig {
+  list : (async (MocketEvent) -> &Responder)?
+  get : (async (MocketEvent) -> &Responder)?
+  create : (async (MocketEvent) -> &Responder)?
+  update : (async (MocketEvent) -> &Responder)?
+  delete : (async (MocketEvent) -> &Responder)?
+}
+
+pub(all) enum RouteSegment {
+  Static(String)
+  Param(String)
+  Wildcard
+  GlobStar
+} derive(Eq)
 
 pub(all) enum SameSiteOption {
   Lax
@@ -316,6 +372,8 @@ pub struct TestResponse {
 pub fn[T : @json.FromJson] TestResponse::body_json(Self) -> T raise
 pub fn TestResponse::body_text(Self) -> String
 
+type TryJsonTestUser derive(Eq, ToJson, @json.FromJson)
+
 pub enum WebSocketAggregatedMessage {
   Text(String)
   Binary(Bytes)
@@ -360,6 +418,7 @@ pub impl BodyReader for Json
 pub(open) trait Responder {
   options(Self, HttpResponse) -> Unit
   output(Self, @buffer.Buffer) -> Unit
+  output_bytes(Self) -> Bytes?
 }
 pub impl Responder for String
 pub impl Responder for Bytes

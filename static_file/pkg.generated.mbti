@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "oboard/mocket/static_file"
+package "bobzhang/crescent/static_file"
 
 import {
-  "oboard/mocket",
+  "bobzhang/crescent",
 }
 
 // Values
@@ -14,7 +14,7 @@ pub fn new(String) -> StaticFileProvider
 pub struct StaticFileProvider {
   path : String
 }
-pub impl @mocket.ServeStaticProvider for StaticFileProvider
+pub impl @crescent.ServeStaticProvider for StaticFileProvider
 
 // Type aliases
 

@@ -12,12 +12,9 @@ pub(all) struct HttpResponse {
 
 ///|
 pub fn[T : BodyReader] HttpResponse::read_body(self : HttpResponse) -> T raise {
-  T::from_request({
-    http_method: "",
-    url: "",
-    headers: self.headers,
-    raw_body: self.raw_body,
-  })
+  T::from_request(
+    HttpRequest::new_request(Other(""), "", self.headers, self.raw_body),
+  )
 }
 
 /// Creates a new `HttpResponse` with the given status code and optional headers, cookies, and body.
@@ -83,7 +80,7 @@ pub fn[T : ToJson] HttpResponse::json_value(
 ///
 /// ```mbt check
 /// test {
-///   let res = @mocket.HttpResponse::ok().header("X-Custom", "value")
+///   let res = @crescent.HttpResponse::ok().header("X-Custom", "value")
 ///   inspect(res.headers.get("X-Custom"), content="Some(\"value\")")
 /// }
 /// ```

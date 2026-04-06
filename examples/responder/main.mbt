@@ -1,5 +1,5 @@
 ///|
-using @mocket {type HttpResponse}
+using @crescent {type HttpResponse}
 
 ///|
 struct Person {
@@ -9,7 +9,7 @@ struct Person {
 
 ///|
 fn main {
-  let app = @mocket.new()
+  let app = @crescent.new()
 
   // Text Response
   app
@@ -18,14 +18,14 @@ fn main {
   // Object Response using json_value
   ..get("/json", _ => HttpResponse::ok().json_value({ name: "oboard", age: 21 }))
 
-  // JSON Request using event.req.json[T]() with post_json for auto error handling
+  // JSON Request using event.req.json[T]() with post for auto error handling
   // curl --location 'localhost:4000/json' \
   // --header 'Content-Type: application/json' \
   // --data '{
   //     "name": "oboard",
   //     "age": 21
   // }'
-  ..post_json("/json", event => {
+  ..post("/json", event => {
     let person : Person = event.req.json()
     HttpResponse::ok().body(
       "Hello, \{person.name}. You are \{person.age} years old.",
@@ -41,7 +41,7 @@ fn main {
   // 404 Page
   .get("/404", _ => {
     HttpResponse::not_found().body(
-      @mocket.html(
+      @crescent.html(
         (
           #|<html>
           #|<body>
@@ -59,5 +59,5 @@ fn main {
   }
 
   // Serve
-  app.serve(port=4000)
+  app.serve_blocking(port=4000)
 }

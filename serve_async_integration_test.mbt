@@ -145,7 +145,7 @@ async fn with_test_server(app : Mocket, run_test : async (Int) -> Unit) -> Unit 
   let port = server.addr.port()
   app.get("/__mocket_ready", _ => "ready")
   @async.with_task_group(group => {
-    group.spawn_bg(no_wait=true, () => app.serve_async_on(server))
+    group.spawn_bg(no_wait=true, () => app.serve_on(server))
     wait_until_ready(port)
     run_test(port)
   })
@@ -161,7 +161,7 @@ async fn with_test_server_options(
   let port = server.addr.port()
   app.get("/__mocket_ready", _ => "ready")
   @async.with_task_group(group => {
-    group.spawn_bg(no_wait=true, () => app.serve_async_on_with(server, options))
+    group.spawn_bg(no_wait=true, () => app.serve_on_with(server, options))
     wait_until_ready(port)
     run_test(port)
   })
@@ -178,7 +178,7 @@ async fn with_port_bound_test_server(
     let port = 40_000 + (start_offset + attempt) % 20_000
     let attempt_result : Result[Bool, Error] = try? @async.with_task_group(group => {
       let task = group.spawn(no_wait=true, allow_failure=true, () => {
-        app.serve_async(port~)
+        app.serve(port~)
       })
       match @async.with_timeout_opt(50, () => try? task.wait()) {
         Some(Ok(_)) => {
@@ -239,8 +239,8 @@ async fn with_two_test_servers(
   app1.get("/__mocket_ready", _ => "ready")
   app2.get("/__mocket_ready", _ => "ready")
   @async.with_task_group(group => {
-    group.spawn_bg(no_wait=true, () => app1.serve_async_on(server1))
-    group.spawn_bg(no_wait=true, () => app2.serve_async_on(server2))
+    group.spawn_bg(no_wait=true, () => app1.serve_on(server1))
+    group.spawn_bg(no_wait=true, () => app2.serve_on(server2))
     wait_until_ready(port1)
     wait_until_ready(port2)
     run_test(port1, port2)
@@ -510,7 +510,7 @@ fn raw_header_count(raw_headers : String, header_name : String) -> Int {
 }
 
 ///|
-async test "serve_async strips query and reads put bodies" {
+async test "serve strips query and reads put bodies" {
   let app = new()
   app.get("/hello/:name", event => {
     let name = event.params.get("name").unwrap_or("world")
@@ -555,7 +555,7 @@ async test "serve_async strips query and reads put bodies" {
 }
 
 ///|
-async test "serve_async preserves middleware onion order" {
+async test "serve preserves middleware onion order" {
   let log : Array[String] = []
   let app = new()
   app.use_middleware((event, next) => {
@@ -594,7 +594,7 @@ async test "serve_async preserves middleware onion order" {
 }
 
 ///|
-async test "serve_async keeps invalid websocket opcodes connection-local and stays healthy" {
+async test "serve keeps invalid websocket opcodes connection-local and stays healthy" {
   let opened : Ref[Int] = Ref::new(0)
   let closed : Ref[Int] = Ref::new(0)
   let messages : Ref[Int] = Ref::new(0)
@@ -680,7 +680,7 @@ async test "serve_async keeps invalid websocket opcodes connection-local and sta
 }
 
 ///|
-async test "serve_async keeps invalid websocket text payloads connection-local and stays healthy" {
+async test "serve keeps invalid websocket text payloads connection-local and stays healthy" {
   let opened : Ref[Int] = Ref::new(0)
   let closed : Ref[Int] = Ref::new(0)
   let messages : Ref[Int] = Ref::new(0)
@@ -761,7 +761,7 @@ async test "serve_async keeps invalid websocket text payloads connection-local a
 }
 
 ///|
-async test "serve_async keeps websocket protocol edge failures connection-local and stays healthy" {
+async test "serve keeps websocket protocol edge failures connection-local and stays healthy" {
   let opened : Ref[Int] = Ref::new(0)
   let closed : Ref[Int] = Ref::new(0)
   let messages : Ref[Int] = Ref::new(0)
@@ -862,7 +862,7 @@ async test "serve_async keeps websocket protocol edge failures connection-local 
 }
 
 ///|
-async test "serve_async keeps websocket sequencing and control-size failures connection-local and stays healthy" {
+async test "serve keeps websocket sequencing and control-size failures connection-local and stays healthy" {
   let opened : Ref[Int] = Ref::new(0)
   let closed : Ref[Int] = Ref::new(0)
   let messages : Ref[Int] = Ref::new(0)
@@ -953,7 +953,7 @@ async test "serve_async keeps websocket sequencing and control-size failures con
 }
 
 ///|
-async test "serve_async keeps websocket continuation and length-format failures connection-local and stays healthy" {
+async test "serve keeps websocket continuation and length-format failures connection-local and stays healthy" {
   let opened : Ref[Int] = Ref::new(0)
   let closed : Ref[Int] = Ref::new(0)
   let messages : Ref[Int] = Ref::new(0)
@@ -1044,7 +1044,7 @@ async test "serve_async keeps websocket continuation and length-format failures 
 }
 
 ///|
-async test "serve_async echoes websocket close reasons and stays healthy" {
+async test "serve echoes websocket close reasons and stays healthy" {
   let opened : Ref[Int] = Ref::new(0)
   let closed : Ref[Int] = Ref::new(0)
   let messages : Ref[Int] = Ref::new(0)
@@ -1102,7 +1102,7 @@ async test "serve_async echoes websocket close reasons and stays healthy" {
 }
 
 ///|
-async test "serve_async rejects invalid websocket close reasons and stays healthy" {
+async test "serve rejects invalid websocket close reasons and stays healthy" {
   let opened : Ref[Int] = Ref::new(0)
   let closed : Ref[Int] = Ref::new(0)
   let messages : Ref[Int] = Ref::new(0)
@@ -1160,7 +1160,7 @@ async test "serve_async rejects invalid websocket close reasons and stays health
 }
 
 ///|
-async test "serve_async auto-replies to websocket ping frames without leaking control messages" {
+async test "serve auto-replies to websocket ping frames without leaking control messages" {
   let opened : Ref[Int] = Ref::new(0)
   let closed : Ref[Int] = Ref::new(0)
   let messages : Ref[Int] = Ref::new(0)
@@ -1225,7 +1225,7 @@ async test "serve_async auto-replies to websocket ping frames without leaking co
 }
 
 ///|
-async test "serve_async ignores unsolicited websocket pong frames without leaking control messages" {
+async test "serve ignores unsolicited websocket pong frames without leaking control messages" {
   let opened : Ref[Int] = Ref::new(0)
   let closed : Ref[Int] = Ref::new(0)
   let messages : Ref[Int] = Ref::new(0)
@@ -1286,7 +1286,7 @@ async test "serve_async ignores unsolicited websocket pong frames without leakin
 }
 
 ///|
-async test "serve_async routes fragmented websocket messages while replying to in-flight pings" {
+async test "serve routes fragmented websocket messages while replying to in-flight pings" {
   let opened : Ref[Int] = Ref::new(0)
   let closed : Ref[Int] = Ref::new(0)
   let messages : Ref[Int] = Ref::new(0)
@@ -1369,7 +1369,7 @@ async test "serve_async routes fragmented websocket messages while replying to i
 }
 
 ///|
-async test "serve_async replies to multiple websocket pings in order without leaking control messages" {
+async test "serve replies to multiple websocket pings in order without leaking control messages" {
   let opened : Ref[Int] = Ref::new(0)
   let closed : Ref[Int] = Ref::new(0)
   let messages : Ref[Int] = Ref::new(0)
@@ -1462,7 +1462,7 @@ async test "serve_async replies to multiple websocket pings in order without lea
 }
 
 ///|
-async test "serve_async_on_with enforces max_connections" {
+async test "serve_on_with enforces max_connections" {
   let app = new()
   let gate = @async.Queue::new(kind=Unbounded)
   let started : Ref[Int] = Ref::new(0)
@@ -1476,10 +1476,7 @@ async test "serve_async_on_with enforces max_connections" {
     let server = allocate_test_server()
     let port = server.addr.port()
     group.spawn_bg(no_wait=true, () => {
-      app.serve_async_on_with(
-        server,
-        NativeServeOptions::new(max_connections=1),
-      )
+      app.serve_on_with(server, NativeServeOptions::new(max_connections=1))
     })
     wait_until_ready(port)
 
@@ -1537,37 +1534,37 @@ async test "serve_async_on_with enforces max_connections" {
 }
 
 ///|
-async test "serve_async_on_with rejects non-positive max_connections" {
+async test "serve_on_with rejects non-positive max_connections" {
   let app = new()
   let server = allocate_test_server()
   defer server.close()
-  let result : Result[Unit, Error] = try? app.serve_async_on_with(
+  let result : Result[Unit, Error] = try? app.serve_on_with(
     server,
     NativeServeOptions::new(max_connections=0),
   )
   match result {
     Err(NativeServeError::InvalidMaxConnections(0)) => ()
     Err(err) => fail("unexpected invalid max_connections error: \{err}")
-    Ok(_) => fail("expected serve_async_on_with to reject max_connections=0")
+    Ok(_) => fail("expected serve_on_with to reject max_connections=0")
   }
 }
 
 ///|
-async test "serve_async_with rejects non-positive max_connections" {
+async test "serve_with rejects non-positive max_connections" {
   let app = new()
-  let result : Result[Unit, Error] = try? app.serve_async_with(
+  let result : Result[Unit, Error] = try? app.serve_with(
     port=0,
     NativeServeOptions::new(max_connections=0),
   )
   match result {
     Err(NativeServeError::InvalidMaxConnections(0)) => ()
     Err(err) => fail("unexpected invalid max_connections error: \{err}")
-    Ok(_) => fail("expected serve_async_with to reject max_connections=0")
+    Ok(_) => fail("expected serve_with to reject max_connections=0")
   }
 }
 
 ///|
-async test "serve_async_on_with enforces max_request_body_bytes for fixed-length bodies" {
+async test "serve_on_with enforces max_request_body_bytes for fixed-length bodies" {
   let app = new()
   let handled : Ref[Int] = Ref::new(0)
   app.post("/body", event => {
@@ -1580,7 +1577,7 @@ async test "serve_async_on_with enforces max_request_body_bytes for fixed-length
     let server = allocate_test_server()
     let port = server.addr.port()
     group.spawn_bg(no_wait=true, () => {
-      app.serve_async_on_with(
+      app.serve_on_with(
         server,
         NativeServeOptions::new(max_request_body_bytes=4),
       )
@@ -1621,7 +1618,7 @@ async test "serve_async_on_with enforces max_request_body_bytes for fixed-length
 }
 
 ///|
-async test "serve_async_on_with treats max_request_body_bytes=0 as empty-body only" {
+async test "serve_on_with treats max_request_body_bytes=0 as empty-body only" {
   let app = new()
   let handled : Ref[Int] = Ref::new(0)
   app.post("/body", event => {
@@ -1634,7 +1631,7 @@ async test "serve_async_on_with treats max_request_body_bytes=0 as empty-body on
     let server = allocate_test_server()
     let port = server.addr.port()
     group.spawn_bg(no_wait=true, () => {
-      app.serve_async_on_with(
+      app.serve_on_with(
         server,
         NativeServeOptions::new(max_request_body_bytes=0),
       )
@@ -1696,7 +1693,7 @@ async test "serve_async_on_with treats max_request_body_bytes=0 as empty-body on
 }
 
 ///|
-async test "serve_async_on_with enforces max_request_body_bytes for chunked bodies" {
+async test "serve_on_with enforces max_request_body_bytes for chunked bodies" {
   let app = new()
   let handled : Ref[Int] = Ref::new(0)
   app.post("/body", event => {
@@ -1709,7 +1706,7 @@ async test "serve_async_on_with enforces max_request_body_bytes for chunked bodi
     let server = allocate_test_server()
     let port = server.addr.port()
     group.spawn_bg(no_wait=true, () => {
-      app.serve_async_on_with(
+      app.serve_on_with(
         server,
         NativeServeOptions::new(max_request_body_bytes=4),
       )
@@ -1746,7 +1743,7 @@ async test "serve_async_on_with enforces max_request_body_bytes for chunked bodi
 }
 
 ///|
-async test "serve_async_on_with accepts exact-limit chunked bodies across multiple reads" {
+async test "serve_on_with accepts exact-limit chunked bodies across multiple reads" {
   let app = new()
   let handled : Ref[Int] = Ref::new(0)
   app.post("/body", event => {
@@ -1761,7 +1758,7 @@ async test "serve_async_on_with accepts exact-limit chunked bodies across multip
     let server = allocate_test_server()
     let port = server.addr.port()
     group.spawn_bg(no_wait=true, () => {
-      app.serve_async_on_with(
+      app.serve_on_with(
         server,
         NativeServeOptions::new(max_request_body_bytes=2048),
       )
@@ -1788,29 +1785,28 @@ async test "serve_async_on_with accepts exact-limit chunked bodies across multip
 }
 
 ///|
-async test "serve_async_on_with rejects negative max_request_body_bytes" {
+async test "serve_on_with rejects negative max_request_body_bytes" {
   let app = new()
   let server = allocate_test_server()
   defer server.close()
-  let result : Result[Unit, Error] = try? app.serve_async_on_with(
+  let result : Result[Unit, Error] = try? app.serve_on_with(
     server,
     NativeServeOptions::new(max_request_body_bytes=-1),
   )
   match result {
     Err(NativeServeError::InvalidMaxRequestBodyBytes(-1)) => ()
     Err(err) => fail("unexpected invalid max_request_body_bytes error: \{err}")
-    Ok(_) =>
-      fail("expected serve_async_on_with to reject max_request_body_bytes=-1")
+    Ok(_) => fail("expected serve_on_with to reject max_request_body_bytes=-1")
   }
 }
 
 ///|
-async test "serve_async_on_until_with rejects negative max_request_body_bytes" {
+async test "serve_on_until_with rejects negative max_request_body_bytes" {
   let app = new()
   let server = allocate_test_server()
   defer server.close()
   let shutdown = @async.Queue::new(kind=Unbounded)
-  let result : Result[Unit, Error] = try? app.serve_async_on_until_with(
+  let result : Result[Unit, Error] = try? app.serve_on_until_with(
     server,
     shutdown,
     NativeServeOptions::new(max_request_body_bytes=-1),
@@ -1819,36 +1815,33 @@ async test "serve_async_on_until_with rejects negative max_request_body_bytes" {
     Err(NativeServeError::InvalidMaxRequestBodyBytes(-1)) => ()
     Err(err) =>
       fail(
-        "unexpected serve_async_on_until_with max_request_body_bytes error: \{err}",
+        "unexpected serve_on_until_with max_request_body_bytes error: \{err}",
       )
     Ok(_) =>
-      fail(
-        "expected serve_async_on_until_with to reject max_request_body_bytes=-1",
-      )
+      fail("expected serve_on_until_with to reject max_request_body_bytes=-1")
   }
 }
 
 ///|
-async test "serve_async_with rejects negative max_request_body_bytes" {
+async test "serve_with rejects negative max_request_body_bytes" {
   let app = new()
-  let result : Result[Unit, Error] = try? app.serve_async_with(
+  let result : Result[Unit, Error] = try? app.serve_with(
     port=0,
     NativeServeOptions::new(max_request_body_bytes=-1),
   )
   match result {
     Err(NativeServeError::InvalidMaxRequestBodyBytes(-1)) => ()
     Err(err) => fail("unexpected invalid max_request_body_bytes error: \{err}")
-    Ok(_) =>
-      fail("expected serve_async_with to reject max_request_body_bytes=-1")
+    Ok(_) => fail("expected serve_with to reject max_request_body_bytes=-1")
   }
 }
 
 ///|
-async test "serve_async_on_with rejects non-positive request_body_read_timeout_ms" {
+async test "serve_on_with rejects non-positive request_body_read_timeout_ms" {
   let app = new()
   let server = allocate_test_server()
   defer server.close()
-  let result : Result[Unit, Error] = try? app.serve_async_on_with(
+  let result : Result[Unit, Error] = try? app.serve_on_with(
     server,
     NativeServeOptions::new(request_body_read_timeout_ms=0),
   )
@@ -1857,19 +1850,17 @@ async test "serve_async_on_with rejects non-positive request_body_read_timeout_m
     Err(err) =>
       fail("unexpected invalid request_body_read_timeout_ms error: \{err}")
     Ok(_) =>
-      fail(
-        "expected serve_async_on_with to reject request_body_read_timeout_ms=0",
-      )
+      fail("expected serve_on_with to reject request_body_read_timeout_ms=0")
   }
 }
 
 ///|
-async test "serve_async_on_until_with rejects non-positive request_body_read_timeout_ms" {
+async test "serve_on_until_with rejects non-positive request_body_read_timeout_ms" {
   let app = new()
   let server = allocate_test_server()
   defer server.close()
   let shutdown = @async.Queue::new(kind=Unbounded)
-  let result : Result[Unit, Error] = try? app.serve_async_on_until_with(
+  let result : Result[Unit, Error] = try? app.serve_on_until_with(
     server,
     shutdown,
     NativeServeOptions::new(request_body_read_timeout_ms=0),
@@ -1878,19 +1869,19 @@ async test "serve_async_on_until_with rejects non-positive request_body_read_tim
     Err(NativeServeError::InvalidRequestBodyReadTimeoutMs(0)) => ()
     Err(err) =>
       fail(
-        "unexpected serve_async_on_until_with request_body_read_timeout_ms error: \{err}",
+        "unexpected serve_on_until_with request_body_read_timeout_ms error: \{err}",
       )
     Ok(_) =>
       fail(
-        "expected serve_async_on_until_with to reject request_body_read_timeout_ms=0",
+        "expected serve_on_until_with to reject request_body_read_timeout_ms=0",
       )
   }
 }
 
 ///|
-async test "serve_async_with rejects non-positive request_body_read_timeout_ms" {
+async test "serve_with rejects non-positive request_body_read_timeout_ms" {
   let app = new()
-  let result : Result[Unit, Error] = try? app.serve_async_with(
+  let result : Result[Unit, Error] = try? app.serve_with(
     port=0,
     NativeServeOptions::new(request_body_read_timeout_ms=0),
   )
@@ -1899,15 +1890,15 @@ async test "serve_async_with rejects non-positive request_body_read_timeout_ms" 
     Err(err) =>
       fail("unexpected invalid request_body_read_timeout_ms error: \{err}")
     Ok(_) =>
-      fail("expected serve_async_with to reject request_body_read_timeout_ms=0")
+      fail("expected serve_with to reject request_body_read_timeout_ms=0")
   }
 }
 
 ///|
-async test "serve_async_until_with rejects non-positive request_body_read_timeout_ms" {
+async test "serve_until_with rejects non-positive request_body_read_timeout_ms" {
   let app = new()
   let shutdown = @async.Queue::new(kind=Unbounded)
-  let result : Result[Unit, Error] = try? app.serve_async_until_with(
+  let result : Result[Unit, Error] = try? app.serve_until_with(
     port=0,
     shutdown,
     NativeServeOptions::new(request_body_read_timeout_ms=0),
@@ -1916,21 +1907,19 @@ async test "serve_async_until_with rejects non-positive request_body_read_timeou
     Err(NativeServeError::InvalidRequestBodyReadTimeoutMs(0)) => ()
     Err(err) =>
       fail(
-        "unexpected serve_async_until_with request_body_read_timeout_ms error: \{err}",
+        "unexpected serve_until_with request_body_read_timeout_ms error: \{err}",
       )
     Ok(_) =>
-      fail(
-        "expected serve_async_until_with to reject request_body_read_timeout_ms=0",
-      )
+      fail("expected serve_until_with to reject request_body_read_timeout_ms=0")
   }
 }
 
 ///|
-async test "serve_async_on_with rejects non-positive websocket_outgoing_queue_capacity" {
+async test "serve_on_with rejects non-positive websocket_outgoing_queue_capacity" {
   let app = new()
   let server = allocate_test_server()
   defer server.close()
-  let result : Result[Unit, Error] = try? app.serve_async_on_with(
+  let result : Result[Unit, Error] = try? app.serve_on_with(
     server,
     NativeServeOptions::new(websocket_outgoing_queue_capacity=0),
   )
@@ -1940,18 +1929,18 @@ async test "serve_async_on_with rejects non-positive websocket_outgoing_queue_ca
       fail("unexpected invalid websocket_outgoing_queue_capacity error: \{err}")
     Ok(_) =>
       fail(
-        "expected serve_async_on_with to reject websocket_outgoing_queue_capacity=0",
+        "expected serve_on_with to reject websocket_outgoing_queue_capacity=0",
       )
   }
 }
 
 ///|
-async test "serve_async_on_until_with rejects non-positive websocket_outgoing_queue_capacity" {
+async test "serve_on_until_with rejects non-positive websocket_outgoing_queue_capacity" {
   let app = new()
   let server = allocate_test_server()
   defer server.close()
   let shutdown = @async.Queue::new(kind=Unbounded)
-  let result : Result[Unit, Error] = try? app.serve_async_on_until_with(
+  let result : Result[Unit, Error] = try? app.serve_on_until_with(
     server,
     shutdown,
     NativeServeOptions::new(websocket_outgoing_queue_capacity=0),
@@ -1960,19 +1949,19 @@ async test "serve_async_on_until_with rejects non-positive websocket_outgoing_qu
     Err(NativeServeError::InvalidWebSocketOutgoingQueueCapacity(0)) => ()
     Err(err) =>
       fail(
-        "unexpected serve_async_on_until_with websocket_outgoing_queue_capacity error: \{err}",
+        "unexpected serve_on_until_with websocket_outgoing_queue_capacity error: \{err}",
       )
     Ok(_) =>
       fail(
-        "expected serve_async_on_until_with to reject websocket_outgoing_queue_capacity=0",
+        "expected serve_on_until_with to reject websocket_outgoing_queue_capacity=0",
       )
   }
 }
 
 ///|
-async test "serve_async_with rejects non-positive websocket_outgoing_queue_capacity" {
+async test "serve_with rejects non-positive websocket_outgoing_queue_capacity" {
   let app = new()
-  let result : Result[Unit, Error] = try? app.serve_async_with(
+  let result : Result[Unit, Error] = try? app.serve_with(
     port=0,
     NativeServeOptions::new(websocket_outgoing_queue_capacity=0),
   )
@@ -1981,17 +1970,15 @@ async test "serve_async_with rejects non-positive websocket_outgoing_queue_capac
     Err(err) =>
       fail("unexpected invalid websocket_outgoing_queue_capacity error: \{err}")
     Ok(_) =>
-      fail(
-        "expected serve_async_with to reject websocket_outgoing_queue_capacity=0",
-      )
+      fail("expected serve_with to reject websocket_outgoing_queue_capacity=0")
   }
 }
 
 ///|
-async test "serve_async_until_with rejects non-positive websocket_outgoing_queue_capacity" {
+async test "serve_until_with rejects non-positive websocket_outgoing_queue_capacity" {
   let app = new()
   let shutdown = @async.Queue::new(kind=Unbounded)
-  let result : Result[Unit, Error] = try? app.serve_async_until_with(
+  let result : Result[Unit, Error] = try? app.serve_until_with(
     port=0,
     shutdown,
     NativeServeOptions::new(websocket_outgoing_queue_capacity=0),
@@ -2000,21 +1987,21 @@ async test "serve_async_until_with rejects non-positive websocket_outgoing_queue
     Err(NativeServeError::InvalidWebSocketOutgoingQueueCapacity(0)) => ()
     Err(err) =>
       fail(
-        "unexpected serve_async_until_with websocket_outgoing_queue_capacity error: \{err}",
+        "unexpected serve_until_with websocket_outgoing_queue_capacity error: \{err}",
       )
     Ok(_) =>
       fail(
-        "expected serve_async_until_with to reject websocket_outgoing_queue_capacity=0",
+        "expected serve_until_with to reject websocket_outgoing_queue_capacity=0",
       )
   }
 }
 
 ///|
-async test "serve_async_on_with rejects non-positive websocket_read_timeout_ms" {
+async test "serve_on_with rejects non-positive websocket_read_timeout_ms" {
   let app = new()
   let server = allocate_test_server()
   defer server.close()
-  let result : Result[Unit, Error] = try? app.serve_async_on_with(
+  let result : Result[Unit, Error] = try? app.serve_on_with(
     server,
     NativeServeOptions::new(websocket_read_timeout_ms=0),
   )
@@ -2023,17 +2010,17 @@ async test "serve_async_on_with rejects non-positive websocket_read_timeout_ms" 
     Err(err) =>
       fail("unexpected invalid websocket_read_timeout_ms error: \{err}")
     Ok(_) =>
-      fail("expected serve_async_on_with to reject websocket_read_timeout_ms=0")
+      fail("expected serve_on_with to reject websocket_read_timeout_ms=0")
   }
 }
 
 ///|
-async test "serve_async_on_until_with rejects non-positive websocket_read_timeout_ms" {
+async test "serve_on_until_with rejects non-positive websocket_read_timeout_ms" {
   let app = new()
   let server = allocate_test_server()
   defer server.close()
   let shutdown = @async.Queue::new(kind=Unbounded)
-  let result : Result[Unit, Error] = try? app.serve_async_on_until_with(
+  let result : Result[Unit, Error] = try? app.serve_on_until_with(
     server,
     shutdown,
     NativeServeOptions::new(websocket_read_timeout_ms=0),
@@ -2042,19 +2029,17 @@ async test "serve_async_on_until_with rejects non-positive websocket_read_timeou
     Err(NativeServeError::InvalidWebSocketReadTimeoutMs(0)) => ()
     Err(err) =>
       fail(
-        "unexpected serve_async_on_until_with websocket_read_timeout_ms error: \{err}",
+        "unexpected serve_on_until_with websocket_read_timeout_ms error: \{err}",
       )
     Ok(_) =>
-      fail(
-        "expected serve_async_on_until_with to reject websocket_read_timeout_ms=0",
-      )
+      fail("expected serve_on_until_with to reject websocket_read_timeout_ms=0")
   }
 }
 
 ///|
-async test "serve_async_with rejects non-positive websocket_read_timeout_ms" {
+async test "serve_with rejects non-positive websocket_read_timeout_ms" {
   let app = new()
-  let result : Result[Unit, Error] = try? app.serve_async_with(
+  let result : Result[Unit, Error] = try? app.serve_with(
     port=0,
     NativeServeOptions::new(websocket_read_timeout_ms=0),
   )
@@ -2062,16 +2047,15 @@ async test "serve_async_with rejects non-positive websocket_read_timeout_ms" {
     Err(NativeServeError::InvalidWebSocketReadTimeoutMs(0)) => ()
     Err(err) =>
       fail("unexpected invalid websocket_read_timeout_ms error: \{err}")
-    Ok(_) =>
-      fail("expected serve_async_with to reject websocket_read_timeout_ms=0")
+    Ok(_) => fail("expected serve_with to reject websocket_read_timeout_ms=0")
   }
 }
 
 ///|
-async test "serve_async_until_with rejects non-positive websocket_read_timeout_ms" {
+async test "serve_until_with rejects non-positive websocket_read_timeout_ms" {
   let app = new()
   let shutdown = @async.Queue::new(kind=Unbounded)
-  let result : Result[Unit, Error] = try? app.serve_async_until_with(
+  let result : Result[Unit, Error] = try? app.serve_until_with(
     port=0,
     shutdown,
     NativeServeOptions::new(websocket_read_timeout_ms=0),
@@ -2080,21 +2064,19 @@ async test "serve_async_until_with rejects non-positive websocket_read_timeout_m
     Err(NativeServeError::InvalidWebSocketReadTimeoutMs(0)) => ()
     Err(err) =>
       fail(
-        "unexpected serve_async_until_with websocket_read_timeout_ms error: \{err}",
+        "unexpected serve_until_with websocket_read_timeout_ms error: \{err}",
       )
     Ok(_) =>
-      fail(
-        "expected serve_async_until_with to reject websocket_read_timeout_ms=0",
-      )
+      fail("expected serve_until_with to reject websocket_read_timeout_ms=0")
   }
 }
 
 ///|
-async test "serve_async_on_with rejects negative websocket_max_message_bytes" {
+async test "serve_on_with rejects negative websocket_max_message_bytes" {
   let app = new()
   let server = allocate_test_server()
   defer server.close()
-  let result : Result[Unit, Error] = try? app.serve_async_on_with(
+  let result : Result[Unit, Error] = try? app.serve_on_with(
     server,
     NativeServeOptions::new(websocket_max_message_bytes=-1),
   )
@@ -2103,19 +2085,17 @@ async test "serve_async_on_with rejects negative websocket_max_message_bytes" {
     Err(err) =>
       fail("unexpected invalid websocket_max_message_bytes error: \{err}")
     Ok(_) =>
-      fail(
-        "expected serve_async_on_with to reject websocket_max_message_bytes=-1",
-      )
+      fail("expected serve_on_with to reject websocket_max_message_bytes=-1")
   }
 }
 
 ///|
-async test "serve_async_on_until_with rejects negative websocket_max_message_bytes" {
+async test "serve_on_until_with rejects negative websocket_max_message_bytes" {
   let app = new()
   let server = allocate_test_server()
   defer server.close()
   let shutdown = @async.Queue::new(kind=Unbounded)
-  let result : Result[Unit, Error] = try? app.serve_async_on_until_with(
+  let result : Result[Unit, Error] = try? app.serve_on_until_with(
     server,
     shutdown,
     NativeServeOptions::new(websocket_max_message_bytes=-1),
@@ -2124,19 +2104,19 @@ async test "serve_async_on_until_with rejects negative websocket_max_message_byt
     Err(NativeServeError::InvalidWebSocketMaxMessageBytes(-1)) => ()
     Err(err) =>
       fail(
-        "unexpected serve_async_on_until_with websocket_max_message_bytes error: \{err}",
+        "unexpected serve_on_until_with websocket_max_message_bytes error: \{err}",
       )
     Ok(_) =>
       fail(
-        "expected serve_async_on_until_with to reject websocket_max_message_bytes=-1",
+        "expected serve_on_until_with to reject websocket_max_message_bytes=-1",
       )
   }
 }
 
 ///|
-async test "serve_async_with rejects negative websocket_max_message_bytes" {
+async test "serve_with rejects negative websocket_max_message_bytes" {
   let app = new()
-  let result : Result[Unit, Error] = try? app.serve_async_with(
+  let result : Result[Unit, Error] = try? app.serve_with(
     port=0,
     NativeServeOptions::new(websocket_max_message_bytes=-1),
   )
@@ -2145,15 +2125,15 @@ async test "serve_async_with rejects negative websocket_max_message_bytes" {
     Err(err) =>
       fail("unexpected invalid websocket_max_message_bytes error: \{err}")
     Ok(_) =>
-      fail("expected serve_async_with to reject websocket_max_message_bytes=-1")
+      fail("expected serve_with to reject websocket_max_message_bytes=-1")
   }
 }
 
 ///|
-async test "serve_async_until_with rejects negative websocket_max_message_bytes" {
+async test "serve_until_with rejects negative websocket_max_message_bytes" {
   let app = new()
   let shutdown = @async.Queue::new(kind=Unbounded)
-  let result : Result[Unit, Error] = try? app.serve_async_until_with(
+  let result : Result[Unit, Error] = try? app.serve_until_with(
     port=0,
     shutdown,
     NativeServeOptions::new(websocket_max_message_bytes=-1),
@@ -2162,17 +2142,15 @@ async test "serve_async_until_with rejects negative websocket_max_message_bytes"
     Err(NativeServeError::InvalidWebSocketMaxMessageBytes(-1)) => ()
     Err(err) =>
       fail(
-        "unexpected serve_async_until_with websocket_max_message_bytes error: \{err}",
+        "unexpected serve_until_with websocket_max_message_bytes error: \{err}",
       )
     Ok(_) =>
-      fail(
-        "expected serve_async_until_with to reject websocket_max_message_bytes=-1",
-      )
+      fail("expected serve_until_with to reject websocket_max_message_bytes=-1")
   }
 }
 
 ///|
-async test "serve_async_on_with times out slow request bodies" {
+async test "serve_on_with times out slow request bodies" {
   let app = new()
   let handled : Ref[Int] = Ref::new(0)
   app.post("/body", event => {
@@ -2185,7 +2163,7 @@ async test "serve_async_on_with times out slow request bodies" {
     let server = allocate_test_server()
     let port = server.addr.port()
     group.spawn_bg(no_wait=true, () => {
-      app.serve_async_on_with(
+      app.serve_on_with(
         server,
         NativeServeOptions::new(request_body_read_timeout_ms=50),
       )
@@ -2229,10 +2207,10 @@ async test "serve_async_on_with times out slow request bodies" {
 }
 
 ///|
-async test "serve_async_until_with rejects negative max_request_body_bytes" {
+async test "serve_until_with rejects negative max_request_body_bytes" {
   let app = new()
   let shutdown = @async.Queue::new(kind=Unbounded)
-  let result : Result[Unit, Error] = try? app.serve_async_until_with(
+  let result : Result[Unit, Error] = try? app.serve_until_with(
     port=0,
     shutdown,
     NativeServeOptions::new(max_request_body_bytes=-1),
@@ -2240,18 +2218,14 @@ async test "serve_async_until_with rejects negative max_request_body_bytes" {
   match result {
     Err(NativeServeError::InvalidMaxRequestBodyBytes(-1)) => ()
     Err(err) =>
-      fail(
-        "unexpected serve_async_until_with max_request_body_bytes error: \{err}",
-      )
+      fail("unexpected serve_until_with max_request_body_bytes error: \{err}")
     Ok(_) =>
-      fail(
-        "expected serve_async_until_with to reject max_request_body_bytes=-1",
-      )
+      fail("expected serve_until_with to reject max_request_body_bytes=-1")
   }
 }
 
 ///|
-async test "serve_async_on_with preserves head content-length for oversized requests" {
+async test "serve_on_with preserves head content-length for oversized requests" {
   let app = new()
   app.get("/healthy", _ => "ok")
   app.get("/body", _ => "body")
@@ -2260,7 +2234,7 @@ async test "serve_async_on_with preserves head content-length for oversized requ
     let server = allocate_test_server()
     let port = server.addr.port()
     group.spawn_bg(no_wait=true, () => {
-      app.serve_async_on_with(
+      app.serve_on_with(
         server,
         NativeServeOptions::new(max_request_body_bytes=4),
       )
@@ -2299,7 +2273,7 @@ async test "serve_async_on_with preserves head content-length for oversized requ
 }
 
 ///|
-async test "serve_async matches middleware base paths by segment boundary" {
+async test "serve matches middleware base paths by segment boundary" {
   let log : Array[String] = []
   let app = new()
   app.use_middleware(
@@ -2346,7 +2320,7 @@ async test "serve_async matches middleware base paths by segment boundary" {
 }
 
 ///|
-async test "serve_async_on_until stops on shutdown signal" {
+async test "serve_on_until stops on shutdown signal" {
   let app = new()
   app.get("/__mocket_ready", _ => "ready")
   @async.with_task_group(group => {
@@ -2354,7 +2328,7 @@ async test "serve_async_on_until stops on shutdown signal" {
     let port = server.addr.port()
     let shutdown = @async.Queue::new(kind=Blocking(0))
     let task = group.spawn(no_wait=true, () => {
-      try? app.serve_async_on_until(server, shutdown)
+      try? app.serve_on_until(server, shutdown)
     })
     wait_until_ready(port)
 
@@ -2375,7 +2349,7 @@ async test "serve_async_on_until stops on shutdown signal" {
         }
       None =>
         fail(
-          "timed out waiting for serve_async_on_until to stop after shutdown signal",
+          "timed out waiting for serve_on_until to stop after shutdown signal",
         )
     }
   }) catch {
@@ -2385,7 +2359,7 @@ async test "serve_async_on_until stops on shutdown signal" {
 }
 
 ///|
-async test "serve_async_on_until broadcasts shutdown when the queue is closed" {
+async test "serve_on_until broadcasts shutdown when the queue is closed" {
   let app1 = new()
   let app2 = new()
   app1.get("/__mocket_ready", _ => "ready")
@@ -2397,10 +2371,10 @@ async test "serve_async_on_until broadcasts shutdown when the queue is closed" {
     let port2 = server2.addr.port()
     let shutdown = @async.Queue::new(kind=Blocking(0))
     let task1 = group.spawn(no_wait=true, () => {
-      try? app1.serve_async_on_until(server1, shutdown)
+      try? app1.serve_on_until(server1, shutdown)
     })
     let task2 = group.spawn(no_wait=true, () => {
-      try? app2.serve_async_on_until(server2, shutdown)
+      try? app2.serve_on_until(server2, shutdown)
     })
     wait_until_ready(port1)
     wait_until_ready(port2)
@@ -2440,7 +2414,7 @@ async test "serve_async_on_until broadcasts shutdown when the queue is closed" {
 }
 
 ///|
-async test "serve_async_until binds by port and stops on shutdown signal" {
+async test "serve_until binds by port and stops on shutdown signal" {
   let app = new()
   app.get("/__mocket_ready", _ => "ready")
   let start_offset = @async.now().to_int() % 20_000
@@ -2449,12 +2423,12 @@ async test "serve_async_until binds by port and stops on shutdown signal" {
     let attempt_result : Result[Bool, Error] = try? @async.with_task_group(group => {
       let shutdown = @async.Queue::new(kind=Unbounded)
       let task = group.spawn(no_wait=true, () => {
-        try? app.serve_async_until(port~, shutdown)
+        try? app.serve_until(port~, shutdown)
       })
       match @async.with_timeout_opt(50, () => task.wait()) {
         Some(result) =>
           match result {
-            Ok(_) => fail("serve_async_until exited before shutdown signal")
+            Ok(_) => fail("serve_until exited before shutdown signal")
             Err(@os_error.OSError(errno, ..)) if errno == 1 =>
               raise SocketBindUnavailable
             Err(@os_error.OSError(_) as err) if err.is_EACCES() =>
@@ -2478,12 +2452,12 @@ async test "serve_async_until binds by port and stops on shutdown signal" {
                 Ok(_) => true
                 Err(err) =>
                   fail(
-                    "expected serve_async_until to stop without runtime failure: \{err}",
+                    "expected serve_until to stop without runtime failure: \{err}",
                   )
               }
             None =>
               fail(
-                "timed out waiting for serve_async_until to stop after shutdown signal",
+                "timed out waiting for serve_until to stop after shutdown signal",
               )
           }
         }
@@ -2500,7 +2474,7 @@ async test "serve_async_until binds by port and stops on shutdown signal" {
 }
 
 ///|
-async test "serve_async mounts static assets by prefix" {
+async test "serve mounts static assets by prefix" {
   let app = new()
   app.static_assets("/assets", TestStaticProvider::{  })
   with_test_server(app, port => {
@@ -2542,13 +2516,13 @@ async test "serve_async mounts static assets by prefix" {
 }
 
 ///|
-async test "serve_async serves static assets from the root mount" {
+async test "serve serves static assets from the root mount" {
   let app = new()
   app.static_assets("", TestStaticProvider::{  })
   @async.with_task_group(group => {
     let server = allocate_test_server()
     let port = server.addr.port()
-    group.spawn_bg(no_wait=true, () => app.serve_async_on(server))
+    group.spawn_bg(no_wait=true, () => app.serve_on(server))
     @async.retry(@async.FixedDelay(20), max_retry=50, () => {
       let (response, _body) = @http.get(localhost_url(port, "/"))
       guard response.code == 200 else { raise ServerNotReady }
@@ -2576,7 +2550,7 @@ async test "serve_async serves static assets from the root mount" {
 }
 
 ///|
-async test "serve_async normalizes trailing-slash static mounts" {
+async test "serve normalizes trailing-slash static mounts" {
   let app = new()
   app.static_assets("/assets/", TestStaticProvider::{  })
   with_test_server(app, port => {
@@ -2608,7 +2582,7 @@ async test "serve_async normalizes trailing-slash static mounts" {
 }
 
 ///|
-async test "serve_async preserves content-encoding for encoded static assets" {
+async test "serve preserves content-encoding for encoded static assets" {
   let app = new()
   app.static_assets("/assets", EncodedStaticProvider::{  })
   with_test_server(app, port => {
@@ -2639,7 +2613,7 @@ async test "serve_async preserves content-encoding for encoded static assets" {
 }
 
 ///|
-async test "serve_async preserves vary and last-modified on conditional static responses" {
+async test "serve preserves vary and last-modified on conditional static responses" {
   let app = new()
   app.static_assets("/assets", EncodedStaticProvider::{  })
   with_test_server(app, port => {
@@ -2705,7 +2679,7 @@ async test "serve_async preserves vary and last-modified on conditional static r
 }
 
 ///|
-async test "serve_async writes cookie headers" {
+async test "serve writes cookie headers" {
   let app = new()
   app.get("/cookie", event => {
     event.res.set_cookie("session", "abc", path="/", http_only=true)
@@ -2726,7 +2700,7 @@ async test "serve_async writes cookie headers" {
 }
 
 ///|
-async test "serve_async preserves explicit content-type headers without duplicates" {
+async test "serve preserves explicit content-type headers without duplicates" {
   let app = new()
   app.get("/custom", event => {
     event.res.headers.set("content-type", "application/custom")
@@ -2765,7 +2739,7 @@ async test "serve_async preserves explicit content-type headers without duplicat
 }
 
 ///|
-async test "serve_async handles head fallback, method not allowed, and options" {
+async test "serve handles head fallback, method not allowed, and options" {
   let app = new()
   app.get("/resource", event => {
     event.res.headers.set("X-Reply", "get")
@@ -2866,7 +2840,7 @@ async test "serve_async handles head fallback, method not allowed, and options" 
 }
 
 ///|
-async test "serve_async binds by port and dispatches trace and connect routes" {
+async test "serve binds by port and dispatches trace and connect routes" {
   let app = new()
   app.trace("/trace", _ => HttpResponse::new(OK).body("trace"))
   app.connect("/connect", _ => HttpResponse::new(OK).body("connect"))
@@ -2893,7 +2867,7 @@ async test "serve_async binds by port and dispatches trace and connect routes" {
 }
 
 ///|
-async test "serve_async does not overmatch non-terminal double wildcards" {
+async test "serve does not overmatch non-terminal double wildcards" {
   let app = new()
   app.get("/files/**/meta", _ => "meta")
   app.post("/files/**/upload", _ => "upload")
@@ -2961,7 +2935,7 @@ async test "serve_async does not overmatch non-terminal double wildcards" {
 }
 
 ///|
-async test "serve_async handles websocket text and binary messages" {
+async test "serve handles websocket text and binary messages" {
   let log : Array[String] = []
   let app = new()
   app.ws("/ws", event => {
@@ -3002,7 +2976,7 @@ async test "serve_async handles websocket text and binary messages" {
 }
 
 ///|
-async test "serve_async drops oldest buffered websocket messages on overflow when configured" {
+async test "serve drops oldest buffered websocket messages on overflow when configured" {
   let app = new()
   app.ws("/ws", event => {
     match event {
@@ -3040,7 +3014,7 @@ async test "serve_async drops oldest buffered websocket messages on overflow whe
 }
 
 ///|
-async test "serve_async drops oldest buffered websocket messages by default" {
+async test "serve drops oldest buffered websocket messages by default" {
   let app = new()
   app.ws("/ws", event => {
     match event {
@@ -3075,7 +3049,7 @@ async test "serve_async drops oldest buffered websocket messages by default" {
 }
 
 ///|
-async test "serve_async drops latest buffered websocket messages on overflow when configured" {
+async test "serve drops latest buffered websocket messages on overflow when configured" {
   let app = new()
   app.ws("/ws", event => {
     match event {
@@ -3113,7 +3087,7 @@ async test "serve_async drops latest buffered websocket messages on overflow whe
 }
 
 ///|
-async test "serve_async closes websocket clients after read timeout between messages" {
+async test "serve closes websocket clients after read timeout between messages" {
   let log : Array[String] = []
   let app = new()
   app.get("/healthy", _ => "ok")
@@ -3175,7 +3149,7 @@ async test "serve_async closes websocket clients after read timeout between mess
 }
 
 ///|
-async test "serve_async closes oversized websocket text messages and stays healthy" {
+async test "serve closes oversized websocket text messages and stays healthy" {
   let log : Array[String] = []
   let app = new()
   app.get("/healthy", _ => "ok")
@@ -3250,7 +3224,7 @@ async test "serve_async closes oversized websocket text messages and stays healt
 }
 
 ///|
-async test "serve_async closes oversized websocket binary messages" {
+async test "serve closes oversized websocket binary messages" {
   let log : Array[String] = []
   let app = new()
   app.ws("/ws", event => {
@@ -3313,7 +3287,7 @@ async test "serve_async closes oversized websocket binary messages" {
 }
 
 ///|
-async test "serve_async treats websocket_max_message_bytes=0 as empty-message only" {
+async test "serve treats websocket_max_message_bytes=0 as empty-message only" {
   let log : Array[String] = []
   let app = new()
   app.get("/healthy", _ => "ok")
@@ -3440,7 +3414,7 @@ async test "serve_async treats websocket_max_message_bytes=0 as empty-message on
 }
 
 ///|
-async test "serve_async enforces websocket_max_message_bytes across multiple reads" {
+async test "serve enforces websocket_max_message_bytes across multiple reads" {
   let log : Array[String] = []
   let app = new()
   app.ws("/ws", event => {
@@ -3508,7 +3482,7 @@ async test "serve_async enforces websocket_max_message_bytes across multiple rea
 }
 
 ///|
-async test "serve_async rejects websocket upgrades for http-only routes" {
+async test "serve rejects websocket upgrades for http-only routes" {
   let handled : Ref[Int] = Ref::new(0)
   let app = new()
   app.get("/ws", _ => {
@@ -3568,7 +3542,7 @@ async test "serve_async rejects websocket upgrades for http-only routes" {
 }
 
 ///|
-async test "serve_async accepts padded websocket handshake headers on matched routes" {
+async test "serve accepts padded websocket handshake headers on matched routes" {
   let log : Array[String] = []
   let app = new()
   app.ws("/ws", event => {
@@ -3595,7 +3569,7 @@ async test "serve_async accepts padded websocket handshake headers on matched ro
 }
 
 ///|
-async test "serve_async rejects invalid websocket handshakes on matched routes and stays healthy" {
+async test "serve rejects invalid websocket handshakes on matched routes and stays healthy" {
   let opened : Ref[Int] = Ref::new(0)
   let closed : Ref[Int] = Ref::new(0)
   let app = new()
@@ -3639,7 +3613,7 @@ async test "serve_async rejects invalid websocket handshakes on matched routes a
 }
 
 ///|
-async test "serve_async rejects unsupported websocket versions and non-get upgrades" {
+async test "serve rejects unsupported websocket versions and non-get upgrades" {
   let opened : Ref[Int] = Ref::new(0)
   let closed : Ref[Int] = Ref::new(0)
   let app = new()
@@ -3691,7 +3665,7 @@ async test "serve_async rejects unsupported websocket versions and non-get upgra
 }
 
 ///|
-async test "serve_async closes the connection after rejected websocket upgrades" {
+async test "serve closes the connection after rejected websocket upgrades" {
   let opened : Ref[Int] = Ref::new(0)
   let closed : Ref[Int] = Ref::new(0)
   let app = new()
@@ -3746,7 +3720,7 @@ async test "serve_async closes the connection after rejected websocket upgrades"
 }
 
 ///|
-async test "serve_async rejects malformed websocket-like requests on websocket routes without stealing plain http" {
+async test "serve rejects malformed websocket-like requests on websocket routes without stealing plain http" {
   let http_hits : Ref[Int] = Ref::new(0)
   let ws_opened : Ref[Int] = Ref::new(0)
   let ws_closed : Ref[Int] = Ref::new(0)
@@ -3831,7 +3805,7 @@ async test "serve_async rejects malformed websocket-like requests on websocket r
 }
 
 ///|
-async test "serve_async honors mixed-case static and websocket upgrade headers" {
+async test "serve honors mixed-case static and websocket upgrade headers" {
   let log : Array[String] = []
   let app = new()
   app.static_assets("/assets", EncodedStaticProvider::{  })
@@ -3889,7 +3863,7 @@ async test "serve_async honors mixed-case static and websocket upgrade headers" 
 }
 
 ///|
-async test "serve_async matches grouped and dynamic websocket routes" {
+async test "serve matches grouped and dynamic websocket routes" {
   let app = new()
   app.group("/api", group => {
     group.ws("/room/:name", event => {
@@ -3915,7 +3889,7 @@ async test "serve_async matches grouped and dynamic websocket routes" {
 }
 
 ///|
-async test "serve_async keeps websocket subscriptions across events" {
+async test "serve keeps websocket subscriptions across events" {
   let app = new()
   app.ws("/hub", event => {
     match event {
@@ -3952,7 +3926,7 @@ async test "serve_async keeps websocket subscriptions across events" {
 }
 
 ///|
-async test "serve_async lets close handlers publish to remaining websocket subscribers" {
+async test "serve lets close handlers publish to remaining websocket subscribers" {
   let app = new()
   app.ws("/hub", event => {
     match event {
@@ -3988,7 +3962,7 @@ async test "serve_async lets close handlers publish to remaining websocket subsc
 }
 
 ///|
-async test "serve_async isolates websocket channels per app" {
+async test "serve isolates websocket channels per app" {
   let app1 = new()
   let app2 = new()
   app1.ws("/hub", event => {
@@ -4034,7 +4008,7 @@ async test "serve_async isolates websocket channels per app" {
 }
 
 ///|
-async test "serve_async isolates websocket channels per server invocation when reusing one app" {
+async test "serve isolates websocket channels per server invocation when reusing one app" {
   let app = new()
   app.ws("/hub", event => {
     match event {
@@ -4072,7 +4046,7 @@ async test "serve_async isolates websocket channels per server invocation when r
 }
 
 ///|
-async test "serve_async isolates close-handler websocket fanout per reused app server" {
+async test "serve isolates close-handler websocket fanout per reused app server" {
   let app = new()
   app.ws("/hub", event => {
     match event {
@@ -4124,7 +4098,7 @@ async test "serve_async isolates close-handler websocket fanout per reused app s
 }
 
 ///|
-async test "serve_async keeps other reused-app servers alive when one server is cancelled" {
+async test "serve keeps other reused-app servers alive when one server is cancelled" {
   let app = new()
   app.get("/__mocket_ready", _ => "ready")
   app.ws("/hub", event => {
@@ -4139,8 +4113,8 @@ async test "serve_async keeps other reused-app servers alive when one server is 
     let server2 = allocate_test_server()
     let port1 = server1.addr.port()
     let port2 = server2.addr.port()
-    let task1 = group.spawn(no_wait=true, () => app.serve_async_on(server1))
-    group.spawn_bg(no_wait=true, () => app.serve_async_on(server2))
+    let task1 = group.spawn(no_wait=true, () => app.serve_on(server1))
+    group.spawn_bg(no_wait=true, () => app.serve_on(server2))
     wait_until_ready(port1)
     wait_until_ready(port2)
 
@@ -4196,7 +4170,7 @@ async test "serve_async keeps other reused-app servers alive when one server is 
 }
 
 ///|
-async test "serve_async_on_until sends going-away close to websocket clients on shutdown signal" {
+async test "serve_on_until sends going-away close to websocket clients on shutdown signal" {
   let app = new()
   app.get("/__mocket_ready", _ => "ready")
   app.ws("/ws", event => {
@@ -4210,7 +4184,7 @@ async test "serve_async_on_until sends going-away close to websocket clients on 
     let port = server.addr.port()
     let shutdown = @async.Queue::new(kind=Unbounded)
     let task = group.spawn(no_wait=true, () => {
-      app.serve_async_on_until(server, shutdown)
+      app.serve_on_until(server, shutdown)
     })
     wait_until_ready(port)
 
@@ -4261,7 +4235,7 @@ async test "serve_async_on_until sends going-away close to websocket clients on 
 }
 
 ///|
-async test "serve_async_on_until broadcasts going-away close when the shutdown queue is closed" {
+async test "serve_on_until broadcasts going-away close when the shutdown queue is closed" {
   let app = new()
   app.get("/__mocket_ready", _ => "ready")
   app.ws("/ws", event => {
@@ -4277,10 +4251,10 @@ async test "serve_async_on_until broadcasts going-away close when the shutdown q
     let port2 = server2.addr.port()
     let shutdown = @async.Queue::new(kind=Unbounded)
     let task1 = group.spawn(no_wait=true, () => {
-      app.serve_async_on_until(server1, shutdown)
+      app.serve_on_until(server1, shutdown)
     })
     let task2 = group.spawn(no_wait=true, () => {
-      app.serve_async_on_until(server2, shutdown)
+      app.serve_on_until(server2, shutdown)
     })
     wait_until_ready(port1)
     wait_until_ready(port2)
@@ -4377,7 +4351,7 @@ async test "serve_async_on_until broadcasts going-away close when the shutdown q
 }
 
 ///|
-async test "serve_async_on_until queue close stops remaining reused websocket servers after cancellation" {
+async test "serve_on_until queue close stops remaining reused websocket servers after cancellation" {
   let app = new()
   app.get("/__mocket_ready", _ => "ready")
   app.ws("/hub", event => {
@@ -4394,10 +4368,10 @@ async test "serve_async_on_until queue close stops remaining reused websocket se
     let port2 = server2.addr.port()
     let shutdown = @async.Queue::new(kind=Unbounded)
     let task1 = group.spawn(no_wait=true, () => {
-      app.serve_async_on_until(server1, shutdown)
+      app.serve_on_until(server1, shutdown)
     })
     let task2 = group.spawn(no_wait=true, () => {
-      app.serve_async_on_until(server2, shutdown)
+      app.serve_on_until(server2, shutdown)
     })
     wait_until_ready(port1)
     wait_until_ready(port2)
@@ -4495,7 +4469,7 @@ async test "serve_async_on_until queue close stops remaining reused websocket se
 }
 
 ///|
-async test "serve_async_on_until shutdown signal wakes one reused websocket server" {
+async test "serve_on_until shutdown signal wakes one reused websocket server" {
   let app = new()
   app.get("/__mocket_ready", _ => "ready")
   app.ws("/hub", event => {
@@ -4512,10 +4486,10 @@ async test "serve_async_on_until shutdown signal wakes one reused websocket serv
     let port2 = server2.addr.port()
     let shutdown = @async.Queue::new(kind=Blocking(0))
     let task1 = group.spawn(no_wait=true, () => {
-      app.serve_async_on_until(server1, shutdown)
+      app.serve_on_until(server1, shutdown)
     })
     let task2 = group.spawn(no_wait=true, () => {
-      app.serve_async_on_until(server2, shutdown)
+      app.serve_on_until(server2, shutdown)
     })
     wait_until_ready(port1)
     wait_until_ready(port2)
@@ -4759,7 +4733,7 @@ async test "serve_async_on_until shutdown signal wakes one reused websocket serv
 }
 
 ///|
-async test "serve_async_on_until queue close stops surviving reused websocket server after shutdown signal" {
+async test "serve_on_until queue close stops surviving reused websocket server after shutdown signal" {
   let app = new()
   app.get("/__mocket_ready", _ => "ready")
   app.ws("/hub", event => {
@@ -4776,10 +4750,10 @@ async test "serve_async_on_until queue close stops surviving reused websocket se
     let port2 = server2.addr.port()
     let shutdown = @async.Queue::new(kind=Blocking(0))
     let task1 = group.spawn(no_wait=true, () => {
-      app.serve_async_on_until(server1, shutdown)
+      app.serve_on_until(server1, shutdown)
     })
     let task2 = group.spawn(no_wait=true, () => {
-      app.serve_async_on_until(server2, shutdown)
+      app.serve_on_until(server2, shutdown)
     })
     wait_until_ready(port1)
     wait_until_ready(port2)
@@ -4999,7 +4973,7 @@ async test "serve_async_on_until queue close stops surviving reused websocket se
 }
 
 ///|
-async test "serve_async_on_until queue close broadcasts to remaining reused websocket servers after shutdown signal" {
+async test "serve_on_until queue close broadcasts to remaining reused websocket servers after shutdown signal" {
   let app = new()
   app.get("/__mocket_ready", _ => "ready")
   app.ws("/hub", event => {
@@ -5018,13 +4992,13 @@ async test "serve_async_on_until queue close broadcasts to remaining reused webs
     let port3 = server3.addr.port()
     let shutdown = @async.Queue::new(kind=Blocking(0))
     let task1 = group.spawn(no_wait=true, () => {
-      app.serve_async_on_until(server1, shutdown)
+      app.serve_on_until(server1, shutdown)
     })
     let task2 = group.spawn(no_wait=true, () => {
-      app.serve_async_on_until(server2, shutdown)
+      app.serve_on_until(server2, shutdown)
     })
     let task3 = group.spawn(no_wait=true, () => {
-      app.serve_async_on_until(server3, shutdown)
+      app.serve_on_until(server3, shutdown)
     })
     wait_until_ready(port1)
     wait_until_ready(port2)

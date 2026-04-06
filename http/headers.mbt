@@ -1,8 +1,28 @@
 /// Compares two HTTP header names for equality using case-insensitive matching.
+/// Uses character-by-character comparison to avoid String allocation from .to_lower().
 
 ///|
 fn header_name_matches(left : String, right : String) -> Bool {
-  left.to_lower() == right.to_lower()
+  if left.length() != right.length() {
+    return false
+  }
+  let left_view = left.view()
+  let right_view = right.view()
+  for i = 0; i < left.length(); i = i + 1 {
+    let l = left_view.unsafe_get(i)
+    let r = right_view.unsafe_get(i)
+    // Fast path: exact match
+    if l == r {
+      continue
+    }
+    // ASCII case-insensitive comparison (a-z vs A-Z differ by 0x20)
+    let lc = if l >= 65 && l <= 90 { l + 32 } else { l }
+    let rc = if r >= 65 && r <= 90 { r + 32 } else { r }
+    if lc != rc {
+      return false
+    }
+  }
+  true
 }
 
 /// Returns the original key from the headers map that matches the given header name

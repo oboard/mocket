@@ -26,6 +26,42 @@ Inherent cost of routing, middleware dispatch, and response building.
 Already optimized: WebSocket check skip, body read skip for GET, middleware
 fast-path, Date header caching, `write_string_utf8` for responders.
 
+## Optimizations Applied
+
+### Radix tree routing (replaces linear scan)
+
+Dynamic routes are stored in a radix/prefix tree that gives O(path_length)
+lookup instead of the previous O(num_routes * path_length) linear scan.
+Static routes still use direct Map lookup for O(1) performance.
+
+### Pre-compiled route patterns
+
+Route templates (e.g. `/users/:id/posts/:postId`) are parsed into a
+`CompiledRoute` with `Array[RouteSegment]` at registration time. Per-request
+matching iterates the pre-parsed array instead of re-splitting strings.
+
+### Cached path and query parsing
+
+`HttpRequest::path()` and `HttpRequest::query_params()` cache their results
+on first access. Since the path is accessed by routing, middleware scope
+matching, and user handler code, this eliminates duplicate parsing.
+
+### Zero-allocation header comparison
+
+`header_name_matches()` compares ASCII characters in-place instead of
+allocating two new strings via `.to_lower()` on every comparison.
+
+### Direct byte output (output_bytes)
+
+The `Responder` trait has an `output_bytes()` method that returns pre-encoded
+bytes directly, bypassing the intermediate `Buffer` allocation for types that
+already hold their response as bytes (HttpResponse, Bytes).
+
+### Efficient header copy
+
+Request headers are copied from the async runtime using `Map::from_iter`
+for bulk construction instead of per-key `set()` insertion.
+
 ## Future Optimization Opportunities
 
 ### Use `Map::get_from_string` to avoid StringView-to-String allocations
@@ -44,28 +80,22 @@ a `StringView` without allocating a `String`. This can be applied in:
 ### Avoid copying request headers
 
 `handle_request_async` copies the entire request headers `Map` via
-`copy_async_headers()` (line ~494 in `serve_async_native.mbt`). This is
-needed because users might mutate `event.req.headers`. A possible optimization:
+`Map::from_iter`. This is needed because middleware may mutate
+`event.req.headers`. A possible optimization:
 
 - Use a copy-on-write wrapper that only copies when mutated.
 - Or make `HttpRequest.headers` read-only and provide explicit mutation APIs.
 
 ### Pre-compute request path
 
-`HttpRequest::path()` calls `request_target_path()` which parses the URL
-each time. The path is also computed in `handle_request_async` for routing.
-Caching the parsed path on the `HttpRequest` struct would avoid duplicate work
-when middleware calls `event.req.path()`.
+The path is now cached after first access via `HttpRequest::path()`, but
+it could be pre-computed at request construction time in `handle_request_async`
+since the path is always needed for routing.
 
-### Reduce allocation in `send_response_async`
+### Reduce allocation in response path
 
-The response path creates a `@buffer.Buffer`, writes the responder output,
-then calls `buffer.to_bytes()` to get the body. This double-copies the data.
-The `Responder` trait could be redesigned to write directly to the connection's
-writer, eliminating the intermediate buffer for simple string responses.
-
-### Route matching with precompiled patterns
-
-Currently, dynamic routes iterate through all registered patterns and call
-`match_path()` on each. Precompiling route patterns into a trie or radix tree
-would give O(path_length) lookup instead of O(num_routes × path_length).
+For simple string responses, the data flows through:
+`String -> Buffer -> Bytes -> connection`. The `output_bytes()` optimization
+helps for Bytes/HttpResponse, but String responses still go through the
+buffer. A `Responder::write_to(writer)` method that writes directly to
+the connection would eliminate the intermediate buffer entirely.

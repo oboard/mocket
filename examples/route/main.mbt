@@ -1,12 +1,12 @@
 ///|
 fn main {
-  let app = @mocket.new()
+  let app = @crescent.new()
 
   // Register global middleware
   app
   ..use_middleware(logger_middleware())
   ..use_middleware(@cors.handle_cors())
-  ..use_middleware(@mocket.security_headers())
+  ..use_middleware(@crescent.security_headers())
 
   // Text Response
   ..get("/", _ => "Tadaa!")
@@ -21,7 +21,7 @@ fn main {
     })
     group.get("/hello", _ => "Hello world!")
     group.get("/json", _ => {
-      @mocket.HttpResponse::ok().json_value(
+      @crescent.HttpResponse::ok().json_value(
         ({ "name": "John Doe", "age": 30, "city": "New York" } : Json),
       )
     })
@@ -33,7 +33,7 @@ fn main {
   })
 
   // Async Response
-  ..get("/async_data", fn(_) noraise {
+  ..get_raw("/async_data", fn(_) noraise {
     ({ "name": "John Doe", "age": 30, "city": "New York" } : Json)
   })
 
@@ -61,8 +61,8 @@ fn main {
 
   // Custom 404 handler
   app.set_not_found_handler(_ => {
-    @mocket.HttpResponse::not_found().body(
-      @mocket.html(
+    @crescent.HttpResponse::not_found().body(
+      @crescent.html(
         (
           #|<html>
           #|<body>
@@ -80,11 +80,11 @@ fn main {
   }
 
   // Serve
-  app.serve(port=4000)
+  app.serve_blocking(port=4000)
 }
 
 ///|
-fn logger_middleware() -> @mocket.Middleware {
+fn logger_middleware() -> @crescent.Middleware {
   (event, next) => {
     let start_time = @async.now()
     let res = next()

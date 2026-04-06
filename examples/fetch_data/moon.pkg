@@ -1,6 +1,6 @@
 import {
-  "oboard/mocket",
-  "oboard/mocket/fetch",
+  "bobzhang/crescent",
+  "bobzhang/crescent/fetch",
 }
 
 options(

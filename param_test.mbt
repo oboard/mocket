@@ -1,8 +1,8 @@
 ///|
 test "param returns string value" {
-  let event = @mocket.MocketEvent::{
-    req: { http_method: "GET", url: "/", headers: {}, raw_body: b"" },
-    res: @mocket.HttpResponse::new(@mocket.OK),
+  let event = @crescent.MocketEvent::{
+    req: @crescent.HttpRequest::new_request(@crescent.Get, "/", {}, b""),
+    res: @crescent.HttpResponse::new(@crescent.OK),
     params: { "id": "42" },
   }
   inspect(event.param("id"), content="Some(\"42\")")
@@ -11,9 +11,9 @@ test "param returns string value" {
 
 ///|
 test "param_int parses integer" {
-  let event = @mocket.MocketEvent::{
-    req: { http_method: "GET", url: "/", headers: {}, raw_body: b"" },
-    res: @mocket.HttpResponse::new(@mocket.OK),
+  let event = @crescent.MocketEvent::{
+    req: @crescent.HttpRequest::new_request(@crescent.Get, "/", {}, b""),
+    res: @crescent.HttpResponse::new(@crescent.OK),
     params: { "id": "123" },
   }
   inspect(event.param_int("id"), content="Some(123)")
@@ -22,10 +22,87 @@ test "param_int parses integer" {
 
 ///|
 test "param_int returns none for non-integer" {
-  let event = @mocket.MocketEvent::{
-    req: { http_method: "GET", url: "/", headers: {}, raw_body: b"" },
-    res: @mocket.HttpResponse::new(@mocket.OK),
+  let event = @crescent.MocketEvent::{
+    req: @crescent.HttpRequest::new_request(@crescent.Get, "/", {}, b""),
+    res: @crescent.HttpResponse::new(@crescent.OK),
     params: { "id": "abc" },
   }
   inspect(event.param_int("id"), content="None")
+}
+
+///|
+test "require_param returns value when present" {
+  let event = @crescent.MocketEvent::{
+    req: @crescent.HttpRequest::new_request(@crescent.Get, "/", {}, b""),
+    res: @crescent.HttpResponse::new(@crescent.OK),
+    params: { "name": "alice" },
+  }
+  let name = event.require_param("name")
+  assert_eq(name, "alice")
+}
+
+///|
+test "require_param raises HttpError when missing" {
+  let event = @crescent.MocketEvent::{
+    req: @crescent.HttpRequest::new_request(@crescent.Get, "/", {}, b""),
+    res: @crescent.HttpResponse::new(@crescent.OK),
+    params: {},
+  }
+  let result = try? event.require_param("id")
+  assert_true(result is Err(_))
+}
+
+///|
+test "require_param_int returns parsed integer" {
+  let event = @crescent.MocketEvent::{
+    req: @crescent.HttpRequest::new_request(@crescent.Get, "/", {}, b""),
+    res: @crescent.HttpResponse::new(@crescent.OK),
+    params: { "id": "42" },
+  }
+  let id = event.require_param_int("id")
+  assert_eq(id, 42)
+}
+
+///|
+test "require_param_int raises on missing param" {
+  let event = @crescent.MocketEvent::{
+    req: @crescent.HttpRequest::new_request(@crescent.Get, "/", {}, b""),
+    res: @crescent.HttpResponse::new(@crescent.OK),
+    params: {},
+  }
+  let result = try? event.require_param_int("id")
+  assert_true(result is Err(_))
+}
+
+///|
+test "require_param_int raises on non-integer value" {
+  let event = @crescent.MocketEvent::{
+    req: @crescent.HttpRequest::new_request(@crescent.Get, "/", {}, b""),
+    res: @crescent.HttpResponse::new(@crescent.OK),
+    params: { "id": "abc" },
+  }
+  let result = try? event.require_param_int("id")
+  assert_true(result is Err(_))
+}
+
+///|
+test "require_param_int64 returns parsed int64" {
+  let event = @crescent.MocketEvent::{
+    req: @crescent.HttpRequest::new_request(@crescent.Get, "/", {}, b""),
+    res: @crescent.HttpResponse::new(@crescent.OK),
+    params: { "id": "9999999999" },
+  }
+  let id = event.require_param_int64("id")
+  assert_eq(id, 9999999999L)
+}
+
+///|
+test "require_param_int64 raises on non-integer" {
+  let event = @crescent.MocketEvent::{
+    req: @crescent.HttpRequest::new_request(@crescent.Get, "/", {}, b""),
+    res: @crescent.HttpResponse::new(@crescent.OK),
+    params: { "id": "not-a-number" },
+  }
+  let result = try? event.require_param_int64("id")
+  assert_true(result is Err(_))
 }

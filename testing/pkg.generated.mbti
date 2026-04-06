@@ -1,0 +1,35 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "bobzhang/crescent/testing"
+
+import {
+  "bobzhang/crescent",
+  "moonbitlang/core/json",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct TestClient {
+  app : @crescent.Mocket
+}
+pub async fn TestClient::delete(Self, String, headers? : Map[String, String]) -> TestResponse
+pub async fn TestClient::get(Self, String, headers? : Map[String, String]) -> TestResponse
+pub fn TestClient::new(@crescent.Mocket) -> Self
+pub async fn TestClient::post(Self, String, body? : Bytes, headers? : Map[String, String]) -> TestResponse
+pub async fn TestClient::put(Self, String, body? : Bytes, headers? : Map[String, String]) -> TestResponse
+pub async fn TestClient::request(Self, String, String, headers~ : Map[String, String], body~ : Bytes) -> TestResponse
+
+pub struct TestResponse {
+  status : @crescent.StatusCode
+  headers : Map[String, String]
+  body_bytes : Bytes
+}
+pub fn[T : @json.FromJson] TestResponse::body_json(Self) -> T raise
+pub fn TestResponse::body_text(Self) -> String
+
+// Type aliases
+
+// Traits
+

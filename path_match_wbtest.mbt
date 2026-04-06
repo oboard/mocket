@@ -104,7 +104,7 @@ test "allowed_methods multiple methods on same path" {
 test "allowed_methods with explicit OPTIONS handler" {
   let app = new()
   app.get("/test", fn(_event) noraise { "ok" })
-  app.options("/test", fn(_event) noraise { "opts" })
+  app.options_raw("/test", fn(_event) noraise { "opts" })
   let methods = app.allowed_methods("/test", false)
   inspect(methods, content="[\"GET\", \"HEAD\", \"OPTIONS\"]")
 }
@@ -128,14 +128,14 @@ test "allowed_methods no implicit OPTIONS when empty" {
 test "find_route returns method-specific route first" {
   let app = new()
   app.get("/test", fn(_event) noraise { "get" })
-  app.all("/test", fn(_event) noraise { "all" })
+  app.all_raw("/test", fn(_event) noraise { "all" })
   inspect(app.find_route("GET", "/test") is Some(_), content="true")
 }
 
 ///|
 test "find_route falls back to wildcard when method not matched" {
   let app = new()
-  app.all("/any", fn(_event) noraise { "any" })
+  app.all_raw("/any", fn(_event) noraise { "any" })
   inspect(app.find_route("DELETE", "/any") is Some(_), content="true")
 }
 
@@ -149,7 +149,7 @@ test "find_route returns None when no route matches" {
 ///|
 test "find_route wildcard dynamic route with params" {
   let app = new()
-  app.all("/items/:id", fn(_event) noraise { "item" })
+  app.all_raw("/items/:id", fn(_event) noraise { "item" })
   match app.find_route("PATCH", "/items/77") {
     Some((_, params)) => inspect(params, content="{\"id\": \"77\"}")
     None => fail("expected wildcard dynamic route match")
