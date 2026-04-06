@@ -1,0 +1,7 @@
+import {
+  "oboard/mocket",
+  "moonbitlang/async",
+  "moonbitlang/core/json",
+}
+
+options("is-main": true)
