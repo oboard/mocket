@@ -1,5 +1,6 @@
 import {
   "oboard/mocket",
+  "moonbitlang/core/json",
 }
 
 options(

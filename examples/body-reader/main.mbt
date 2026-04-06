@@ -11,13 +11,25 @@ impl @mocket.BodyReader for Csv with from_request(req) -> Csv {
 }
 
 ///|
+struct UserInput {
+  name : String
+  email : String
+} derive(FromJson, ToJson)
+
+///|
 fn main {
   let app = @mocket.new()
 
-  // Text Response
-  app.post("/", event => {
+  // Custom BodyReader: parse CSV from request body
+  app.post("/csv", event => {
     let csv : Csv = event.req.body() catch { _ => Csv("") }
-    HttpResponse::new(OK).body(csv.0)
+    HttpResponse::ok().body(csv.0)
+  })
+
+  // Typed JSON: parse body into a struct with derive(FromJson)
+  app.post_json("/json", event => {
+    let user : UserInput = event.req.json()
+    HttpResponse::ok().json_value(user)
   })
 
   // Print Server URL

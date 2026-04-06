@@ -8,45 +8,39 @@ struct Person {
 } derive(ToJson, FromJson)
 
 ///|
-impl @mocket.BodyReader for Person with from_request(req) -> Person raise {
-  @json.from_json(req.body())
-}
-
-///|
 fn main {
   let app = @mocket.new()
 
   // Text Response
   app
-  ..get("/", _event => "⚡️ Tadaa!")
+  ..get("/", _ => "Tadaa!")
 
-  // Object Response
-  ..get("/json", _event => { name: "oboard", age: 21 }.to_json())
+  // Object Response using json_value
+  ..get("/json", _ => HttpResponse::ok().json_value({ name: "oboard", age: 21 }))
 
-  // JSON Request
+  // JSON Request using event.req.json[T]() with post_json for auto error handling
   // curl --location 'localhost:4000/json' \
   // --header 'Content-Type: application/json' \
   // --data '{
   //     "name": "oboard",
   //     "age": 21
   // }'
-  ..post("/json", event => {
-    try {
-      let person : Person = event.req.body()
-      HttpResponse::new(OK).body(
-        "Hello, \{person.name}. You are \{person.age} years old.",
-      )
-    } catch {
-      _ => HttpResponse::new(BadRequest).body("Invalid JSON")
-    }
+  ..post_json("/json", event => {
+    let person : Person = event.req.json()
+    HttpResponse::ok().body(
+      "Hello, \{person.name}. You are \{person.age} years old.",
+    )
   })
 
   // Echo Server
   ..post("/echo", e => e.req)
 
+  // Error response helpers
+  ..get("/error", _ => HttpResponse::error(BadRequest, "Something went wrong"))
+
   // 404 Page
   .get("/404", _ => {
-    HttpResponse::new(NotFound).body(
+    HttpResponse::not_found().body(
       @mocket.html(
         (
           #|<html>

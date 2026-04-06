@@ -6,7 +6,7 @@ fn main {
   app.static_assets("/", @static_file.new("./"))
 
   // Text Response
-  app.get("/", _event => "⚡️ Tadaa!")
+  app.get("/", _ => "Tadaa!")
 
   // Print Server URL
   for path in app.mappings.keys() {
@@ -20,9 +20,9 @@ fn main {
 ///|
 fn logger_middleware() -> @mocket.Middleware {
   (event, next) => {
-    let start_time = @env.now()
+    let start_time = @async.now()
     let res = next()
-    let duration = @env.now() - start_time
+    let duration = @async.now() - start_time
     println("\{event.req.http_method} \{event.req.url} - \{duration}ms")
     res
   }

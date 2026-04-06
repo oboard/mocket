@@ -1,5 +1,5 @@
 import {
-  "moonbitlang/core/env",
+  "moonbitlang/async",
   "oboard/mocket",
   "oboard/mocket/static_file",
 }

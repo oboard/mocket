@@ -6,60 +6,73 @@ fn main {
   app
   ..use_middleware(logger_middleware())
   ..use_middleware(@cors.handle_cors())
+  ..use_middleware(@mocket.security_headers())
 
   // Text Response
-  ..get("/", _event => "⚡️ Tadaa!")
+  ..get("/", _ => "Tadaa!")
 
   // Hello World
   ..on("GET", "/hello", _ => "Hello world!")
   ..group("/api", group => {
     // Add group-level middleware
     group.use_middleware((event, next) => {
-      println(
-        "🔒 API Group Middleware: \{event.req.http_method} \{event.req.url}",
-      )
+      println("API Group Middleware: \{event.req.http_method} \{event.req.url}")
       next()
     })
     group.get("/hello", _ => "Hello world!")
     group.get("/json", _ => {
-      ({ "name": "John Doe", "age": 30, "city": "New York" } : Json)
+      @mocket.HttpResponse::ok().json_value(
+        ({ "name": "John Doe", "age": 30, "city": "New York" } : Json),
+      )
     })
   })
 
   // JSON Response
-  ..get("/json", _event => {
+  ..get("/json", _ => {
     ({ "name": "John Doe", "age": 30, "city": "New York" } : Json)
   })
 
   // Async Response
-  ..get("/async_data", fn(_event) noraise {
+  ..get("/async_data", fn(_) noraise {
     ({ "name": "John Doe", "age": 30, "city": "New York" } : Json)
   })
 
   // Dynamic Routes
   // /hello2/World = Hello, World!
   ..get("/hello/:name", event => {
-    let name = event.params.get("name").unwrap_or("World")
+    let name = event.param("name").unwrap_or("World")
     "Hello, \{name}!"
   })
   // /hello2/World = Hello, World!
   ..get("/hello2/*", event => {
-    let name = event.params.get("_").unwrap_or("World")
+    let name = event.param("_").unwrap_or("World")
     "Hello, \{name}!"
   })
 
   // Wildcard Routes
   // /hello3/World/World = Hello, World/World!
   ..get("/hello3/**", event => {
-    let name = event.params.get("_").unwrap_or("World")
+    let name = event.param("_").unwrap_or("World")
     "Hello, \{name}!"
   })
 
   // Echo Server
-  ..post("/echo", e => e.req)
+  .post("/echo", e => e.req)
 
-  // 404 Page
-  .use_middleware(not_found_middleware())
+  // Custom 404 handler
+  app.set_not_found_handler(_ => {
+    @mocket.HttpResponse::not_found().body(
+      @mocket.html(
+        (
+          #|<html>
+          #|<body>
+          #|  <h1>Custom 404</h1>
+          #|</body>
+          #|</html>
+        ),
+      ),
+    )
+  })
 
   // Print Server URL
   for path in app.mappings.keys() {
@@ -71,32 +84,11 @@ fn main {
 }
 
 ///|
-pub fn not_found_middleware() -> @mocket.Middleware {
-  (event, next) => {
-    let res = next()
-    res.options(event.res)
-    if event.res.status_code == NotFound {
-      @mocket.html(
-        (
-          #|<html>
-          #|<body>
-          #|  <h1>Custom 404</h1>
-          #|</body>
-          #|</html>
-        ),
-      )
-    } else {
-      res
-    }
-  }
-}
-
-///|
 fn logger_middleware() -> @mocket.Middleware {
   (event, next) => {
-    let start_time = @env.now()
+    let start_time = @async.now()
     let res = next()
-    let duration = @env.now() - start_time
+    let duration = @async.now() - start_time
     println("\{event.req.http_method} \{event.req.url} - \{duration}ms")
     res
   }
