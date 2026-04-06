@@ -89,7 +89,32 @@ pub(all) struct CookieItem {
   secure : Bool?
   http_only : Bool?
   same_site : SameSiteOption?
+
+  fn new(
+    name~ : String,
+    value~ : String,
+    max_age? : Int,
+    path? : String,
+    domain? : String,
+    secure? : Bool,
+    http_only? : Bool,
+    same_site? : SameSiteOption,
+  ) -> CookieItem
 } derive(Eq)
+
+///|
+pub fn CookieItem::new(
+  name~ : String,
+  value~ : String,
+  max_age? : Int,
+  path? : String,
+  domain? : String,
+  secure? : Bool,
+  http_only? : Bool,
+  same_site? : SameSiteOption,
+) -> CookieItem {
+  { name, value, max_age, path, domain, secure, http_only, same_site }
+}
 
 ///|
 fn sanitize_cookie_value(s : String) -> String {

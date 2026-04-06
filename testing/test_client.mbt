@@ -13,7 +13,9 @@
 
 ///|
 pub struct TestClient {
-  app : @crescent.Mocket
+  priv app : @crescent.Mocket
+
+  fn new(app : @crescent.Mocket) -> TestClient
 }
 
 /// The response from a `TestClient` request, containing status, headers, and body.

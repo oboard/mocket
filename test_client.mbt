@@ -11,7 +11,9 @@
 
 ///|
 pub struct TestClient {
-  app : Mocket
+  priv app : Mocket
+
+  fn new(app : Mocket) -> TestClient
 }
 
 /// The response from a `TestClient` request, containing status, headers, and body.

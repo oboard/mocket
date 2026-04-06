@@ -12,7 +12,9 @@ import {
 
 // Types and methods
 pub struct TestClient {
-  app : @crescent.Mocket
+  // private fields
+
+  fn new(@crescent.Mocket) -> TestClient
 }
 pub async fn TestClient::delete(Self, String, headers? : Map[String, String]) -> TestResponse
 pub async fn TestClient::get(Self, String, headers? : Map[String, String]) -> TestResponse

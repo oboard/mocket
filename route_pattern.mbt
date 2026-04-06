@@ -28,7 +28,7 @@ impl Show for RouteSegment with output(self, logger) {
 /// A pre-compiled route pattern, parsed once at registration time.
 
 ///|
-pub(all) struct CompiledRoute {
+pub struct CompiledRoute {
   /// The original template string (for debugging/display)
   template : String
   /// Pre-parsed segments (avoids re-splitting on every request)

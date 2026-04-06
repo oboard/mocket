@@ -8,6 +8,15 @@ pub(all) struct StaticAssetMeta {
   path : String?
   size : Int64?
   encoding : String?
+
+  fn new(
+    asset_type? : String,
+    etag? : String,
+    mtime? : Int64,
+    path? : String,
+    size? : Int64,
+    encoding? : String,
+  ) -> StaticAssetMeta
 }
 
 /// Creates a new `StaticAssetMeta` with optional fields for asset type, ETag, mtime, path, size, and encoding.

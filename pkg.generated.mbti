@@ -51,7 +51,7 @@ pub suberror NativeServeError {
 pub suberror NetworkError derive(@debug.Debug)
 
 // Types and methods
-pub(all) struct CompiledRoute {
+pub struct CompiledRoute {
   template : String
   segments : Array[RouteSegment]
   is_static : Bool
@@ -68,7 +68,10 @@ pub(all) struct CookieItem {
   secure : Bool?
   http_only : Bool?
   same_site : SameSiteOption?
+
+  fn new(name~ : String, value~ : String, max_age? : Int, path? : String, domain? : String, secure? : Bool, http_only? : Bool, same_site? : SameSiteOption) -> CookieItem
 } derive(Eq)
+pub fn CookieItem::new(name~ : String, value~ : String, max_age? : Int, path? : String, domain? : String, secure? : Bool, http_only? : Bool, same_site? : SameSiteOption) -> Self
 pub impl Show for CookieItem
 
 pub(all) enum FetchCredentials {
@@ -280,6 +283,8 @@ pub(all) struct StaticAssetMeta {
   path : String?
   size : Int64?
   encoding : String?
+
+  fn new(asset_type? : String, etag? : String, mtime? : Int64, path? : String, size? : Int64, encoding? : String) -> StaticAssetMeta
 }
 pub fn StaticAssetMeta::new(asset_type? : String, etag? : String, mtime? : Int64, path? : String, size? : Int64, encoding? : String) -> Self
 
@@ -356,7 +361,9 @@ pub fn StatusCode::to_int(Self) -> Int
 pub impl Show for StatusCode
 
 pub struct TestClient {
-  app : Mocket
+  // private fields
+
+  fn new(Mocket) -> TestClient
 }
 pub async fn TestClient::delete(Self, String, headers? : Map[String, String]) -> TestResponse
 pub async fn TestClient::get(Self, String, headers? : Map[String, String]) -> TestResponse
@@ -387,10 +394,12 @@ pub enum WebSocketEvent {
 }
 
 pub struct WebSocketPeer {
-  connection_id : String
-  mut subscribed_channels : Array[String]
+  // private fields
+
+  fn new(connection_id~ : String) -> WebSocketPeer
 }
 pub fn WebSocketPeer::binary(Self, Bytes) -> Unit
+pub fn WebSocketPeer::new(connection_id~ : String) -> Self
 pub fn WebSocketPeer::publish(Self, String, String) -> Unit
 pub fn WebSocketPeer::subscribe(Self, String) -> Unit
 pub fn WebSocketPeer::text(Self, String) -> Unit

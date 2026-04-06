@@ -12,16 +12,16 @@ pub fn HttpResponse::set_cookie(
   http_only? : Bool,
   same_site? : SameSiteOption,
 ) -> Unit {
-  let item : CookieItem = {
-    name,
-    value,
-    max_age,
-    path,
-    domain,
-    secure,
-    http_only,
-    same_site,
-  }
+  let item = CookieItem::new(
+    name~,
+    value~,
+    max_age?,
+    path?,
+    domain?,
+    secure?,
+    http_only?,
+    same_site?,
+  )
   self.cookies.set(name, item)
 }
 
@@ -101,16 +101,7 @@ pub fn parse_cookie(cookie : StringView) -> Map[String, CookieItem] {
         return
       }
     }
-    let item = CookieItem::{
-      name: key,
-      value,
-      max_age: None,
-      path: None,
-      domain: None,
-      secure: None,
-      http_only: None,
-      same_site: None,
-    }
+    let item = CookieItem::new(name=key, value~)
     res.set(key, item)
     last_cookie_item = Some((key, item))
   }

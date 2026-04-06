@@ -1,6 +1,6 @@
 {
   "name": "bobzhang/crescent",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "deps": {
     "moonbitlang/x": "0.4.41",
     "moonbitlang/async": "0.17.0"

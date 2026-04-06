@@ -2,8 +2,15 @@
 
 ///|
 pub struct WebSocketPeer {
-  connection_id : String
-  mut subscribed_channels : Array[String]
+  priv connection_id : String
+  priv mut subscribed_channels : Array[String]
+
+  fn new(connection_id~ : String) -> WebSocketPeer
+}
+
+///|
+pub fn WebSocketPeer::new(connection_id~ : String) -> WebSocketPeer {
+  { connection_id, subscribed_channels: [] }
 }
 
 /// Sends a text message to this WebSocket peer.

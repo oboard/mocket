@@ -68,7 +68,7 @@ async fn issue_request(
 
 ///|
 async test "static_file provider exposes file metadata" {
-  let provider = new("static_file/testdata")
+  let provider = StaticFileProvider::new(path="static_file/testdata")
   match provider.get_meta("hello.txt") {
     Some(meta) => {
       assert_eq(meta.size, Some(16L))
@@ -84,7 +84,10 @@ async test "static_file provider exposes file metadata" {
 ///|
 async test "static_file serves files and directory index" {
   let app = @crescent.Mocket::new()
-  app.static_assets("/assets", new("static_file/testdata"))
+  app.static_assets(
+    "/assets",
+    StaticFileProvider::new(path="static_file/testdata"),
+  )
   with_test_server(app, port => {
     let (file_response, file_body) = @http.get(
       localhost_url(port, "/assets/hello.txt"),
@@ -110,7 +113,10 @@ async test "static_file serves files and directory index" {
 ///|
 async test "static_file serves head and validates etags" {
   let app = @crescent.Mocket::new()
-  app.static_assets("/assets", new("static_file/testdata"))
+  app.static_assets(
+    "/assets",
+    StaticFileProvider::new(path="static_file/testdata"),
+  )
   with_test_server(app, port => {
     let (get_response, get_body) = @http.get(
       localhost_url(port, "/assets/hello.txt"),
@@ -217,7 +223,10 @@ async test "static_file serves head and validates etags" {
 async test "static_file respects grouped mounts and blocks traversal" {
   let app = @crescent.Mocket::new()
   app.group("/api", group => {
-    group.static_assets("/assets", new("static_file/testdata"))
+    group.static_assets(
+      "/assets",
+      StaticFileProvider::new(path="static_file/testdata"),
+    )
   })
   with_test_server(app, port => {
     let (file_response, file_body) = @http.get(

@@ -9,13 +9,15 @@ using @crescent {trait ServeStaticProvider, trait Responder}
 
 ///|
 pub struct StaticFileProvider {
-  path : String
+  priv path : String
+
+  fn new(path~ : String) -> StaticFileProvider
 }
 
 /// Creates a new `StaticFileProvider` rooted at the given directory path.
 
 ///|
-pub fn new(path : String) -> StaticFileProvider {
+pub fn StaticFileProvider::new(path~ : String) -> StaticFileProvider {
   { path, }
 }
 
