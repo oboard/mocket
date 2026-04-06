@@ -33,7 +33,7 @@ pub suberror FetchError {
   RequestFailed(String)
 } derive(@debug.Debug)
 
-pub suberror HttpError {
+pub(all) suberror HttpError {
   HttpError(StatusCode, String)
 } derive(@debug.Debug)
 

@@ -4,7 +4,7 @@
 /// `get_json`, `post_json`, etc. to return a structured JSON error.
 
 ///|
-pub suberror HttpError {
+pub(all) suberror HttpError {
   HttpError(StatusCode, String)
 } derive(Debug)
 
