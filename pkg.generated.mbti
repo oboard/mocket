@@ -6,6 +6,7 @@ import {
   "moonbitlang/async/http",
   "moonbitlang/core/buffer",
   "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
@@ -99,6 +100,7 @@ pub fn HttpRequest::content_type(Self) -> String?
 pub fn HttpRequest::get_cookie(Self, String) -> CookieItem?
 pub fn HttpRequest::get_header(Self, String) -> String?
 pub fn HttpRequest::get_query(Self, String) -> String?
+pub fn[T : @json.FromJson] HttpRequest::json(Self) -> T raise
 pub fn HttpRequest::path(Self) -> String
 pub fn HttpRequest::query_params(Self) -> Map[String, String]
 pub fn HttpRequest::query_string(Self) -> String?
@@ -119,6 +121,7 @@ pub fn HttpResponse::forbidden() -> Self
 pub fn HttpResponse::header(Self, String, String) -> Self
 pub fn HttpResponse::internal_server_error() -> Self
 pub fn HttpResponse::json(Self, &ToJson) -> Self
+pub fn[T : ToJson] HttpResponse::json_value(Self, T) -> Self
 pub fn HttpResponse::new(StatusCode, headers? : Map[String, String], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
 pub fn HttpResponse::no_content() -> Self
 pub fn HttpResponse::not_found() -> Self

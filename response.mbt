@@ -57,6 +57,28 @@ pub fn HttpResponse::json(self : HttpResponse, obj : &ToJson) -> HttpResponse {
   self.body(obj.to_json())
 }
 
+/// Serializes a typed value as JSON, sets Content-Type, and returns the response.
+///
+/// This is the recommended way to return typed data from handlers.
+/// Works with any type that has `derive(ToJson)`.
+///
+/// Example:
+/// ```
+/// struct User { name : String } derive(ToJson)
+/// HttpResponse::ok().json_value({ name: "Alice" })
+/// ```
+
+///|
+pub fn[T : ToJson] HttpResponse::json_value(
+  self : HttpResponse,
+  value : T,
+) -> HttpResponse {
+  self.headers.set("Content-Type", "application/json; charset=utf-8")
+  let json_str = value.to_json().stringify()
+  self.raw_body = @utf8.encode(json_str)
+  self
+}
+
 /// Sets a response header and returns self for fluent chaining.
 
 ///|

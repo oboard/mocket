@@ -65,6 +65,24 @@ pub fn[T : BodyReader] HttpRequest::body(self : HttpRequest) -> T raise {
   T::from_request(self)
 }
 
+/// Parses the request body as JSON and deserializes into type `T`.
+///
+/// Works with any type that has `derive(FromJson)`. This is the recommended
+/// way for AI agents and developers to extract typed data from request bodies.
+///
+/// Example:
+/// ```
+/// struct CreateUser { name : String, age : Int } derive(FromJson)
+/// let user : CreateUser = event.req.json()
+/// ```
+
+///|
+pub fn[T : @json.FromJson] HttpRequest::json(self : HttpRequest) -> T raise {
+  let text = @utf8.decode(self.raw_body)
+  let json = @json.parse(text)
+  @json.from_json(json)
+}
+
 ///|
 test "get_header is case-insensitive" {
   let req = HttpRequest::{
