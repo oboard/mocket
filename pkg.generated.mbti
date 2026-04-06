@@ -33,6 +33,10 @@ pub suberror FetchError {
   RequestFailed(String)
 } derive(@debug.Debug)
 
+pub suberror HttpError {
+  HttpError(StatusCode, String)
+} derive(@debug.Debug)
+
 pub suberror IOError derive(@debug.Debug)
 
 pub suberror NativeServeError {
@@ -150,14 +154,19 @@ pub struct Mocket {
 pub fn Mocket::all(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::connect(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::delete(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::delete_json(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn Mocket::get(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::get_json(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn Mocket::group(Self, String, (Self) -> Unit) -> Unit
 pub fn Mocket::head(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::on(Self, String, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::options(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::patch(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::patch_json(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn Mocket::post(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::post_json(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn Mocket::put(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::put_json(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn Mocket::serve(Self, port~ : Int) -> Unit
 pub async fn Mocket::serve_async(Self, port~ : Int) -> Unit
 pub async fn Mocket::serve_async_on(Self, @http.Server) -> Unit
