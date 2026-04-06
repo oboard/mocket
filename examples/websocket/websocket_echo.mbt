@@ -1,6 +1,6 @@
 ///|
 fn main {
-  let app = @crescent.Mocket::new()
+  let app = @crescent.Mocket()
   app.ws("/ws", event => {
     match event {
       Open(peer) => println("WS open: " + peer.to_string())

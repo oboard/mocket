@@ -83,7 +83,7 @@ pub impl ServeStaticProvider for StaticFileProvider with get_meta(
           match (try? file.size(), try? file.mtime()) {
             (Ok(size), Ok((mtime_sec, mtime_nsec))) =>
               Some(
-                @crescent.StaticAssetMeta::new(
+                @crescent.StaticAssetMeta(
                   etag=static_asset_etag(mtime_sec, mtime_nsec, size),
                   mtime=mtime_sec,
                   path~,
@@ -124,14 +124,14 @@ pub impl ServeStaticProvider for StaticFileProvider with get_contents(
             _ => {}
           }
           try file.read_all().binary() catch {
-            _ => @crescent.HttpResponse::new(NotFound).body("Not Found")
+            _ => @crescent.HttpResponse(NotFound).body("Not Found")
           } noraise {
-            contents => @crescent.HttpResponse::new(OK, headers~).body(contents)
+            contents => @crescent.HttpResponse(OK, headers~).body(contents)
           }
         }
-        None => @crescent.HttpResponse::new(NotFound).body("Not Found")
+        None => @crescent.HttpResponse(NotFound).body("Not Found")
       }
-    None => @crescent.HttpResponse::new(NotFound).body("Not Found")
+    None => @crescent.HttpResponse(NotFound).body("Not Found")
   }
 }
 

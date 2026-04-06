@@ -24,7 +24,7 @@ pub async fn Mocket::dispatch(
   // Construct event
   let event = {
     req: HttpRequest::from_method_string(http_method, url, headers, body),
-    res: HttpResponse::new(OK),
+    res: HttpResponse(OK),
     params,
   }
   // Execute middleware chain + handler

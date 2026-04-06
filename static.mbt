@@ -216,7 +216,7 @@ pub fn Mocket::static_assets(
           return next()
         }
         event.res.headers.set("Allow", "GET, HEAD")
-        return HttpResponse::new(MethodNotAllowed)
+        return HttpResponse(MethodNotAllowed)
       }
       let original_id = mounted_asset_id(mount_path, request_path)
       let if_none_match = event.req.get_header("if-none-match")
@@ -279,7 +279,7 @@ pub fn Mocket::static_assets(
           if provider.get_fallthrough() {
             return next()
           }
-          return HttpResponse::new(NotFound).body("Not Found")
+          return HttpResponse(NotFound).body("Not Found")
         }
         Some(meta) => {
           let meta = match meta.etag {
@@ -290,7 +290,7 @@ pub fn Mocket::static_assets(
                   Some(revalidated_meta) =>
                     match revalidated_meta.etag {
                       Some(revalidated_etag) if revalidated_etag == etag =>
-                        return HttpResponse::new(
+                        return HttpResponse(
                           NotModified,
                           headers=static_not_modified_headers(
                             event.res.headers,
@@ -316,7 +316,7 @@ pub fn Mocket::static_assets(
                     Some(revalidated_mtime) if if_modified_since_matches(
                         header, revalidated_mtime,
                       ) =>
-                      return HttpResponse::new(
+                      return HttpResponse(
                         NotModified,
                         headers=static_not_modified_headers(
                           event.res.headers,
@@ -337,7 +337,7 @@ pub fn Mocket::static_assets(
                 head_headers.set(key, value)
               }
             })
-            return HttpResponse::new(OK, headers=head_headers)
+            return HttpResponse(OK, headers=head_headers)
           }
           let contents = provider.get_contents(id)
           StaticResolvedResponder::{ inner: contents, asset_headers }

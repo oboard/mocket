@@ -1,9 +1,9 @@
 ///|
 fn main {
-  let app = @crescent.Mocket::new()
+  let app = @crescent.Mocket()
   app.use_middleware(logger_middleware())
   // Register global middleware
-  app.static_assets("/", @static_file.StaticFileProvider::new(path="./"))
+  app.static_assets("/", @static_file.StaticFileProvider(path="./"))
 
   // Text Response
   app.get("/", _ => "Tadaa!")

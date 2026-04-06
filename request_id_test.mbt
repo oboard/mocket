@@ -1,6 +1,6 @@
 ///|
 async test "request_id middleware generates unique ids" {
-  let app = @crescent.Mocket::new()
+  let app = @crescent.Mocket()
   app.use_middleware(@crescent.request_id())
   app.get("/test", event => {
     let id = event.request_id()
@@ -9,7 +9,7 @@ async test "request_id middleware generates unique ids" {
       None => "no-id"
     }
   })
-  let client = @crescent.TestClient::new(app)
+  let client = @crescent.TestClient(app)
   let res1 = client.get("/test")
   let res2 = client.get("/test")
   // Both should have X-Request-Id
@@ -25,7 +25,7 @@ async test "request_id middleware generates unique ids" {
 
 ///|
 async test "request_id middleware preserves existing id" {
-  let app = @crescent.Mocket::new()
+  let app = @crescent.Mocket()
   app.use_middleware(@crescent.request_id())
   app.get("/test", event => {
     match event.request_id() {
@@ -33,7 +33,7 @@ async test "request_id middleware preserves existing id" {
       None => "no-id"
     }
   })
-  let client = @crescent.TestClient::new(app)
+  let client = @crescent.TestClient(app)
   let res = client.get("/test", headers={ "X-Request-Id": "custom-trace-123" })
   assert_eq(res.headers.get("X-Request-Id"), Some("custom-trace-123"))
   assert_eq(res.body_text(), "custom-trace-123")
@@ -41,14 +41,14 @@ async test "request_id middleware preserves existing id" {
 
 ///|
 async test "request_id returns None without middleware" {
-  let app = @crescent.Mocket::new()
+  let app = @crescent.Mocket()
   app.get("/test", event => {
     match event.request_id() {
       Some(id) => id
       None => "no-id"
     }
   })
-  let client = @crescent.TestClient::new(app)
+  let client = @crescent.TestClient(app)
   let res = client.get("/test")
   assert_eq(res.body_text(), "no-id")
 }

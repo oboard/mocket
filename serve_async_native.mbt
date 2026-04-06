@@ -134,7 +134,7 @@ fn allow_header_value(methods : Array[String]) -> String {
 fn method_not_allowed_handler(allow : String) -> HttpHandler {
   fn(event) noraise {
     event.res.headers.set("Allow", allow)
-    HttpResponse::new(MethodNotAllowed).body("Method Not Allowed")
+    HttpResponse(MethodNotAllowed).body("Method Not Allowed")
   }
 }
 
@@ -142,7 +142,7 @@ fn method_not_allowed_handler(allow : String) -> HttpHandler {
 fn options_handler(allow : String) -> HttpHandler {
   fn(event) noraise {
     event.res.headers.set("Allow", allow)
-    HttpResponse::new(NoContent)
+    HttpResponse(NoContent)
   }
 }
 
@@ -289,7 +289,7 @@ async fn send_request_entity_too_large_async(
   request : @http.Request,
   conn : @http.ServerConnection,
 ) -> Unit raise Error {
-  let response = HttpResponse::new(RequestEntityTooLarge).body(
+  let response = HttpResponse(RequestEntityTooLarge).body(
     "Request Entity Too Large",
   )
   response.headers.set("Content-Type", "text/plain; charset=utf-8")
@@ -301,7 +301,7 @@ async fn send_request_timeout_async(
   request : @http.Request,
   conn : @http.ServerConnection,
 ) -> Unit raise Error {
-  let response = HttpResponse::new(RequestTimeout).body("Request Timeout")
+  let response = HttpResponse(RequestTimeout).body("Request Timeout")
   response.headers.set("Content-Type", "text/plain; charset=utf-8")
   send_response_and_close_async(request, conn, response)
 }
@@ -311,7 +311,7 @@ async fn send_not_found_async(
   request : @http.Request,
   conn : @http.ServerConnection,
 ) -> Unit raise Error {
-  let response = HttpResponse::new(NotFound).body("Not Found")
+  let response = HttpResponse(NotFound).body("Not Found")
   response.headers.set("Content-Type", "text/plain; charset=utf-8")
   send_response_and_close_async(request, conn, response)
 }
@@ -502,7 +502,7 @@ async fn handle_request_async(
       copy_async_headers(request.headers),
       request_body,
     ),
-    res: HttpResponse::new(OK),
+    res: HttpResponse(OK),
     params,
   }
   let responder = execute_middlewares(app.middlewares, event, handler)
@@ -554,7 +554,7 @@ pub async fn Mocket::serve_on(
   self : Mocket,
   server : @http.Server,
 ) -> Unit raise Error {
-  self.serve_on_with(server, NativeServeOptions::new())
+  self.serve_on_with(server, NativeServeOptions())
 }
 
 ///|
@@ -593,7 +593,7 @@ pub async fn Mocket::serve_on_until(
   server : @http.Server,
   shutdown : @async.Queue[Unit],
 ) -> Unit raise Error {
-  self.serve_on_until_with(server, shutdown, NativeServeOptions::new())
+  self.serve_on_until_with(server, shutdown, NativeServeOptions())
 }
 
 ///|
@@ -632,7 +632,7 @@ pub async fn Mocket::serve_on_until_with(
 ///|
 /// Starts serving HTTP requests on the given port with default options.
 pub async fn Mocket::serve(self : Mocket, port~ : Int) -> Unit raise Error {
-  self.serve_with(port~, NativeServeOptions::new())
+  self.serve_with(port~, NativeServeOptions())
 }
 
 ///|
@@ -678,7 +678,7 @@ pub async fn Mocket::serve_until(
   port~ : Int,
   shutdown : @async.Queue[Unit],
 ) -> Unit raise Error {
-  self.serve_until_with(port~, shutdown, NativeServeOptions::new())
+  self.serve_until_with(port~, shutdown, NativeServeOptions())
 }
 
 ///|

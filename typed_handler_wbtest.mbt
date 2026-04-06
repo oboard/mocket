@@ -2,8 +2,8 @@
 async test "wrap_error_handler passes through success" {
   let handler = wrap_error_handler(fn(_event) { "ok" })
   let event = MocketEvent::{
-    req: HttpRequest::new(Get, "/", {}, raw_body=b""),
-    res: HttpResponse::new(OK),
+    req: HttpRequest(Get, "/", {}, raw_body=b""),
+    res: HttpResponse(OK),
     params: {},
   }
   let result = handler(event)
@@ -18,8 +18,8 @@ async test "wrap_error_handler catches HttpError" {
     raise HttpError(BadRequest, "name is required")
   })
   let event = MocketEvent::{
-    req: HttpRequest::new(Get, "/", {}, raw_body=b""),
-    res: HttpResponse::new(OK),
+    req: HttpRequest(Get, "/", {}, raw_body=b""),
+    res: HttpResponse(OK),
     params: {},
   }
   let result = handler(event)
@@ -39,8 +39,8 @@ async test "wrap_error_handler catches JsonDecodeError as 400" {
     "ok"
   })
   let event = MocketEvent::{
-    req: HttpRequest::new(Post, "/", {}, raw_body=b"not valid json"),
-    res: HttpResponse::new(OK),
+    req: HttpRequest(Post, "/", {}, raw_body=b"not valid json"),
+    res: HttpResponse(OK),
     params: {},
   }
   let result = handler(event)
@@ -52,8 +52,8 @@ async test "wrap_error_handler catches JsonDecodeError as 400" {
 async test "wrap_error_handler catches unknown error as 500" {
   let handler = wrap_error_handler(_event => raise NetworkError)
   let event = MocketEvent::{
-    req: HttpRequest::new(Get, "/", {}, raw_body=b""),
-    res: HttpResponse::new(OK),
+    req: HttpRequest(Get, "/", {}, raw_body=b""),
+    res: HttpResponse(OK),
     params: {},
   }
   let result = handler(event)
@@ -65,8 +65,8 @@ async test "wrap_error_handler catches unknown error as 500" {
 async test "wrap_error_handler catches Failure as 500" {
   let handler = wrap_error_handler(_event => fail("something went wrong"))
   let event = MocketEvent::{
-    req: HttpRequest::new(Get, "/", {}, raw_body=b""),
-    res: HttpResponse::new(OK),
+    req: HttpRequest(Get, "/", {}, raw_body=b""),
+    res: HttpResponse(OK),
     params: {},
   }
   let result = handler(event)
@@ -84,8 +84,8 @@ async test "HttpError with NotFound status" {
     raise HttpError(NotFound, "user not found")
   })
   let event = MocketEvent::{
-    req: HttpRequest::new(Get, "/", {}, raw_body=b""),
-    res: HttpResponse::new(OK),
+    req: HttpRequest(Get, "/", {}, raw_body=b""),
+    res: HttpResponse(OK),
     params: {},
   }
   let result = handler(event)

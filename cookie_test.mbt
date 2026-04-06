@@ -119,7 +119,7 @@ test "parse_complex_cookie_string" {
 
 ///|
 test "get_cookie supports case-insensitive header lookup and delete_cookie expires values" {
-  let req_lower = @crescent.HttpRequest::new(
+  let req_lower = @crescent.HttpRequest(
     Get,
     "/",
     { "cookie": "session=abc123; theme=dark" },
@@ -130,7 +130,7 @@ test "get_cookie supports case-insensitive header lookup and delete_cookie expir
     None => fail("Expected session cookie")
   }
 
-  let req_mixed = @crescent.HttpRequest::new(
+  let req_mixed = @crescent.HttpRequest(
     Get,
     "/",
     { "CoOkIe": "theme=dark" },

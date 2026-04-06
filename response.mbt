@@ -18,7 +18,7 @@ pub(all) struct HttpResponse {
 /// Deserializes the response body into a value of type `T` via the `BodyReader` trait.
 pub fn[T : BodyReader] HttpResponse::read_body(self : HttpResponse) -> T raise {
   T::from_request(
-    HttpRequest::new(Other(""), "", self.headers, raw_body=self.raw_body),
+    HttpRequest(Other(""), "", self.headers, raw_body=self.raw_body),
   )
 }
 
@@ -87,7 +87,7 @@ pub fn HttpResponse::to_responder(self : HttpResponse) -> &Responder {
 
 ///|
 test "read_response_body" {
-  let res = HttpResponse::new(OK, raw_body=b"{\"Hello\":\"Response\"}")
+  let res = HttpResponse(OK, raw_body=b"{\"Hello\":\"Response\"}")
   let text : String = res.read_body()
   let json : Json = res.read_body()
   inspect(

@@ -15,7 +15,7 @@ impl Show for TestUser with output(self, logger) {
 
 ///|
 test "HttpRequest::json parses struct from body" {
-  let req = @crescent.HttpRequest::new(
+  let req = @crescent.HttpRequest(
     Post,
     "/users",
     {},
@@ -27,14 +27,14 @@ test "HttpRequest::json parses struct from body" {
 
 ///|
 test "HttpRequest::json fails on invalid json" {
-  let req = @crescent.HttpRequest::new(Post, "/users", {}, raw_body=b"not json")
+  let req = @crescent.HttpRequest(Post, "/users", {}, raw_body=b"not json")
   let result : Result[TestUser, _] = try? req.json()
   assert_true(result is Err(_))
 }
 
 ///|
 test "HttpRequest::json fails on missing fields" {
-  let req = @crescent.HttpRequest::new(
+  let req = @crescent.HttpRequest(
     Post,
     "/users",
     {},
@@ -46,7 +46,7 @@ test "HttpRequest::json fails on missing fields" {
 
 ///|
 test "HttpRequest::json fails on wrong field type" {
-  let req = @crescent.HttpRequest::new(
+  let req = @crescent.HttpRequest(
     Post,
     "/users",
     {},
@@ -58,7 +58,7 @@ test "HttpRequest::json fails on wrong field type" {
 
 ///|
 test "HttpRequest::json parses nested struct" {
-  let req = @crescent.HttpRequest::new(
+  let req = @crescent.HttpRequest(
     Post,
     "/",
     {},
@@ -71,7 +71,7 @@ test "HttpRequest::json parses nested struct" {
 
 ///|
 test "HttpRequest::json parses empty body as error" {
-  let req = @crescent.HttpRequest::new(Post, "/", {}, raw_body=b"")
+  let req = @crescent.HttpRequest(Post, "/", {}, raw_body=b"")
   let result : Result[TestUser, _] = try? req.json()
   assert_true(result is Err(_))
 }

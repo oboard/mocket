@@ -80,7 +80,7 @@ pub fn handle_cors(
         max_age~,
       )
       // For preflight requests, return empty response without calling next()
-      @crescent.HttpResponse::new(OK).to_responder()
+      @crescent.HttpResponse(OK).to_responder()
     } else {
       append_cors_headers(
         event,

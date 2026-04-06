@@ -296,7 +296,7 @@ pub fn Mocket::group(
   base_path : String,
   configure : (Mocket) -> Unit,
 ) -> Unit {
-  let group = Mocket::new(base_path=self.base_path + base_path)
+  let group = Mocket(base_path=self.base_path + base_path)
   configure(group)
   // Merge routes
   group.mappings.iter().each(i => self.mappings.set(i.0, i.1))

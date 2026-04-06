@@ -11,7 +11,7 @@ pub fn HttpResponse::set_cookie(
   http_only? : Bool,
   same_site? : SameSiteOption,
 ) -> Unit {
-  let item = CookieItem::new(
+  let item = CookieItem(
     name~,
     value~,
     max_age?,
@@ -96,7 +96,7 @@ pub fn parse_cookie(cookie : StringView) -> Map[String, CookieItem] {
         return
       }
     }
-    let item = CookieItem::new(name=key, value~)
+    let item = CookieItem(name=key, value~)
     res.set(key, item)
     last_cookie_item = Some((key, item))
   }
