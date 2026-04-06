@@ -298,6 +298,24 @@ pub fn StatusCode::from_int(Int) -> Self
 pub fn StatusCode::to_int(Self) -> Int
 pub impl Show for StatusCode
 
+pub struct TestClient {
+  app : Mocket
+}
+pub async fn TestClient::delete(Self, String, headers? : Map[String, String]) -> TestResponse
+pub async fn TestClient::get(Self, String, headers? : Map[String, String]) -> TestResponse
+pub fn TestClient::new(Mocket) -> Self
+pub async fn TestClient::post(Self, String, body? : Bytes, headers? : Map[String, String]) -> TestResponse
+pub async fn TestClient::put(Self, String, body? : Bytes, headers? : Map[String, String]) -> TestResponse
+pub async fn TestClient::request(Self, String, String, headers~ : Map[String, String], body~ : Bytes) -> TestResponse
+
+pub struct TestResponse {
+  status : StatusCode
+  headers : Map[String, String]
+  body_bytes : Bytes
+}
+pub fn[T : @json.FromJson] TestResponse::body_json(Self) -> T raise
+pub fn TestResponse::body_text(Self) -> String
+
 pub enum WebSocketAggregatedMessage {
   Text(String)
   Binary(Bytes)
