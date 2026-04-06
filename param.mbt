@@ -1,4 +1,16 @@
 /// Returns a route parameter value as a String, or None if not found.
+///
+/// ```mbt check
+/// test {
+///   let event = @mocket.MocketEvent::{
+///     req: { http_method: "GET", url: "/", headers: {}, raw_body: b"" },
+///     res: @mocket.HttpResponse::new(@mocket.OK),
+///     params: { "id": "42" },
+///   }
+///   inspect(event.param("id"), content="Some(\"42\")")
+///   inspect(event.param("missing"), content="None")
+/// }
+/// ```
 
 ///|
 pub fn MocketEvent::param(self : MocketEvent, name : String) -> String? {

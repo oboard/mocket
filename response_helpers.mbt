@@ -1,4 +1,11 @@
 /// Creates a 200 OK response.
+///
+/// ```mbt check
+/// test {
+///   let res = @mocket.HttpResponse::ok()
+///   inspect(res.status_code, content="OK")
+/// }
+/// ```
 
 ///|
 pub fn HttpResponse::ok() -> HttpResponse {
@@ -55,6 +62,14 @@ pub fn HttpResponse::internal_server_error() -> HttpResponse {
 }
 
 /// Creates an error response with a JSON body containing status and message.
+///
+/// ```mbt check
+/// test {
+///   let res = @mocket.HttpResponse::error(@mocket.BadRequest, "invalid input")
+///   inspect(res.status_code, content="BadRequest")
+///   inspect(res.headers.get("Content-Type"), content="Some(\"application/json; charset=utf-8\")")
+/// }
+/// ```
 
 ///|
 pub fn HttpResponse::error(

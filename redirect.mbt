@@ -1,4 +1,12 @@
 /// Returns a 301 Moved Permanently redirect response.
+///
+/// ```mbt check
+/// test {
+///   let res = @mocket.HttpResponse::redirect("/new-path")
+///   inspect(res.status_code, content="MovedPermanently")
+///   inspect(res.headers.get("Location"), content="Some(\"/new-path\")")
+/// }
+/// ```
 
 ///|
 pub fn HttpResponse::redirect(location : String) -> HttpResponse {

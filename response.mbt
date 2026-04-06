@@ -80,6 +80,13 @@ pub fn[T : ToJson] HttpResponse::json_value(
 }
 
 /// Sets a response header and returns self for fluent chaining.
+///
+/// ```mbt check
+/// test {
+///   let res = @mocket.HttpResponse::ok().header("X-Custom", "value")
+///   inspect(res.headers.get("X-Custom"), content="Some(\"value\")")
+/// }
+/// ```
 
 ///|
 pub fn HttpResponse::header(
