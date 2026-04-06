@@ -11,9 +11,8 @@ fn hex_digit(b : Byte) -> Int? {
   }
 }
 
-/// Decodes a percent-encoded URL byte sequence into a UTF-8 string.
-
 ///|
+/// Decodes a percent-encoded URL byte sequence into a UTF-8 string.
 pub fn url_decode(bytes : BytesView) -> String {
   let len = bytes.length()
   let res = Array::make(len, b'\x00')
@@ -51,9 +50,8 @@ pub fn url_decode(bytes : BytesView) -> String {
   }
 }
 
-/// Parses URL-encoded form data (e.g. `key=value&foo=bar`) into a map of key-value pairs.
-
 ///|
+/// Parses URL-encoded form data (e.g. `key=value&foo=bar`) into a map of key-value pairs.
 pub fn parse_form_data(bytes : BytesView) -> Map[String, String] {
   let res = Map::new()
   if bytes.length() == 0 {
@@ -111,9 +109,8 @@ fn is_unreserved(b : Byte) -> Bool {
   b == b'~'
 }
 
-/// Percent-encodes a string for use in URLs, escaping all characters except unreserved ones.
-
 ///|
+/// Percent-encodes a string for use in URLs, escaping all characters except unreserved ones.
 pub fn url_encode(s : String) -> String {
   let bytes = @utf8.encode(s)
   let buf = StringBuilder::new()
@@ -142,9 +139,8 @@ pub fn url_encode(s : String) -> String {
   buf.to_string()
 }
 
-/// Encodes a map of key-value pairs into a URL-encoded form string (e.g. `key=value&foo=bar`).
-
 ///|
+/// Encodes a map of key-value pairs into a URL-encoded form string (e.g. `key=value&foo=bar`).
 pub fn form_encode(map : Map[String, String]) -> String {
   let buf = StringBuilder::new()
   let mut first = true

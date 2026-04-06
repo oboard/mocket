@@ -207,6 +207,7 @@ pub impl Show for StatusCode with output(self, logger) {
 }
 
 ///|
+/// Converts an integer HTTP status code to a `StatusCode` enum value.
 pub fn StatusCode::from_int(i : Int) -> StatusCode {
   match i {
     100 => Continue
@@ -276,6 +277,7 @@ pub fn StatusCode::from_int(i : Int) -> StatusCode {
 }
 
 ///|
+/// Returns the integer value of this HTTP status code.
 pub fn StatusCode::to_int(self : StatusCode) -> Int {
   match self {
     Continue => 100

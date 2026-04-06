@@ -1,17 +1,8 @@
+///|
 /// HTTP request methods as a type-safe enum.
 ///
 /// Using this enum instead of raw strings prevents typos like "DLETE" or "OPTONS"
 /// and enables pattern matching in handlers.
-///
-/// ```
-/// match event.req.http_method {
-///   Get => ...
-///   Post => ...
-///   _ => ...
-/// }
-/// ```
-
-///|
 pub(all) enum HttpMethod {
   Get
   Head
@@ -31,9 +22,8 @@ pub impl Show for HttpMethod with output(self, logger) {
   logger.write_string(self.to_method_string())
 }
 
-/// Converts the enum to its HTTP method string representation.
-
 ///|
+/// Converts the enum to its HTTP method string representation.
 pub fn HttpMethod::to_method_string(self : HttpMethod) -> String {
   match self {
     Get => "GET"
@@ -49,9 +39,8 @@ pub fn HttpMethod::to_method_string(self : HttpMethod) -> String {
   }
 }
 
-/// Parses a string into an HttpMethod.
-
 ///|
+/// Parses a string into an HttpMethod.
 pub fn HttpMethod::from_string(s : String) -> HttpMethod {
   match s {
     "GET" => Get

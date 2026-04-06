@@ -1,6 +1,5 @@
-/// A single segment of a pre-compiled route pattern.
-
 ///|
+/// A single segment of a pre-compiled route pattern.
 pub(all) enum RouteSegment {
   /// A literal path segment that must match exactly (e.g. "api", "users")
   Static(String)
@@ -25,9 +24,8 @@ impl Show for RouteSegment with output(self, logger) {
   }
 }
 
-/// A pre-compiled route pattern, parsed once at registration time.
-
 ///|
+/// A pre-compiled route pattern, parsed once at registration time.
 pub struct CompiledRoute {
   /// The original template string (for debugging/display)
   template : String
@@ -37,12 +35,8 @@ pub struct CompiledRoute {
   is_static : Bool
 }
 
-/// Compiles a route template string into a `CompiledRoute`.
-///
-/// Called once at route registration time. The segments are pre-parsed
-/// so that per-request matching only needs to iterate the array.
-
 ///|
+/// Compiles a route template string into a `CompiledRoute`.
 pub fn CompiledRoute::compile(template : String) -> CompiledRoute {
   let parts = template.split("/")
   let segments : Array[RouteSegment] = []
@@ -64,10 +58,8 @@ pub fn CompiledRoute::compile(template : String) -> CompiledRoute {
   { template, segments, is_static }
 }
 
-/// Matches a compiled route against a request path.
-/// Returns extracted parameters on match, or None on mismatch.
-
 ///|
+/// Matches a compiled route against a request path, returning extracted parameters or None.
 pub fn CompiledRoute::match_path(
   self : CompiledRoute,
   path : String,

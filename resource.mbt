@@ -1,40 +1,5 @@
-/// Configuration for registering a RESTful resource with standard CRUD routes.
-///
-/// Each field is optional — only provided handlers are registered.
-/// All handlers use the raising API (automatic error mapping).
-///
-/// Example:
-/// ```
-/// app.resource("/api/todos", ResourceConfig::{
-///   list:   Some(event => HttpResponse::ok().json_value(todos)),
-///   get:    Some(event => {
-///     let id = event.require_param_int("id")
-///     HttpResponse::ok().json_value(find_todo(id))
-///   }),
-///   create: Some(event => {
-///     let input : CreateTodo = event.json()
-///     HttpResponse::created().json_value(save_todo(input))
-///   }),
-///   update: Some(event => {
-///     let id = event.require_param_int("id")
-///     let input : UpdateTodo = event.json()
-///     HttpResponse::ok().json_value(update_todo(id, input))
-///   }),
-///   delete: Some(event => {
-///     let id = event.require_param_int("id")
-///     delete_todo(id)
-///     HttpResponse::no_content()
-///   }),
-/// })
-/// // Registers:
-/// //   GET    /api/todos        -> list
-/// //   GET    /api/todos/:id    -> get
-/// //   POST   /api/todos        -> create
-/// //   PUT    /api/todos/:id    -> update
-/// //   DELETE /api/todos/:id    -> delete
-/// ```
-
 ///|
+/// Configuration for registering a RESTful resource with standard CRUD routes.
 pub(all) struct ResourceConfig {
   /// GET /path — list all resources
   list : (async (MocketEvent) -> &Responder)?
@@ -57,6 +22,7 @@ pub(all) struct ResourceConfig {
 }
 
 ///|
+/// Creates a new `ResourceConfig` with optional CRUD handlers.
 pub fn ResourceConfig::new(
   list? : async (MocketEvent) -> &Responder,
   get? : async (MocketEvent) -> &Responder,
@@ -67,18 +33,8 @@ pub fn ResourceConfig::new(
   { list, get, create, update, delete }
 }
 
-/// Registers standard REST routes for a resource.
-/// This is the recommended way for AI agents to set up CRUD APIs — one call
-/// registers all standard endpoints with correct HTTP methods and paths.
-///
-/// Given a base path like `/api/todos`, this registers:
-/// - `GET /api/todos` → list handler
-/// - `GET /api/todos/:id` → get handler
-/// - `POST /api/todos` → create handler
-/// - `PUT /api/todos/:id` → update handler
-/// - `DELETE /api/todos/:id` → delete handler
-
 ///|
+/// Registers standard REST routes (list, get, create, update, delete) for a resource path.
 pub fn Mocket::resource(
   self : Mocket,
   path : String,

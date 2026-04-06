@@ -1,6 +1,5 @@
-/// Sets a cookie on the response with the given name, value, and optional attributes.
-
 ///|
+/// Sets a cookie on the response with the given name, value, and optional attributes.
 pub fn HttpResponse::set_cookie(
   self : HttpResponse,
   name : String,
@@ -25,9 +24,8 @@ pub fn HttpResponse::set_cookie(
   self.cookies.set(name, item)
 }
 
-/// Retrieves a cookie by name from the request's Cookie header, if present.
-
 ///|
+/// Retrieves a cookie by name from the request's Cookie header, if present.
 pub fn HttpRequest::get_cookie(
   self : HttpRequest,
   name : String,
@@ -38,23 +36,20 @@ pub fn HttpRequest::get_cookie(
   }
 }
 
-/// Deletes a cookie by setting its value to empty and max-age to 0.
-
 ///|
+/// Deletes a cookie by setting its value to empty and max-age to 0.
 pub fn HttpResponse::delete_cookie(self : HttpResponse, key : String) -> Unit {
   self.set_cookie(key, "", max_age=0)
 }
 
-/// Serializes an array of cookie items into a semicolon-separated string.
-
 ///|
+/// Serializes an array of cookie items into a semicolon-separated string.
 pub fn cookie_to_string(cookie : Array[CookieItem]) -> String {
   cookie.map(x => x.to_string()).join(";")
 }
 
-/// Parses a raw cookie header string into a map of cookie names to `CookieItem` values.
-
 ///|
+/// Parses a raw cookie header string into a map of cookie names to `CookieItem` values.
 pub fn parse_cookie(cookie : StringView) -> Map[String, CookieItem] {
   fn dequote(value : StringView) -> StringView {
     if value is ['"', .. rest, '"'] {

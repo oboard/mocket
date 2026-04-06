@@ -11,6 +11,7 @@ extern "c" fn pointer_sub(
 ) -> Int64 = "moonbit_native_pointer_sub"
 
 ///|
+/// Converts a C string to a MoonBit `Bytes` value by copying its contents.
 pub extern "c" fn CStr::to_bytes(self : CStr) -> Bytes = "moonbit_native_cstring_to_bytes"
 
 ///|

@@ -1,8 +1,7 @@
 ///|
 
-/// Error type for invalid HTTP method strings encountered during request parsing.
-
 ///|
+/// Error type for invalid HTTP method strings encountered during request parsing.
 pub suberror RequestError {
   InvalidHttpMethod(String)
 }
@@ -23,10 +22,9 @@ fn parse_http_method(http_method : String) -> @crescent.HttpMethod raise Error {
   }
 }
 
+///|
 /// Sends an HTTP request using the method, URL, headers, and body from the given
 /// `HttpRequest` object, and returns the response.
-
-///|
 pub async fn request(
   req : @crescent.HttpRequest,
 ) -> @crescent.HttpResponse raise Error {
@@ -41,10 +39,9 @@ pub async fn request(
   }
 }
 
+///|
 /// Sends an HTTP GET request to the given URL with optional data, headers,
 /// credentials, and mode settings.
-
-///|
 pub async fn get(
   url : String,
   data? : &@crescent.Responder,
@@ -55,10 +52,9 @@ pub async fn get(
   @crescent.fetch(url, Get, data?, headers?, credentials?, mode?)
 }
 
+///|
 /// Sends an HTTP DELETE request to the given URL with optional data, headers,
 /// credentials, and mode settings.
-
-///|
 pub async fn delete(
   url : String,
   data? : &@crescent.Responder,
@@ -69,10 +65,9 @@ pub async fn delete(
   @crescent.fetch(url, Delete, data?, headers?, credentials?, mode?)
 }
 
+///|
 /// Sends an HTTP HEAD request to the given URL with optional data, headers,
 /// credentials, and mode settings.
-
-///|
 pub async fn head(
   url : String,
   data? : &@crescent.Responder,
@@ -83,10 +78,9 @@ pub async fn head(
   @crescent.fetch(url, Head, data?, headers?, credentials?, mode?)
 }
 
+///|
 /// Sends an HTTP OPTIONS request to the given URL with optional data, headers,
 /// credentials, and mode settings.
-
-///|
 pub async fn options(
   url : String,
   data? : &@crescent.Responder,
@@ -97,10 +91,9 @@ pub async fn options(
   @crescent.fetch(url, Options, data?, headers?, credentials?, mode?)
 }
 
+///|
 /// Sends an HTTP TRACE request to the given URL with optional data, headers,
 /// credentials, and mode settings.
-
-///|
 pub async fn trace(
   url : String,
   data? : &@crescent.Responder,
@@ -111,10 +104,9 @@ pub async fn trace(
   @crescent.fetch(url, Trace, data?, headers?, credentials?, mode?)
 }
 
+///|
 /// Sends an HTTP CONNECT request to the given URL with optional data, headers,
 /// credentials, and mode settings.
-
-///|
 pub async fn connect(
   url : String,
   data? : &@crescent.Responder,
@@ -125,10 +117,9 @@ pub async fn connect(
   @crescent.fetch(url, Connect, data?, headers?, credentials?, mode?)
 }
 
+///|
 /// Sends an HTTP POST request to the given URL with optional data, headers,
 /// credentials, and mode settings.
-
-///|
 pub async fn post(
   url : String,
   data? : &@crescent.Responder,
@@ -139,10 +130,9 @@ pub async fn post(
   @crescent.fetch(url, Post, data?, headers?, credentials?, mode?)
 }
 
+///|
 /// Sends an HTTP PUT request to the given URL with optional data, headers,
 /// credentials, and mode settings.
-
-///|
 pub async fn put(
   url : String,
   data? : &@crescent.Responder,
@@ -153,10 +143,9 @@ pub async fn put(
   @crescent.fetch(url, Put, data?, headers?, credentials?, mode?)
 }
 
+///|
 /// Sends an HTTP PATCH request to the given URL with optional data, headers,
 /// credentials, and mode settings.
-
-///|
 pub async fn patch(
   url : String,
   data? : &@crescent.Responder,

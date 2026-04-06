@@ -549,6 +549,7 @@ async fn wait_for_shutdown_signal(shutdown : @async.Queue[Unit]) -> Unit {
 }
 
 ///|
+/// Starts serving HTTP requests on the given server with default options.
 pub async fn Mocket::serve_on(
   self : Mocket,
   server : @http.Server,
@@ -629,6 +630,7 @@ pub async fn Mocket::serve_on_until_with(
 }
 
 ///|
+/// Starts serving HTTP requests on the given port with default options.
 pub async fn Mocket::serve(self : Mocket, port~ : Int) -> Unit raise Error {
   self.serve_with(port~, NativeServeOptions::new())
 }

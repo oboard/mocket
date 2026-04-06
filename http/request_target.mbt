@@ -1,7 +1,6 @@
+///|
 /// Extracts the path component from an HTTP request target by stripping the
 /// query string and fragment portions.
-
-///|
 pub fn request_target_path(request_target : String) -> String {
   let mut end = request_target.length()
   match request_target.find("?") {
@@ -22,10 +21,9 @@ pub fn request_target_path(request_target : String) -> String {
   normalize_path(request_target[:end].to_string())
 }
 
+///|
 /// Normalizes a URL path by collapsing consecutive slashes into single slashes.
 /// Preserves the leading slash if present.
-
-///|
 pub fn normalize_path(path : String) -> String {
   if !path.contains("//") {
     return path
@@ -46,10 +44,9 @@ pub fn normalize_path(path : String) -> String {
   buf.to_string()
 }
 
+///|
 /// Extracts the query string from an HTTP request target, excluding the leading
 /// `?` delimiter. Returns `None` if no query string is present.
-
-///|
 pub fn request_target_query_string(request_target : String) -> String? {
   match request_target.find("?") {
     Some(query_start) => {
@@ -65,11 +62,10 @@ pub fn request_target_query_string(request_target : String) -> String? {
   }
 }
 
+///|
 /// Returns `true` if the request path falls within the given scope path. The
 /// root scope `"/"` matches all paths; otherwise the request path must equal or
 /// be a sub-path of the scope (separated by `'/'`).
-
-///|
 pub fn path_scope_matches(scope_path : String, request_path : String) -> Bool {
   if scope_path == "/" {
     true

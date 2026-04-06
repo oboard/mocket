@@ -1,6 +1,5 @@
-/// A single value from a multipart form submission, containing optional filename, content type, and raw data.
-
 ///|
+/// A single value from a multipart form submission, containing optional filename, content type, and raw data.
 pub(all) struct MultipartFormValue {
   filename : String?
   content_type : String?
@@ -33,9 +32,8 @@ fn find_boundary(
   -1
 }
 
-/// Parses a multipart/form-data body using the given boundary string into a map of form values.
-
 ///|
+/// Parses a multipart/form-data body using the given boundary string into a map of form values.
 pub fn parse_multipart(
   bytes : BytesView,
   boundary : String,

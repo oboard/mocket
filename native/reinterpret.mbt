@@ -1,14 +1,17 @@
 ///|
+/// Reinterprets this pointer as a mutable byte pointer.
 pub fn[T] Ptr::reinterpret_as_byte_ptr(self : Ptr[T]) -> Ptr[Byte] {
   unsafe_coerce(self)
 }
 
 ///|
+/// Reinterprets this mutable pointer as a const byte pointer.
 pub fn[T] Ptr::reinterpret_as_const_byte_ptr(self : Ptr[T]) -> ConstPtr[Byte] {
   unsafe_coerce(self)
 }
 
 ///|
+/// Reinterprets this const pointer as a const byte pointer.
 pub fn[T] ConstPtr::reinterpret_as_const_byte_ptr(
   self : ConstPtr[T],
 ) -> ConstPtr[Byte] {
@@ -16,6 +19,7 @@ pub fn[T] ConstPtr::reinterpret_as_const_byte_ptr(
 }
 
 ///|
+/// Reinterprets this C string as a const byte pointer.
 pub fn CStr::reinterpret_as_const_byte_ptr(self : CStr) -> ConstPtr[Byte] {
   unsafe_coerce(self)
 }
@@ -24,21 +28,25 @@ pub fn CStr::reinterpret_as_const_byte_ptr(self : CStr) -> ConstPtr[Byte] {
 extern "c" fn pointer_reinterpret_as_int64(ptr : Ptr[Byte]) -> Int64 = "moonbit_native_pointer_reinterpret_as_int64"
 
 ///|
+/// Reinterprets this pointer's address as a signed 64-bit integer.
 pub fn[T] Ptr::reinterpret_as_int64(self : Ptr[T]) -> Int64 {
   pointer_reinterpret_as_int64(unsafe_coerce(self))
 }
 
 ///|
+/// Reinterprets this pointer's address as an unsigned 64-bit integer.
 pub fn[T] Ptr::reinterpret_as_uint64(self : Ptr[T]) -> UInt64 {
   pointer_reinterpret_as_int64(unsafe_coerce(self)).reinterpret_as_uint64()
 }
 
 ///|
+/// Reinterprets this const pointer's address as an unsigned 64-bit integer.
 pub fn[T] ConstPtr::reinterpret_as_uint64(self : ConstPtr[T]) -> UInt64 {
   pointer_reinterpret_as_int64(unsafe_coerce(self)).reinterpret_as_uint64()
 }
 
 ///|
+/// Reinterprets this const pointer's address as a signed 64-bit integer.
 pub fn[T] ConstPtr::reinterpret_as_int64(self : ConstPtr[T]) -> Int64 {
   pointer_reinterpret_as_int64(unsafe_coerce(self))
 }

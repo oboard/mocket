@@ -3,20 +3,18 @@
 ///|
 using @crescent {trait ServeStaticProvider, trait Responder}
 
+///|
 /// A file-system-backed provider for serving static assets. Implements the
 /// `ServeStaticProvider` trait to resolve asset metadata and contents from a
 /// directory on disk.
-
-///|
 pub struct StaticFileProvider {
   priv path : String
 
   fn new(path~ : String) -> StaticFileProvider
 }
 
-/// Creates a new `StaticFileProvider` rooted at the given directory path.
-
 ///|
+/// Creates a new `StaticFileProvider` rooted at the given directory path.
 pub fn StaticFileProvider::new(path~ : String) -> StaticFileProvider {
   { path, }
 }
@@ -70,10 +68,9 @@ async fn open_static_asset(path : String) -> @fs.File? noraise {
   }
 }
 
+///|
 /// Returns metadata (ETag, modification time, path, size) for the asset
 /// identified by `id`, or `None` if the file does not exist or is not a regular file.
-
-///|
 pub impl ServeStaticProvider for StaticFileProvider with get_meta(
   self,
   id : String,
@@ -102,10 +99,9 @@ pub impl ServeStaticProvider for StaticFileProvider with get_meta(
   }
 }
 
+///|
 /// Reads and returns the full contents of the static asset identified by `id`
 /// as an HTTP response, including `Content-Length` and `ETag` headers.
-
-///|
 pub impl ServeStaticProvider for StaticFileProvider with get_contents(
   self,
   id : String,
@@ -139,18 +135,16 @@ pub impl ServeStaticProvider for StaticFileProvider with get_contents(
   }
 }
 
+///|
 /// Returns the MIME type for the given asset identifier. This implementation
 /// always returns `None`, deferring type detection to the framework.
-
-///|
 pub impl ServeStaticProvider for StaticFileProvider with get_type(_, _ : String) -> String? {
   None
 }
 
+///|
 /// Returns the content-encoding mappings (e.g. file extension to encoding name).
 /// This implementation returns an empty map, indicating no pre-encoded variants.
-
-///|
 pub impl ServeStaticProvider for StaticFileProvider with get_encodings(_) -> Map[
   String,
   String,
@@ -158,10 +152,9 @@ pub impl ServeStaticProvider for StaticFileProvider with get_encodings(_) -> Map
   {}
 }
 
+///|
 /// Returns the list of filenames to try when resolving a directory request to an
 /// index document (e.g. `"index.html"`, `"index.htm"`).
-
-///|
 pub impl ServeStaticProvider for StaticFileProvider with get_index_names(_) -> Array[
   String,
 ] {
@@ -171,11 +164,10 @@ pub impl ServeStaticProvider for StaticFileProvider with get_index_names(_) -> A
   ]
 }
 
+///|
 /// Returns whether unmatched requests should fall through to subsequent
 /// middleware. This implementation returns `false`, meaning a 404 is returned
 /// for missing assets.
-
-///|
 pub impl ServeStaticProvider for StaticFileProvider with get_fallthrough(_) -> Bool {
   false
 }

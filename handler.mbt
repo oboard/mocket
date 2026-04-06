@@ -1,6 +1,3 @@
-/// The async handler type for HTTP route callbacks.
-///
-/// Receives a `MocketEvent` and returns a `Responder`.
-
 ///|
+/// The async handler type for HTTP route callbacks.
 pub type HttpHandler = async (MocketEvent) -> &Responder noraise

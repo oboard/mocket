@@ -1,8 +1,7 @@
 // HttpMethod is defined in http_method.mbt
 
-/// Controls whether credentials (cookies, TLS certificates) are sent with a fetch request.
-
 ///|
+/// Controls whether credentials (cookies, TLS certificates) are sent with a fetch request.
 pub(all) enum FetchCredentials {
   Omit
   SameOrigin
@@ -10,6 +9,7 @@ pub(all) enum FetchCredentials {
 } derive(Eq, Debug)
 
 ///|
+/// Returns the string representation of a `FetchCredentials` value for use in fetch request options.
 pub fn FetchCredentials::to_string(self : FetchCredentials) -> String {
   match self {
     Omit => "omit"
@@ -18,9 +18,8 @@ pub fn FetchCredentials::to_string(self : FetchCredentials) -> String {
   }
 }
 
-/// Controls the CORS mode for a fetch request.
-
 ///|
+/// Controls the CORS mode for a fetch request.
 pub(all) enum FetchMode {
   Cors
   NoCors
@@ -29,6 +28,7 @@ pub(all) enum FetchMode {
 } derive(Eq, Debug)
 
 ///|
+/// Returns the string representation of a `FetchMode` value for use in fetch request options.
 pub fn FetchMode::to_string(self : FetchMode) -> String {
   match self {
     Cors => "cors"
@@ -38,9 +38,8 @@ pub fn FetchMode::to_string(self : FetchMode) -> String {
   }
 }
 
-/// Error type for fetch operations, wrapping a failure message.
-
 ///|
+/// Error type for fetch operations, wrapping a failure message.
 pub suberror FetchError {
   RequestFailed(String)
 } derive(Debug)

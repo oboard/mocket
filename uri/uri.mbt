@@ -1,9 +1,8 @@
 // URI parser implementation following RFC 3986
 
+///|
 /// Represents the host component of a URI, which is either an IPv6 address
 /// enclosed in brackets or a registered name (including IPv4 addresses).
-
-///|
 pub enum Host {
   IPv6Address(BytesView)
   RegName(BytesView)
@@ -25,10 +24,9 @@ impl Show for Host with output(self, logger) {
   }
 }
 
+///|
 /// The authority component of a URI, comprising an optional userinfo, a host,
 /// and an optional port number (e.g. `user:pass@example.com:8080`).
-
-///|
 pub struct Authority {
   mut userinfo : BytesView?
   mut host : Host
@@ -46,10 +44,9 @@ impl Show for Authority with output(self, logger) {
   logger.write_string("}")
 }
 
+///|
 /// A parsed URI following RFC 3986, containing an optional scheme, authority,
 /// path segments, query, and fragment.
-
-///|
 pub struct Uri {
   mut scheme : BytesView?
   mut authority : Authority?
@@ -58,10 +55,9 @@ pub struct Uri {
   mut fragment : BytesView?
 } derive(Eq, Debug)
 
+///|
 /// Errors that can occur during URI parsing, indicating the specific component
 /// that failed validation.
-
-///|
 pub suberror ParseError {
   InvalidScheme(BytesView)
   InvalidHeirPart(BytesView)
@@ -202,10 +198,9 @@ fn parse_uri_reference(
   }
 }
 
+///|
 /// Parses a URI-reference from raw bytes following RFC 3986, returning a fully
 /// populated `Uri` structure or raising a `ParseError` on invalid input.
-
-///|
 pub fn Uri::parse(source : BytesView) -> Uri raise ParseError {
   let uri = Uri::{
     scheme: None,

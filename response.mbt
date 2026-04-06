@@ -1,6 +1,5 @@
-/// An outgoing HTTP response containing the status code, headers, cookies, and body.
-
 ///|
+/// An outgoing HTTP response containing the status code, headers, cookies, and body.
 pub(all) struct HttpResponse {
   mut status_code : StatusCode
   headers : Map[String, String]
@@ -15,18 +14,16 @@ pub(all) struct HttpResponse {
   ) -> HttpResponse
 }
 
-/// Deserializes the response body into a value of type `T` via the `BodyReader` trait.
-
 ///|
+/// Deserializes the response body into a value of type `T` via the `BodyReader` trait.
 pub fn[T : BodyReader] HttpResponse::read_body(self : HttpResponse) -> T raise {
   T::from_request(
     HttpRequest::new(Other(""), "", self.headers, raw_body=self.raw_body),
   )
 }
 
-/// Creates a new `HttpResponse` with the given status code and optional headers, cookies, and body.
-
 ///|
+/// Creates a new `HttpResponse` with the given status code and optional headers, cookies, and body.
 pub fn HttpResponse::new(
   status_code : StatusCode,
   headers? : Map[String, String],
@@ -41,9 +38,8 @@ pub fn HttpResponse::new(
   }
 }
 
-/// Sets the response body from any `Responder` and returns the response for chaining.
-
 ///|
+/// Sets the response body from any `Responder` and returns the response for chaining.
 pub fn HttpResponse::body(
   self : HttpResponse,
   body : &Responder,
@@ -54,25 +50,14 @@ pub fn HttpResponse::body(
   self
 }
 
-/// Sets the response body to the JSON representation of the given value.
-
 ///|
+/// Sets the response body to the JSON representation of the given value.
 pub fn HttpResponse::json(self : HttpResponse, obj : &ToJson) -> HttpResponse {
   self.body(obj.to_json())
 }
 
-/// Serializes a typed value as JSON, sets Content-Type, and returns the response.
-///
-/// This is the recommended way to return typed data from handlers.
-/// Works with any type that has `derive(ToJson)`.
-///
-/// Example:
-/// ```
-/// struct User { name : String } derive(ToJson)
-/// HttpResponse::ok().json_value({ name: "Alice" })
-/// ```
-
 ///|
+/// Serializes a typed value as JSON, sets Content-Type, and returns the response.
 pub fn[T : ToJson] HttpResponse::json_value(
   self : HttpResponse,
   value : T,
@@ -83,16 +68,8 @@ pub fn[T : ToJson] HttpResponse::json_value(
   self
 }
 
-/// Sets a response header and returns self for fluent chaining.
-///
-/// ```mbt check
-/// test {
-///   let res = @crescent.HttpResponse::ok().header("X-Custom", "value")
-///   inspect(res.headers.get("X-Custom"), content="Some(\"value\")")
-/// }
-/// ```
-
 ///|
+/// Sets a response header and returns self for fluent chaining.
 pub fn HttpResponse::header(
   self : HttpResponse,
   name : String,
@@ -102,9 +79,8 @@ pub fn HttpResponse::header(
   self
 }
 
-/// Converts this response into a `Responder` trait object for use as a handler return value.
-
 ///|
+/// Converts this response into a `Responder` trait object for use as a handler return value.
 pub fn HttpResponse::to_responder(self : HttpResponse) -> &Responder {
   self
 }

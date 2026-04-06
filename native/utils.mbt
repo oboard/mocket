@@ -1,4 +1,5 @@
 ///|
+/// Executes `f` and guarantees `finally_` runs afterward, even if `f` raises an error.
 pub fn[V, E : Error] try_finally(
   f : () -> V raise E,
   finally_~ : () -> Unit,

@@ -1,4 +1,5 @@
 ///|
+/// Error type for invalid native server configuration values.
 pub suberror NativeServeError {
   InvalidMaxConnections(Int)
   InvalidMaxRequestBodyBytes(Int)
@@ -9,6 +10,7 @@ pub suberror NativeServeError {
 } derive(Debug, ToJson)
 
 ///|
+/// Policy for handling a full outbound WebSocket message queue.
 pub(all) enum NativeWebSocketOverflowPolicy {
   DropOldest
   DropLatest
@@ -23,6 +25,7 @@ pub impl Show for NativeWebSocketOverflowPolicy with output(self, logger) {
 }
 
 ///|
+/// Configuration options for the native async HTTP server runtime.
 pub struct NativeServeOptions {
   max_connections : Int?
   max_request_body_bytes : Int?

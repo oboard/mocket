@@ -1,29 +1,5 @@
-/// Trait for types that can be sent as an HTTP response body.
-///
-/// Implementors define `options` to configure response headers (e.g. Content-Type)
-/// and `output` to write the body bytes into the buffer.
-///
-/// Built-in implementations:
-/// - `String` / `StringView` → `text/plain; charset=utf-8`
-/// - `Bytes` → `application/octet-stream`
-/// - `Json` / `&ToJson` → `application/json; charset=utf-8`
-/// - `HttpResponse` → uses the response's own status, headers, and body
-/// - `HttpRequest` → forwards the request body (useful for proxying)
-/// - `Html` (via `html()` helper) → `text/html; charset=utf-8`
-///
-/// To make your own type a responder, implement the trait:
-/// ```
-/// struct MyData { value : Int }
-/// pub impl Responder for MyData with options(_, res) {
-///   res.headers.set("Content-Type", "text/plain")
-/// }
-/// pub impl Responder for MyData with output(self, buf) {
-///   buf.write_string_utf8(self.value.to_string())
-/// }
-/// pub impl Responder for MyData with output_bytes(_) -> Bytes? { None }
-/// ```
-
 ///|
+/// Trait for types that can be sent as an HTTP response body.
 pub(open) trait Responder {
   options(Self, res : HttpResponse) -> Unit
   output(Self, buf : @buffer.Buffer) -> Unit
@@ -194,16 +170,14 @@ pub impl Responder for Html with output_bytes(_self) -> Bytes? {
   None
 }
 
-/// Creates an HTML responder from any `Show` value, setting the Content-Type to `text/html`.
-
 ///|
+/// Creates an HTML responder from any `Show` value, setting the Content-Type to `text/html`.
 pub fn html(html : &Show) -> &Responder {
   Html(html.to_string())
 }
 
-/// Creates a plain-text responder from any `Show` value, setting the Content-Type to `text/plain`.
-
 ///|
+/// Creates a plain-text responder from any `Show` value, setting the Content-Type to `text/plain`.
 pub fn text(text : &Show) -> &Responder {
   text.to_string()
 }

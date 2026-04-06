@@ -1,12 +1,9 @@
-/// The continuation function passed to middleware, calling the next handler in the chain.
-
 ///|
+/// The continuation function passed to middleware, calling the next handler in the chain.
 pub type MiddlewareNext = async () -> &Responder noraise
 
-/// A middleware function that receives a request event and a next continuation, and returns a response.
-
 ///|
-// Middleware type: accepts HttpEvent and next function, returns HttpBody
+/// A middleware function that receives a request event and a next continuation, and returns a response.
 pub type Middleware = async (MocketEvent, MiddlewareNext) -> &Responder noraise
 
 ///|
@@ -20,10 +17,8 @@ fn normalize_middleware_base_path(base_path : String) -> String {
   }
 }
 
-/// Adds a middleware to the app, optionally scoped to a base path prefix.
-
 ///|
-// Register middleware with path matching support
+/// Adds a middleware to the app, optionally scoped to a base path prefix.
 pub fn Mocket::use_middleware(
   self : Mocket,
   middleware : Middleware,
@@ -35,8 +30,6 @@ pub fn Mocket::use_middleware(
   // Store middleware together with path scope
   self.middlewares.push((base_path, middleware))
 }
-
-/// Executes the middleware chain using the onion model, filtering by path scope, then calls the final handler.
 
 ///|
 // Execute middleware chain with path matching (onion model)

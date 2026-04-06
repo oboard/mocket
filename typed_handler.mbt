@@ -1,19 +1,8 @@
-/// Error type for handlers that want automatic HTTP error responses.
-///
-/// Raise `HttpError(status, message)` from any handler registered with
-/// `get`, `post`, etc. to return a structured JSON error.
-
 ///|
+/// Error type for handlers that want automatic HTTP error responses.
 pub(all) suberror HttpError {
   HttpError(StatusCode, String)
 } derive(Debug)
-
-/// Wraps a raising handler into a noraise HttpHandler with automatic error mapping.
-///
-/// Caught errors are mapped to JSON responses:
-/// - `HttpError(status, msg)` → `{"error":{"status":<int>,"message":"<msg>"}}`
-/// - `@json.JsonDecodeError` → 400 Bad Request
-/// - Any other error → 500 Internal Server Error
 
 ///|
 fn wrap_error_handler(
@@ -39,18 +28,8 @@ fn wrap_error_handler(
   }
 }
 
-/// Registers a GET handler that can raise errors. Errors are automatically
-/// converted to JSON error responses. This is the recommended default for
-/// AI agents and most handlers.
-///
-/// ```
-/// app.get("/users/:id", event => {
-///   let id = event.require_param_int("id")
-///   HttpResponse::ok().json_value(find_user(id))
-/// })
-/// ```
-
 ///|
+/// Registers a GET handler with automatic error-to-JSON mapping.
 pub fn Mocket::get(
   self : Mocket,
   path : String,
@@ -59,9 +38,8 @@ pub fn Mocket::get(
   self.get_raw(path, wrap_error_handler(handler))
 }
 
-/// Registers a POST handler that can raise errors.
-
 ///|
+/// Registers a POST handler with automatic error-to-JSON mapping.
 pub fn Mocket::post(
   self : Mocket,
   path : String,
@@ -70,9 +48,8 @@ pub fn Mocket::post(
   self.post_raw(path, wrap_error_handler(handler))
 }
 
-/// Registers a PUT handler that can raise errors.
-
 ///|
+/// Registers a PUT handler with automatic error-to-JSON mapping.
 pub fn Mocket::put(
   self : Mocket,
   path : String,
@@ -81,9 +58,8 @@ pub fn Mocket::put(
   self.put_raw(path, wrap_error_handler(handler))
 }
 
-/// Registers a PATCH handler that can raise errors.
-
 ///|
+/// Registers a PATCH handler with automatic error-to-JSON mapping.
 pub fn Mocket::patch(
   self : Mocket,
   path : String,
@@ -92,9 +68,8 @@ pub fn Mocket::patch(
   self.patch_raw(path, wrap_error_handler(handler))
 }
 
-/// Registers a DELETE handler that can raise errors.
-
 ///|
+/// Registers a DELETE handler with automatic error-to-JSON mapping.
 pub fn Mocket::delete(
   self : Mocket,
   path : String,
@@ -103,9 +78,8 @@ pub fn Mocket::delete(
   self.delete_raw(path, wrap_error_handler(handler))
 }
 
-/// Registers a HEAD handler that can raise errors.
-
 ///|
+/// Registers a HEAD handler with automatic error-to-JSON mapping.
 pub fn Mocket::head(
   self : Mocket,
   path : String,
@@ -114,9 +88,8 @@ pub fn Mocket::head(
   self.head_raw(path, wrap_error_handler(handler))
 }
 
-/// Registers an OPTIONS handler that can raise errors.
-
 ///|
+/// Registers an OPTIONS handler with automatic error-to-JSON mapping.
 pub fn Mocket::options(
   self : Mocket,
   path : String,
@@ -125,9 +98,8 @@ pub fn Mocket::options(
   self.options_raw(path, wrap_error_handler(handler))
 }
 
-/// Registers a TRACE handler that can raise errors.
-
 ///|
+/// Registers a TRACE handler with automatic error-to-JSON mapping.
 pub fn Mocket::trace(
   self : Mocket,
   path : String,
@@ -136,9 +108,8 @@ pub fn Mocket::trace(
   self.trace_raw(path, wrap_error_handler(handler))
 }
 
-/// Registers a CONNECT handler that can raise errors.
-
 ///|
+/// Registers a CONNECT handler with automatic error-to-JSON mapping.
 pub fn Mocket::connect(
   self : Mocket,
   path : String,
@@ -147,9 +118,8 @@ pub fn Mocket::connect(
   self.connect_raw(path, wrap_error_handler(handler))
 }
 
-/// Registers a handler that matches all HTTP methods and can raise errors.
-
 ///|
+/// Registers a handler matching all HTTP methods with automatic error-to-JSON mapping.
 pub fn Mocket::all(
   self : Mocket,
   path : String,

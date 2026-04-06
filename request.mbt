@@ -1,6 +1,5 @@
-/// An incoming HTTP request containing the method, URL, headers, and body.
-
 ///|
+/// An incoming HTTP request containing the method, URL, headers, and body.
 pub(all) struct HttpRequest {
   http_method : HttpMethod
   url : String
@@ -20,6 +19,7 @@ pub(all) struct HttpRequest {
 }
 
 ///|
+/// Creates a new `HttpRequest` with the given method, URL, headers, and optional body.
 pub fn HttpRequest::new(
   http_method : HttpMethod,
   url : String,
@@ -36,10 +36,8 @@ pub fn HttpRequest::new(
   }
 }
 
-/// Creates a new HttpRequest from a method string.
-/// Convenience constructor that parses the method string into an HttpMethod.
-
 ///|
+/// Creates a new `HttpRequest` from a method string, parsing it into an `HttpMethod`.
 pub fn HttpRequest::from_method_string(
   http_method : String,
   url : String,
@@ -54,48 +52,20 @@ pub fn HttpRequest::from_method_string(
   )
 }
 
-/// Returns the HTTP method as a string (e.g., "GET", "POST").
-
 ///|
+/// Returns the HTTP method as a string (e.g., "GET", "POST").
 pub fn HttpRequest::method_string(self : HttpRequest) -> String {
   self.http_method.to_method_string()
 }
 
-/// Trait for types that can be deserialized from an HTTP request body.
-///
-/// Implement `from_request` to define how the raw request bytes are converted
-/// into the target type. Used by `event.req.body[T]()`.
-///
-/// Built-in implementations:
-/// - `String` → UTF-8 decoded text (handles UTF-16 payloads gracefully)
-/// - `Json` → parsed JSON value
-/// - `Bytes` → raw bytes (zero-copy)
-/// - `FixedArray[Byte]` / `Array[Byte]` → byte arrays
-///
-/// For typed JSON parsing, prefer `event.req.json[T]()` or `event.json[T]()`
-/// which use `derive(FromJson)` directly — no `BodyReader` implementation needed.
-///
-/// To make your own type a body reader:
-/// ```
-/// struct CsvData { rows : Array[Array[String]] }
-/// pub impl BodyReader for CsvData with from_request(req) {
-///   let text = @utf8.decode(req.raw_body)
-///   // parse CSV ...
-/// }
-/// ```
-
 ///|
+/// Trait for types that can be deserialized from an HTTP request body.
 pub(open) trait BodyReader {
   from_request(req : HttpRequest) -> Self raise
 }
 
-/// Returns the path component of the request URL, excluding query string and fragment.
-///
-/// The result is cached on first access — subsequent calls return the cached value
-/// without re-parsing, which is important since the path is accessed by routing,
-/// middleware scope matching, and user handler code.
-
 ///|
+/// Returns the path component of the request URL, excluding query string and fragment.
 pub fn HttpRequest::path(self : HttpRequest) -> String {
   match self.cached_path {
     Some(p) => p
@@ -107,27 +77,20 @@ pub fn HttpRequest::path(self : HttpRequest) -> String {
   }
 }
 
-/// Returns the raw query string from the request URL, or `None` if absent.
-
 ///|
+/// Returns the raw query string from the request URL, or `None` if absent.
 pub fn HttpRequest::query_string(self : HttpRequest) -> String? {
   @mhttp.request_target_query_string(self.url)
 }
 
-/// Returns the Content-Type header value, or None if not set.
-
 ///|
+/// Returns the Content-Type header value, or None if not set.
 pub fn HttpRequest::content_type(self : HttpRequest) -> String? {
   self.get_header("content-type")
 }
 
-/// Parses the query string into a map of key-value pairs.
-///
-/// Returns an empty map when no query string is present.
-/// The result is cached on first access — subsequent calls return the cached map
-/// without re-parsing.
-
 ///|
+/// Parses the query string into a map of key-value pairs, cached on first access.
 pub fn HttpRequest::query_params(self : HttpRequest) -> Map[String, String] {
   match self.cached_query_params {
     Some(params) => params
@@ -142,55 +105,29 @@ pub fn HttpRequest::query_params(self : HttpRequest) -> Map[String, String] {
   }
 }
 
-/// Looks up a single query parameter by key, returning `None` if not found.
-///
-/// Uses the cached query params map, so calling this multiple times with
-/// different keys only parses the query string once.
-
 ///|
+/// Looks up a single query parameter by key, returning `None` if not found.
 pub fn HttpRequest::get_query(self : HttpRequest, key : String) -> String? {
   self.query_params().get(key)
 }
 
-/// Deserializes the request body into a value of type `T` via the `BodyReader` trait.
-
 ///|
+/// Deserializes the request body into a value of type `T` via the `BodyReader` trait.
 pub fn[T : BodyReader] HttpRequest::body(self : HttpRequest) -> T raise {
   T::from_request(self)
 }
 
-/// Parses the request body as JSON and deserializes into type `T`.
-///
-/// Works with any type that has `derive(FromJson)`. This is the recommended
-/// way for AI agents and developers to extract typed data from request bodies.
-///
-/// Example:
-/// ```
-/// struct CreateUser { name : String, age : Int } derive(FromJson)
-/// let user : CreateUser = event.req.json()
-/// ```
-
 ///|
+/// Parses the request body as JSON and deserializes into type `T`.
 pub fn[T : FromJson] HttpRequest::json(self : HttpRequest) -> T raise {
   let text = @utf8.decode(self.raw_body)
   let json = @json.parse(text)
   @json.from_json(json)
 }
 
+///|
 /// Tries to parse the request body as JSON, returning `Ok(T)` on success
 /// or `Err(message)` on failure.
-///
-/// Use this when you want custom error handling instead of the automatic
-/// error mapping provided by `json()`.
-///
-/// ```
-/// match event.req.try_json() {
-///   Ok(user) => HttpResponse::ok().json_value(user)
-///   Err(msg) => HttpResponse::error(BadRequest, "Invalid input: \{msg}")
-/// }
-/// ```
-
-///|
 pub fn[T : FromJson] HttpRequest::try_json(
   self : HttpRequest,
 ) -> Result[T, String] {

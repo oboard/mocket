@@ -42,10 +42,9 @@ fn find_header_key_case_insensitive(
   None
 }
 
+///|
 /// Retrieves the value of a header by name using case-insensitive lookup, or
 /// `None` if the header is not present.
-
-///|
 pub fn get_header_case_insensitive(
   headers : Map[String, String],
   header_name : String,
@@ -56,10 +55,9 @@ pub fn get_header_case_insensitive(
   }
 }
 
+///|
 /// Returns `true` if the headers map contains a header matching the given name
 /// case-insensitively.
-
-///|
 pub fn has_header_case_insensitive(
   headers : Map[String, String],
   header_name : String,
@@ -87,10 +85,9 @@ fn set_header_case_insensitive(
   }
 }
 
+///|
 /// Sets a header value only if no header with the same name (case-insensitive)
 /// already exists in the map.
-
-///|
 pub fn set_missing_header_case_insensitive(
   headers : Map[String, String],
   header_name : String,
@@ -101,10 +98,9 @@ pub fn set_missing_header_case_insensitive(
   }
 }
 
+///|
 /// Merges all headers from the source map into the target map using
 /// case-insensitive key matching, overwriting existing entries on conflict.
-
-///|
 pub fn merge_headers_case_insensitive(
   target : Map[String, String],
   source : Map[String, String],

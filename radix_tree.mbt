@@ -203,6 +203,7 @@ struct RadixRouter[T] {
 }
 
 ///|
+/// Creates a new empty radix router with no registered routes.
 pub fn[T] RadixRouter::new() -> RadixRouter[T] {
   { trees: {}, fallback_routes: {} }
 }
@@ -222,9 +223,8 @@ fn[T] RadixRouter::get_or_create_tree(
   }
 }
 
-/// Insert a compiled route for a given HTTP method.
-
 ///|
+/// Inserts a compiled route for a given HTTP method.
 pub fn[T] RadixRouter::insert(
   self : RadixRouter[T],
   http_method : String,
@@ -259,9 +259,8 @@ fn has_globstar_with_trailing(segments : Array[RouteSegment]) -> Bool {
   false
 }
 
-/// Merge all routes from another router into this one.
-
 ///|
+/// Merges all routes from another router into this one.
 pub fn[T] RadixRouter::merge(
   self : RadixRouter[T],
   other : RadixRouter[T],
@@ -320,9 +319,8 @@ fn[T] merge_nodes(target : RadixNode[T], source : RadixNode[T]) -> Unit {
   }
 }
 
-/// Search for a handler matching the given method and path.
-
 ///|
+/// Searches for a handler matching the given HTTP method and path.
 pub fn[T] RadixRouter::search(
   self : RadixRouter[T],
   http_method : String,

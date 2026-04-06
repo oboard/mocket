@@ -1,13 +1,6 @@
-/// Dispatches a synthetic HTTP request through the full routing + middleware
-/// pipeline and returns the response components.
-///
-/// This is the public entry point used by `@testing.TestClient`. It
-/// encapsulates all internal routing logic (route lookup, middleware chain,
-/// responder output) behind a stable public API.
-///
-/// Returns `(status_code, headers, body_bytes)`.
-
 ///|
+/// Dispatches a synthetic HTTP request through the full routing + middleware
+/// pipeline and returns `(status_code, headers, body_bytes)`.
 pub async fn Mocket::dispatch(
   self : Mocket,
   http_method : String,

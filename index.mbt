@@ -1,6 +1,5 @@
-/// The main application type that holds route mappings, middleware, and WebSocket handlers.
-
 ///|
+/// The main application type that holds route mappings, middleware, and WebSocket handlers.
 pub struct Mocket {
   priv base_path : String
   priv mappings : Map[(String, String), HttpHandler]
@@ -24,9 +23,8 @@ fn next_mocket_instance_id() -> String {
   "mocket-\{mocket_instance_counter.val}"
 }
 
-/// Creates a new Mocket application instance with an optional base path prefix.
-
 ///|
+/// Creates a new Mocket application instance with an optional base path prefix.
 pub fn Mocket::new(base_path? : String = "") -> Mocket {
   {
     base_path,
@@ -41,18 +39,14 @@ pub fn Mocket::new(base_path? : String = "") -> Mocket {
   }
 }
 
-/// Returns an iterator over the registered route keys as `(method, path)` pairs.
-
 ///|
+/// Returns an iterator over the registered route keys as `(method, path)` pairs.
 pub fn Mocket::routes(self : Mocket) -> Iter[(String, String)] {
   self.mappings.keys()
 }
 
 ///|
-
 /// The SameSite attribute for cookies, controlling cross-site request behavior.
-
-///|
 pub(all) enum SameSiteOption {
   Lax
   Strict
@@ -77,9 +71,8 @@ pub impl ToJson for SameSiteOption with to_json(self : SameSiteOption) -> Json {
   }
 }
 
-/// Represents an HTTP cookie with its name, value, and optional attributes.
-
 ///|
+/// Represents an HTTP cookie with its name, value, and optional attributes.
 pub(all) struct CookieItem {
   name : String
   value : String
@@ -103,6 +96,7 @@ pub(all) struct CookieItem {
 } derive(Eq)
 
 ///|
+/// Creates a new `CookieItem` with the given name, value, and optional attributes.
 pub fn CookieItem::new(
   name~ : String,
   value~ : String,
@@ -167,9 +161,8 @@ pub impl Show for CookieItem with to_string(self : CookieItem) -> String {
   buf.to_string()
 }
 
-/// Registers a route handler for the given HTTP method and path.
-
 ///|
+/// Registers a route handler for the given HTTP method and path.
 pub fn Mocket::on(
   self : Mocket,
   event : String,
@@ -196,10 +189,8 @@ pub fn Mocket::on(
   }
 }
 
-/// Registers a noraise GET handler. For most use cases, prefer `get()` which
-/// provides automatic error handling.
-
 ///|
+/// Registers a noraise GET handler. For most use cases, prefer `get()`.
 pub fn Mocket::get_raw(
   self : Mocket,
   path : String,
@@ -208,9 +199,8 @@ pub fn Mocket::get_raw(
   self.on("GET", path, handler)
 }
 
-/// Registers a noraise POST handler.
-
 ///|
+/// Registers a noraise POST handler.
 pub fn Mocket::post_raw(
   self : Mocket,
   path : String,
@@ -219,9 +209,8 @@ pub fn Mocket::post_raw(
   self.on("POST", path, handler)
 }
 
-/// Registers a noraise PATCH handler.
-
 ///|
+/// Registers a noraise PATCH handler.
 pub fn Mocket::patch_raw(
   self : Mocket,
   path : String,
@@ -230,9 +219,8 @@ pub fn Mocket::patch_raw(
   self.on("PATCH", path, handler)
 }
 
-/// Registers a noraise CONNECT handler.
-
 ///|
+/// Registers a noraise CONNECT handler.
 pub fn Mocket::connect_raw(
   self : Mocket,
   path : String,
@@ -241,9 +229,8 @@ pub fn Mocket::connect_raw(
   self.on("CONNECT", path, handler)
 }
 
-/// Registers a noraise PUT handler.
-
 ///|
+/// Registers a noraise PUT handler.
 pub fn Mocket::put_raw(
   self : Mocket,
   path : String,
@@ -252,9 +239,8 @@ pub fn Mocket::put_raw(
   self.on("PUT", path, handler)
 }
 
-/// Registers a noraise DELETE handler.
-
 ///|
+/// Registers a noraise DELETE handler.
 pub fn Mocket::delete_raw(
   self : Mocket,
   path : String,
@@ -263,9 +249,8 @@ pub fn Mocket::delete_raw(
   self.on("DELETE", path, handler)
 }
 
-/// Registers a noraise HEAD handler.
-
 ///|
+/// Registers a noraise HEAD handler.
 pub fn Mocket::head_raw(
   self : Mocket,
   path : String,
@@ -274,9 +259,8 @@ pub fn Mocket::head_raw(
   self.on("HEAD", path, handler)
 }
 
-/// Registers a noraise OPTIONS handler.
-
 ///|
+/// Registers a noraise OPTIONS handler.
 pub fn Mocket::options_raw(
   self : Mocket,
   path : String,
@@ -285,9 +269,8 @@ pub fn Mocket::options_raw(
   self.on("OPTIONS", path, handler)
 }
 
-/// Registers a noraise TRACE handler.
-
 ///|
+/// Registers a noraise TRACE handler.
 pub fn Mocket::trace_raw(
   self : Mocket,
   path : String,
@@ -296,9 +279,8 @@ pub fn Mocket::trace_raw(
   self.on("TRACE", path, handler)
 }
 
-/// Registers a noraise handler that matches all HTTP methods.
-
 ///|
+/// Registers a noraise handler that matches all HTTP methods.
 pub fn Mocket::all_raw(
   self : Mocket,
   path : String,
@@ -307,10 +289,8 @@ pub fn Mocket::all_raw(
   self.on("*", path, handler)
 }
 
-/// Creates a route group with a shared base path prefix, merging its routes and middleware into the app.
-
 ///|
-// Create route group
+/// Creates a route group with a shared base path prefix, merging its routes and middleware into the app.
 pub fn Mocket::group(
   self : Mocket,
   base_path : String,
@@ -342,9 +322,8 @@ pub fn Mocket::group(
   }
 }
 
-/// Sets a custom handler for 404 Not Found responses.
-
 ///|
+/// Sets a custom handler for 404 Not Found responses.
 pub fn Mocket::set_not_found_handler(
   self : Mocket,
   handler : HttpHandler,
@@ -352,17 +331,14 @@ pub fn Mocket::set_not_found_handler(
   self.not_found_handler = Some(handler)
 }
 
-/// Returns true if a custom not-found handler has been registered.
-
 ///|
+/// Returns true if a custom not-found handler has been registered.
 pub fn Mocket::has_not_found_handler(self : Mocket) -> Bool {
   self.not_found_handler is Some(_)
 }
 
-/// Registers a WebSocket handler for the given path, matched regardless of HTTP method.
-
 ///|
-// Register WebSocket route (method-agnostic, matched by path)
+/// Registers a WebSocket handler for the given path, matched regardless of HTTP method.
 pub fn Mocket::ws(
   self : Mocket,
   path : String,

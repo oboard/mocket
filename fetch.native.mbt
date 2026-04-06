@@ -147,6 +147,7 @@ fn prepare_fetch_payload_bytes(
 }
 
 ///|
+/// Sends an HTTP request to the given URL and returns the response.
 pub async fn fetch(
   url : String,
   body? : String,

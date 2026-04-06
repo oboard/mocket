@@ -166,10 +166,9 @@ fn http_month_name(month : Int) -> String {
   }
 }
 
+///|
 /// Formats a Unix epoch timestamp (in seconds) as an HTTP-date string in the
 /// RFC 7231 preferred format, e.g. `"Sun, 06 Nov 1994 08:49:37 GMT"`.
-
-///|
 pub fn format_http_date(epoch_seconds : Int64) -> String {
   let days_since_epoch = floor_div_i64(epoch_seconds, HTTP_SECONDS_PER_DAY)
   let seconds_of_day = (epoch_seconds - days_since_epoch * HTTP_SECONDS_PER_DAY).to_int()
@@ -180,10 +179,9 @@ pub fn format_http_date(epoch_seconds : Int64) -> String {
   "\{http_weekday_name(days_since_epoch)}, \{zero_pad_2(day)} \{http_month_name(month)} \{year} \{zero_pad_2(hour)}:\{zero_pad_2(minute)}:\{zero_pad_2(second)} GMT"
 }
 
+///|
 /// Parses an HTTP-date string in RFC 7231 preferred format into a Unix epoch
 /// timestamp (in seconds), returning `None` if the format is invalid.
-
-///|
 pub fn parse_http_date(http_date : StringView) -> Int64? {
   if http_date.length() != 29 {
     return None
