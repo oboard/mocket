@@ -14,7 +14,7 @@ async test "wrap_error_handler passes through success" {
 
 ///|
 async test "wrap_error_handler catches HttpError" {
-  let handler = wrap_error_handler(fn(_event) {
+  let handler = wrap_error_handler(_event => {
     raise HttpError(BadRequest, "name is required")
   })
   let event = MocketEvent::{
@@ -34,7 +34,7 @@ async test "wrap_error_handler catches HttpError" {
 
 ///|
 async test "wrap_error_handler catches JsonDecodeError as 400" {
-  let handler = wrap_error_handler(fn(event) {
+  let handler = wrap_error_handler(event => {
     let _user : Json = event.req.json()
     "ok"
   })
@@ -55,7 +55,7 @@ async test "wrap_error_handler catches JsonDecodeError as 400" {
 
 ///|
 async test "wrap_error_handler catches unknown error as 500" {
-  let handler = wrap_error_handler(fn(_event) { raise NetworkError })
+  let handler = wrap_error_handler(_event => raise NetworkError)
   let event = MocketEvent::{
     req: { http_method: "GET", url: "/", headers: {}, raw_body: b"" },
     res: HttpResponse::new(OK),
@@ -68,7 +68,7 @@ async test "wrap_error_handler catches unknown error as 500" {
 
 ///|
 async test "wrap_error_handler catches Failure as 500" {
-  let handler = wrap_error_handler(fn(_event) { fail("something went wrong") })
+  let handler = wrap_error_handler(_event => fail("something went wrong"))
   let event = MocketEvent::{
     req: { http_method: "GET", url: "/", headers: {}, raw_body: b"" },
     res: HttpResponse::new(OK),
@@ -85,7 +85,7 @@ async test "wrap_error_handler catches Failure as 500" {
 
 ///|
 async test "HttpError with NotFound status" {
-  let handler = wrap_error_handler(fn(_event) {
+  let handler = wrap_error_handler(_event => {
     raise HttpError(NotFound, "user not found")
   })
   let event = MocketEvent::{

@@ -19,7 +19,7 @@ pub(all) suberror HttpError {
 fn wrap_error_handler(
   handler : async (MocketEvent) -> &Responder,
 ) -> HttpHandler {
-  fn(event) noraise {
+  event => {
     handler(event) catch {
       HttpError(status, message) => HttpResponse::error(status, message)
       @json.JsonDecodeError(_) as err =>

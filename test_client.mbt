@@ -112,15 +112,14 @@ pub async fn TestClient::delete(
 ///|
 pub async fn TestClient::request(
   self : TestClient,
-  method : String,
+  meth : String,
   path : String,
   headers~ : Map[String, String],
   body~ : Bytes,
 ) -> TestResponse {
   let request_path = @mhttp.request_target_path(path)
   // Look up route
-  let (params, handler) = match
-    self.app.lookup_http_route(method, request_path) {
+  let (params, handler) = match self.app.lookup_http_route(meth, request_path) {
     Found(matched_handler, matched_params) => (matched_params, matched_handler)
     MethodNotAllowed(allow) => ({}, method_not_allowed_handler(allow))
     Options(allow) => ({}, options_handler(allow))
@@ -132,7 +131,7 @@ pub async fn TestClient::request(
   }
   // Construct event
   let event = {
-    req: { http_method: method, url: path, headers, raw_body: body },
+    req: { http_method: meth, url: path, headers, raw_body: body },
     res: HttpResponse::new(OK),
     params,
   }

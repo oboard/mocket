@@ -77,7 +77,7 @@ fn build_todo_app() -> @mocket.Mocket {
   })
 
   // Get single todo by ID
-  app.get_json("/api/todos/:id", fn(event) {
+  app.get_json("/api/todos/:id", event => {
     let id = match event.param_int("id") {
       Some(id) => id
       None =>
@@ -95,7 +95,7 @@ fn build_todo_app() -> @mocket.Mocket {
   })
 
   // Create todo
-  app.post_json("/api/todos", fn(event) {
+  app.post_json("/api/todos", event => {
     let input : CreateTodo = event.req.json()
     let id = next_id.val
     next_id.val += 1
@@ -230,7 +230,7 @@ async test "full-stack: json round-trip preserves all fields" {
 ///|
 async test "full-stack: nested json with optional fields" {
   let app = @mocket.new()
-  app.post_json("/api/profile", fn(event) {
+  app.post_json("/api/profile", event => {
     let profile : UserProfile = event.req.json()
     // Echo back with modification
     @mocket.HttpResponse::ok().json_value({
@@ -258,13 +258,13 @@ async test "full-stack: middleware chain with typed handlers" {
   let log : Array[String] = []
   let app = @mocket.new()
   // Logging middleware
-  app.use_middleware(fn(event, next) noraise {
+  app.use_middleware((event, next) => {
     log.push("before: \{event.req.http_method} \{event.req.url}")
     let res = next()
     log.push("after")
     res
   })
-  app.get_json("/api/data", fn(_event) {
+  app.get_json("/api/data", _event => {
     let todo : Todo = { id: 1, title: "test", done: false }
     @mocket.HttpResponse::ok().json_value(todo)
   })

@@ -80,7 +80,7 @@ async test "test client runs middleware" {
 ///|
 async test "test client with error handling handler" {
   let app = new()
-  app.post_json("/users", fn(event) {
+  app.post_json("/users", event => {
     let _body : Json = event.req.json()
     "created"
   })
@@ -135,7 +135,7 @@ async test "test client with path-scoped middleware" {
   let order : Array[String] = []
   let app = new()
   app.use_middleware(
-    fn(_event, next) noraise {
+    (_event, next) => {
       order.push("api-mw")
       next()
     },
