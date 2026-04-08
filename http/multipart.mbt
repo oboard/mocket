@@ -33,12 +33,17 @@ fn find_boundary(
 }
 
 ///|
-/// Parses a multipart/form-data body using the given boundary string into a map of form values.
+/// Parses a multipart/form-data body using the given boundary string.
+///
+/// Returns a map where each field name maps to an array of values — this
+/// preserves repeated field names (e.g. a form with multiple `<input name="tag">`
+/// entries). Use `.get(name)` to retrieve all values for a field, then index
+/// into the array for a specific one.
 pub fn parse_multipart(
   bytes : BytesView,
   boundary : String,
-) -> Map[String, MultipartFormValue] {
-  let res = Map::new()
+) -> Map[String, Array[MultipartFormValue]] {
+  let res : Map[String, Array[MultipartFormValue]] = {}
   let boundary_bytes = @utf8.encode("--" + boundary)
   let boundary_len = boundary_bytes.length()
   let len = bytes.length()
@@ -77,10 +82,30 @@ pub fn parse_multipart(
   res
 }
 
+/// Parses a single `name="value"` or `name=value` directive from a
+/// Content-Disposition header. Handles both quoted and unquoted values.
+
+///|
+fn parse_disposition_value(directive : String, key : String) -> String? {
+  let prefix = key + "="
+  if !directive.has_prefix(prefix) {
+    return None
+  }
+  let rest = directive[prefix.length():]
+  // Quoted value
+  if rest.length() >= 2 &&
+    rest.has_prefix("\"") &&
+    rest.view().to_string().has_suffix("\"") {
+    Some(rest[1:rest.length() - 1].to_string())
+  } else {
+    Some(rest.to_string())
+  }
+}
+
 ///|
 fn parse_multipart_part(
   part : BytesView,
-  res : Map[String, MultipartFormValue],
+  res : Map[String, Array[MultipartFormValue]],
 ) -> Unit {
   let len = part.length()
   let mut body_start = -1
@@ -111,15 +136,14 @@ fn parse_multipart_part(
       if key == "content-disposition" {
         let directives = val.split(";").to_array()
         for directive in directives {
-          let directive = directive.trim()
-          if directive.has_prefix("name=") {
-            let d_str = directive.to_string()
-            let substr = d_str[6:d_str.length() - 1]
-            name = substr.to_string()
-          } else if directive.has_prefix("filename=") {
-            let d_str = directive.to_string()
-            let substr = d_str[10:d_str.length() - 1]
-            filename = Some(substr.to_string())
+          let directive = directive.trim().to_string()
+          match parse_disposition_value(directive, "name") {
+            Some(n) => name = n
+            None => ()
+          }
+          match parse_disposition_value(directive, "filename") {
+            Some(f) => filename = Some(f)
+            None => ()
           }
         }
       } else if key == "content-type" {
@@ -128,6 +152,23 @@ fn parse_multipart_part(
     }
   }
   if name != "" {
-    res.set(name, { filename, content_type, data: body_bytes })
+    let value = { filename, content_type, data: body_bytes }
+    match res.get(name) {
+      Some(existing) => existing.push(value)
+      None => res.set(name, [value])
+    }
+  }
+}
+
+///|
+/// Returns the first value for a given field name, or `None` if not present.
+/// Convenience helper for forms where each field is known to have a single value.
+pub fn first_multipart_value(
+  form : Map[String, Array[MultipartFormValue]],
+  name : String,
+) -> MultipartFormValue? {
+  match form.get(name) {
+    Some(values) if values.length() > 0 => Some(values[0])
+    _ => None
   }
 }

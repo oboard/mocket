@@ -2,6 +2,8 @@ import {
   "moonbitlang/core/json",
 }
 
+warnings = "+74"
+
 options(
   targets: {
     "async.mbt": [ "js" ],

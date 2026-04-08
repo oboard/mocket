@@ -84,9 +84,12 @@ pub fn HttpRequest::content_type(self : HttpRequest) -> String? {
   self.get_header("content-type")
 }
 
+/// Returns the cached parsed query params, parsing the URL on first access.
+/// Private — external callers should use `query_params()` or `get_query()`
+/// which return owned copies.
+
 ///|
-/// Parses the query string into a map of key-value pairs, cached on first access.
-pub fn HttpRequest::query_params(self : HttpRequest) -> Map[String, String] {
+fn HttpRequest::cached_query(self : HttpRequest) -> Map[String, String] {
   match self.cached_query_params {
     Some(params) => params
     None => {
@@ -101,9 +104,24 @@ pub fn HttpRequest::query_params(self : HttpRequest) -> Map[String, String] {
 }
 
 ///|
+/// Parses the query string into a map of key-value pairs.
+///
+/// Returns a fresh copy on every call — mutating the returned map does NOT
+/// affect subsequent `get_query()` calls. The underlying parse is cached, so
+/// calling this multiple times only parses the URL once.
+pub fn HttpRequest::query_params(self : HttpRequest) -> Map[String, String] {
+  let cached = self.cached_query()
+  let copy : Map[String, String] = {}
+  cached.each((k, v) => copy[k] = v)
+  copy
+}
+
+///|
 /// Looks up a single query parameter by key, returning `None` if not found.
+/// Uses the cached query params — calling this multiple times with different
+/// keys only parses the URL once.
 pub fn HttpRequest::get_query(self : HttpRequest, key : String) -> String? {
-  self.query_params().get(key)
+  self.cached_query().get(key)
 }
 
 ///|
@@ -145,6 +163,17 @@ test "path is cached after first access" {
   // Second call returns cached value
   let path2 = req.path()
   assert_eq(path1, path2)
+}
+
+///|
+test "query_params returns a copy that doesn't affect the cache" {
+  let req = HttpRequest(Get, "/search?q=hello&lang=en", {}, raw_body=b"")
+  let params1 = req.query_params()
+  params1["injected"] = "hacked"
+  // The mutation should not affect subsequent gets
+  assert_eq(req.get_query("injected"), None)
+  let params2 = req.query_params()
+  assert_eq(params2.get("injected"), None)
 }
 
 ///|

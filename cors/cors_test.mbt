@@ -36,6 +36,36 @@ test "explicit origin is preserved with credentials" {
 }
 
 ///|
+test "Vary header handles existing lowercase vary" {
+  let event = make_event(Get, { "origin": "https://myapp.com" })
+  // Pre-populate a lowercase Vary header with a different token
+  event.res.headers["vary"] = "Accept-Encoding"
+  append_cors_headers(event, origin="*", credentials=true)
+  // Should append Origin to the existing (lowercase) Vary header,
+  // not create a duplicate.
+  let mut vary_count = 0
+  event.res.headers.each((k, _v) => {
+    if k.to_lower() == "vary" {
+      vary_count = vary_count + 1
+    }
+  })
+  assert_eq(vary_count, 1)
+  // The existing header should now contain both tokens
+  let vary = event.res.headers.get("vary").unwrap()
+  assert_true(vary.contains("Accept-Encoding"))
+  assert_true(vary.contains("Origin"))
+}
+
+///|
+test "Vary header doesn't duplicate Origin token" {
+  let event = make_event(Get, { "origin": "https://myapp.com" })
+  event.res.headers["Vary"] = "Origin"
+  append_cors_headers(event, origin="*", credentials=true)
+  // Should not create "Origin, Origin"
+  assert_eq(event.res.headers.get("Vary"), Some("Origin"))
+}
+
+///|
 test "origin=* without credentials stays as *" {
   let event = make_event(Get, { "origin": "https://any.com" })
   append_cors_headers(event, origin="*", credentials=false)

@@ -44,6 +44,30 @@ fn StaticFileProvider::full_path(
   }
 }
 
+/// Canonicalizes `candidate` and verifies it still resides under `root`.
+/// Returns `None` if canonicalization fails (file missing) or if the resolved
+/// path escapes `root` via symlink. This defends against symlinks inside the
+/// static root that point to arbitrary files outside the root.
+
+///|
+async fn resolve_within_root(
+  root : String,
+  candidate : String,
+) -> String? noraise {
+  let root_real = try? @fs.realpath(root)
+  let candidate_real = try? @fs.realpath(candidate)
+  match (root_real, candidate_real) {
+    (Ok(root_path), Ok(cand_path)) =>
+      // Candidate must be equal to root, or under root with a separator.
+      if cand_path == root_path || cand_path.has_prefix(root_path + "/") {
+        Some(cand_path)
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
 ///|
 fn static_asset_etag(
   mtime_sec : Int64,
@@ -68,14 +92,29 @@ async fn open_static_asset(path : String) -> @fs.File? noraise {
   }
 }
 
+/// Resolves a static asset id to a canonical path within the provider root,
+/// or `None` if the path escapes the root (via symlinks or otherwise).
+
+///|
+async fn StaticFileProvider::safe_resolve(
+  self : StaticFileProvider,
+  id : String,
+) -> String? noraise {
+  match self.full_path(id) {
+    Some(candidate) => resolve_within_root(self.path, candidate)
+    None => None
+  }
+}
+
 ///|
 /// Returns metadata (ETag, modification time, path, size) for the asset
-/// identified by `id`, or `None` if the file does not exist or is not a regular file.
+/// identified by `id`, or `None` if the file does not exist, is not a regular
+/// file, or resolves outside the provider root (symlink escape).
 pub impl ServeStaticProvider for StaticFileProvider with get_meta(
   self,
   id : String,
 ) -> @crescent.StaticAssetMeta? {
-  match self.full_path(id) {
+  match self.safe_resolve(id) {
     Some(path) =>
       match open_static_asset(path) {
         Some(file) => {
@@ -102,11 +141,12 @@ pub impl ServeStaticProvider for StaticFileProvider with get_meta(
 ///|
 /// Reads and returns the full contents of the static asset identified by `id`
 /// as an HTTP response, including `Content-Length` and `ETag` headers.
+/// Returns 404 if the asset is missing or resolves outside the provider root.
 pub impl ServeStaticProvider for StaticFileProvider with get_contents(
   self,
   id : String,
 ) -> &Responder {
-  match self.full_path(id) {
+  match self.safe_resolve(id) {
     Some(path) =>
       match open_static_asset(path) {
         Some(file) => {

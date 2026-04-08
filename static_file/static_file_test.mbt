@@ -67,12 +67,44 @@ async fn issue_request(
 }
 
 ///|
+async fn try_remove(path : String) -> Unit noraise {
+  let r : Result[Unit, Error] = try? @fs.remove(path)
+  ignore(r)
+}
+
+///|
+async test "static_file blocks symlink escaping root" {
+  // Create a symlink inside testdata that points to /etc/passwd (outside root)
+  let link_path = "static_file/testdata/escape_link"
+  // Remove any pre-existing symlink from prior test runs
+  try_remove(link_path)
+  // Skip test if we can't create the symlink (e.g., no write perms)
+  let link_created : Result[Unit, Error] = try? @fs.symlink(
+    target="/etc/passwd",
+    link_path,
+  )
+  guard link_created is Ok(_) else { return }
+  let provider = StaticFileProvider::new(path="static_file/testdata")
+  // The symlink exists inside the root directory but points outside;
+  // the provider must refuse to serve it.
+  let meta = provider.get_meta("escape_link")
+  // Clean up before asserting
+  try_remove(link_path)
+  assert_true(meta is None)
+}
+
+///|
 async test "static_file provider exposes file metadata" {
   let provider = StaticFileProvider::new(path="static_file/testdata")
   match provider.get_meta("hello.txt") {
     Some(meta) => {
       assert_eq(meta.size, Some(16L))
-      assert_eq(meta.path, Some("static_file/testdata/hello.txt"))
+      // Path is now canonicalized (absolute), so check suffix
+      match meta.path {
+        Some(path) =>
+          assert_true(path.has_suffix("static_file/testdata/hello.txt"))
+        None => fail("expected meta.path to be set")
+      }
       guard meta.etag is Some(_) else {
         fail("expected filesystem provider to emit an ETag")
       }

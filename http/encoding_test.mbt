@@ -48,29 +48,54 @@ test "parse_multipart" {
   let body = "--boundary\r\nContent-Disposition: form-data; name=\"field1\"\r\n\r\nvalue1\r\n--boundary\r\nContent-Disposition: form-data; name=\"field2\"; filename=\"example.txt\"\r\nContent-Type: text/plain\r\n\r\nvalue2\r\n--boundary--"
   let bytes = @utf8.encode(body)
   let parts = parse_multipart(bytes[:], boundary)
+  let field1 = first_multipart_value(parts, "field1")
   inspect(
-    parts.get("field1").map(v => @utf8.decode(v.data) catch { _ => "" }),
+    field1.map(v => @utf8.decode(v.data) catch { _ => "" }),
     content=(
       #|Some("value1")
     ),
   )
-  inspect(parts.get("field1").bind(fn(v) { v.filename }), content="None")
+  inspect(field1.bind(fn(v) { v.filename }), content="None")
+  let field2 = first_multipart_value(parts, "field2")
   inspect(
-    parts.get("field2").map(v => @utf8.decode(v.data) catch { _ => "" }),
+    field2.map(v => @utf8.decode(v.data) catch { _ => "" }),
     content=(
       #|Some("value2")
     ),
   )
   inspect(
-    parts.get("field2").bind(v => v.filename),
+    field2.bind(v => v.filename),
     content=(
       #|Some("example.txt")
     ),
   )
   inspect(
-    parts.get("field2").bind(v => v.content_type),
+    field2.bind(v => v.content_type),
     content=(
       #|Some("text/plain")
     ),
   )
+}
+
+///|
+test "parse_multipart with repeated field names" {
+  let boundary = "B"
+  let body = "--B\r\nContent-Disposition: form-data; name=\"tag\"\r\n\r\nfoo\r\n--B\r\nContent-Disposition: form-data; name=\"tag\"\r\n\r\nbar\r\n--B\r\nContent-Disposition: form-data; name=\"tag\"\r\n\r\nbaz\r\n--B--"
+  let bytes = @utf8.encode(body)
+  let parts = parse_multipart(bytes[:], boundary)
+  let tags = parts.get("tag").unwrap()
+  assert_eq(tags.length(), 3)
+  let values = tags.map(v => @utf8.decode(v.data) catch { _ => "" })
+  assert_eq(values, ["foo", "bar", "baz"])
+}
+
+///|
+test "parse_multipart handles unquoted disposition values" {
+  let boundary = "B"
+  let body = "--B\r\nContent-Disposition: form-data; name=field1\r\n\r\nvalue1\r\n--B--"
+  let bytes = @utf8.encode(body)
+  let parts = parse_multipart(bytes[:], boundary)
+  let v = first_multipart_value(parts, "field1").unwrap()
+  let decoded = @utf8.decode(v.data) catch { _ => "" }
+  assert_eq(decoded, "value1")
 }
