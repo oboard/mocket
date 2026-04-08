@@ -7,4 +7,4 @@ import {
   "bobzhang/crescent",
 }
 
-warnings = "-29"
+warnings = "-29+74"

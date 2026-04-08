@@ -34,8 +34,7 @@ fn request_method_to_async(
     Options => Options
     Trace => Trace
     Connect => Connect
-    Other(m) =>
-      raise FetchError::RequestFailed("unsupported HTTP method: \{m}")
+    Other(m) => raise FetchError::RequestFailed("unsupported HTTP method: \{m}")
   }
 }
 

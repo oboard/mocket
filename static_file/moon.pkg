@@ -8,4 +8,4 @@ import {
   "moonbitlang/async/socket",
 }
 
-warnings = "-29"
+warnings = "-29+74"

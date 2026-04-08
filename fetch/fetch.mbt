@@ -1,28 +1,4 @@
 ///|
-
-///|
-/// Error type for invalid HTTP method strings encountered during request parsing.
-pub suberror RequestError {
-  InvalidHttpMethod(String)
-}
-
-///|
-fn parse_http_method(http_method : String) -> @crescent.HttpMethod raise Error {
-  match http_method.to_lower() {
-    "get" => Get
-    "post" => Post
-    "put" => Put
-    "patch" => Patch
-    "delete" => Delete
-    "head" => Head
-    "options" => Options
-    "trace" => Trace
-    "connect" => Connect
-    _ => raise RequestError::InvalidHttpMethod(http_method)
-  }
-}
-
-///|
 /// Sends an HTTP request using the method, URL, headers, and body from the given
 /// `HttpRequest` object, and returns the response.
 pub async fn request(

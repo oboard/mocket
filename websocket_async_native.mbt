@@ -92,10 +92,14 @@ fn snapshot_native_ws_channels(connection_id : String) -> Array[String] {
 }
 
 ///|
-fn snapshot_native_ws_peer(connection_id : String) -> WebSocketPeer {
+fn snapshot_native_ws_peer(
+  connection_id : String,
+  params : Map[String, String],
+) -> WebSocketPeer {
   {
     connection_id,
     subscribed_channels: snapshot_native_ws_channels(connection_id),
+    params,
   }
 }
 
@@ -418,6 +422,7 @@ async fn handle_websocket_route_async(
   request : @http.Request,
   conn : @http.ServerConnection,
   handler : WebSocketHandler,
+  params : Map[String, String],
   max_message_bytes : Int?,
   outgoing_queue_capacity : Int,
   overflow_policy : NativeWebSocketOverflowPolicy,
@@ -443,13 +448,13 @@ async fn handle_websocket_route_async(
   )
   @async.with_task_group(group => {
     group.spawn_bg(() => write_native_ws_outgoing(ws, outgoing))
-    handler(Open(snapshot_native_ws_peer(connection_id)))
+    handler(Open(snapshot_native_ws_peer(connection_id, params)))
     for ;; {
       let message = match recv_native_ws_message(ws, read_timeout_ms) {
         Some(message) => message
         None => break
       }
-      let peer = snapshot_native_ws_peer(connection_id)
+      let peer = snapshot_native_ws_peer(connection_id, params)
       match read_native_ws_message_contents(ws, message, max_message_bytes) {
         Some(aggregated_message) => handler(Message(peer, aggregated_message))
         None => break
@@ -461,12 +466,12 @@ async fn handle_websocket_route_async(
       if @async.is_cancellation_error(err) {
         send_native_ws_shutdown_close(ws)
       }
-      handler(Close(snapshot_native_ws_peer(connection_id)))
+      handler(Close(snapshot_native_ws_peer(connection_id, params)))
       unregister_native_ws_connection(connection_id)
       raise err
     }
   }
-  handler(Close(snapshot_native_ws_peer(connection_id)))
+  handler(Close(snapshot_native_ws_peer(connection_id, params)))
   unregister_native_ws_connection(connection_id)
 }
 

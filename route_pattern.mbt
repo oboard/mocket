@@ -12,19 +12,6 @@ pub(all) enum RouteSegment {
 } derive(Eq)
 
 ///|
-impl Show for RouteSegment with output(self, logger) {
-  match self {
-    Static(s) => logger.write_string(s)
-    Param(name) => {
-      logger.write_string(":")
-      logger.write_string(name)
-    }
-    Wildcard => logger.write_string("*")
-    GlobStar => logger.write_string("**")
-  }
-}
-
-///|
 /// A pre-compiled route pattern, parsed once at registration time.
 pub struct CompiledRoute {
   /// The original template string (for debugging/display)

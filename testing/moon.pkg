@@ -1,8 +1,0 @@
-import {
-  "bobzhang/crescent",
-  "moonbitlang/async",
-  "moonbitlang/core/json",
-  "moonbitlang/core/encoding/utf8",
-}
-
-warnings = "-29"

@@ -3,3 +3,5 @@ import {
   "moonbitlang/core/strconv",
   "moonbitlang/core/string",
 }
+
+warnings = "+74"

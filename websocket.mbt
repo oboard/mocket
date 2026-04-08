@@ -1,16 +1,35 @@
 ///|
-/// Represents a connected WebSocket client with its connection ID and subscribed channels.
+/// Represents a connected WebSocket client with its connection ID, subscribed
+/// channels, and route parameters captured from the upgrade URL.
 pub struct WebSocketPeer {
   priv connection_id : String
   priv subscribed_channels : Array[String]
+  priv params : Map[String, String]
 
-  fn new(connection_id~ : String) -> WebSocketPeer
+  fn new(
+    connection_id~ : String,
+    params? : Map[String, String],
+  ) -> WebSocketPeer
 }
 
 ///|
-/// Creates a new `WebSocketPeer` with the given connection ID.
-pub fn WebSocketPeer::new(connection_id~ : String) -> WebSocketPeer {
-  { connection_id, subscribed_channels: [] }
+/// Creates a new `WebSocketPeer` with the given connection ID and optional
+/// route parameters (extracted from dynamic WebSocket routes like `/ws/:room`).
+pub fn WebSocketPeer::new(
+  connection_id~ : String,
+  params? : Map[String, String],
+) -> WebSocketPeer {
+  { connection_id, subscribed_channels: [], params: params.unwrap_or({}) }
+}
+
+///|
+/// Returns a route parameter captured from the WebSocket upgrade URL,
+/// or `None` if the parameter was not present.
+///
+/// For example, a route `/ws/:room` matched against `/ws/lobby` makes
+/// `peer.param("room")` return `Some("lobby")`.
+pub fn WebSocketPeer::param(self : WebSocketPeer, name : String) -> String? {
+  self.params.get(name)
 }
 
 ///|

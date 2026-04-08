@@ -74,12 +74,40 @@ fn mounted_asset_id(mount_path : String, request_path : String) -> String {
   }
 }
 
+/// Parses a single Accept-Encoding token, returning the encoding name
+/// or `None` if the q-value is 0 (meaning the client explicitly refuses it).
+/// Examples:
+///   "gzip"           -> Some("gzip")
+///   "gzip; q=0.8"    -> Some("gzip")
+///   "gzip;q=0"       -> None
+///   "br;q=0.0"       -> None
+
 ///|
-fn parse_accept_encoding_token(token : StringView) -> String {
-  match token.find(";") {
-    Some(index) => token[:index].trim(chars=" ").to_string().to_lower()
-    None => token.trim(chars=" ").to_string().to_lower()
+fn parse_accept_encoding_token(token : StringView) -> String? {
+  let (name, rest) = match token.find(";") {
+    Some(index) =>
+      (
+        token[:index].trim(chars=" ").to_string().to_lower(),
+        Some(token[index + 1:]),
+      )
+    None => (token.trim(chars=" ").to_string().to_lower(), None)
   }
+  // Check q-value — if explicitly 0, refuse this encoding.
+  match rest {
+    Some(params) =>
+      for param in params.split(";") {
+        let trimmed = param.trim(chars=" ")
+        if trimmed.has_prefix("q=") || trimmed.has_prefix("Q=") {
+          let qval = trimmed[2:].trim(chars=" ").to_string()
+          // q=0, q=0.0, q=0.00, etc. means refused.
+          if qval == "0" || qval == "0.0" || qval == "0.00" || qval == "0.000" {
+            return None
+          }
+        }
+      }
+    None => ()
+  }
+  Some(name)
 }
 
 ///|
@@ -235,10 +263,13 @@ pub fn Mocket::static_assets(
       if accept_encoding != "" {
         // split requires `chars` label
         for pair in accept_encoding.split(",") {
-          let encoding = parse_accept_encoding_token(pair)
-          match encodings.get(encoding) {
-            Some(mapped) => matched_encodings.push(mapped)
-            None => ()
+          match parse_accept_encoding_token(pair) {
+            Some(encoding) =>
+              match encodings.get(encoding) {
+                Some(mapped) => matched_encodings.push(mapped)
+                None => ()
+              }
+            None => () // q=0 — client refuses this encoding
           }
         }
       }

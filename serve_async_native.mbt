@@ -450,9 +450,12 @@ async fn handle_request_async(
       options,
     )
     match app.find_ws_route(request_path) {
-      Some((ws_handler, _params)) => {
+      Some((ws_handler, route_params)) => {
+        // Convert StringView params to owned Strings for the peer
+        let ws_params : Map[String, String] = {}
+        route_params.each((k, v) => ws_params.set(k, v.to_string()))
         handle_websocket_route_async(
-          ws_runtime_id, request, conn, ws_handler, websocket_max_message_bytes,
+          ws_runtime_id, request, conn, ws_handler, ws_params, websocket_max_message_bytes,
           websocket_outgoing_queue_capacity, websocket_overflow_policy, websocket_read_timeout_ms,
         )
         return

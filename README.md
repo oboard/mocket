@@ -519,7 +519,6 @@ Pattern match on the request method — no string comparisons:
 
 ```
 bobzhang/crescent             — Core: routing, middleware, serving, WebSocket
-bobzhang/crescent/testing     — TestClient (alternative import path)
 bobzhang/crescent/http        — HTTP protocol: headers, dates, URL encoding
 bobzhang/crescent/cors        — CORS middleware
 bobzhang/crescent/fetch       — HTTP client

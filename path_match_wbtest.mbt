@@ -181,10 +181,7 @@ test "find_ws_route miss" {
 // (previously a separate match_path function; now exercises CompiledRoute directly)
 
 ///|
-fn match_path(
-  template : String,
-  path : String,
-) -> Map[String, StringView]? {
+fn match_path(template : String, path : String) -> Map[String, StringView]? {
   CompiledRoute::compile(template).match_path(path)
 }
 

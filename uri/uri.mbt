@@ -759,18 +759,30 @@ test "RFC 3986 Dot Segment Removal" {
 ///|
 test "parse_percent_encoding accepts only hex digits" {
   // Valid hex digits
-  let ok1 : Result[BytesView, ParseError] = try? parse_percent_encoding("20 rest")
+  let ok1 : Result[BytesView, ParseError] = try? parse_percent_encoding(
+    "20 rest",
+  )
   assert_true(ok1 is Ok(_))
-  let ok2 : Result[BytesView, ParseError] = try? parse_percent_encoding("FF end")
+  let ok2 : Result[BytesView, ParseError] = try? parse_percent_encoding(
+    "FF end",
+  )
   assert_true(ok2 is Ok(_))
-  let ok3 : Result[BytesView, ParseError] = try? parse_percent_encoding("ab end")
+  let ok3 : Result[BytesView, ParseError] = try? parse_percent_encoding(
+    "ab end",
+  )
   assert_true(ok3 is Ok(_))
   // Invalid: non-hex letters
-  let bad1 : Result[BytesView, ParseError] = try? parse_percent_encoding("GG end")
+  let bad1 : Result[BytesView, ParseError] = try? parse_percent_encoding(
+    "GG end",
+  )
   assert_true(bad1 is Err(_))
-  let bad2 : Result[BytesView, ParseError] = try? parse_percent_encoding("xz end")
+  let bad2 : Result[BytesView, ParseError] = try? parse_percent_encoding(
+    "xz end",
+  )
   assert_true(bad2 is Err(_))
-  let bad3 : Result[BytesView, ParseError] = try? parse_percent_encoding("ZZ end")
+  let bad3 : Result[BytesView, ParseError] = try? parse_percent_encoding(
+    "ZZ end",
+  )
   assert_true(bad3 is Err(_))
 }
 

@@ -28,9 +28,7 @@ test "origin=* with credentials=true reflects request origin" {
 ///|
 test "explicit origin is preserved with credentials" {
   let event = make_event(Get, { "origin": "https://myapp.com" })
-  append_cors_headers(
-    event, origin="https://allowed.com", credentials=true,
-  )
+  append_cors_headers(event, origin="https://allowed.com", credentials=true)
   assert_eq(
     event.res.headers.get("Access-Control-Allow-Origin"),
     Some("https://allowed.com"),
