@@ -21,7 +21,9 @@ fn FetchProtocol::scheme(self : FetchProtocol) -> String {
 }
 
 ///|
-fn request_method_to_async(http_method : HttpMethod) -> @http.RequestMethod {
+fn request_method_to_async(
+  http_method : HttpMethod,
+) -> @http.RequestMethod raise Error {
   match http_method {
     Get => Get
     Post => Post
@@ -32,7 +34,8 @@ fn request_method_to_async(http_method : HttpMethod) -> @http.RequestMethod {
     Options => Options
     Trace => Trace
     Connect => Connect
-    Other(_) => Get
+    Other(m) =>
+      raise FetchError::RequestFailed("unsupported HTTP method: \{m}")
   }
 }
 

@@ -11,6 +11,40 @@ fn make_event(
 }
 
 ///|
+test "origin=* with credentials=true reflects request origin" {
+  let event = make_event(Get, { "origin": "https://myapp.com" })
+  append_cors_headers(event, origin="*", credentials=true)
+  assert_eq(
+    event.res.headers.get("Access-Control-Allow-Origin"),
+    Some("https://myapp.com"),
+  )
+  assert_eq(
+    event.res.headers.get("Access-Control-Allow-Credentials"),
+    Some("true"),
+  )
+  assert_eq(event.res.headers.get("Vary"), Some("Origin"))
+}
+
+///|
+test "explicit origin is preserved with credentials" {
+  let event = make_event(Get, { "origin": "https://myapp.com" })
+  append_cors_headers(
+    event, origin="https://allowed.com", credentials=true,
+  )
+  assert_eq(
+    event.res.headers.get("Access-Control-Allow-Origin"),
+    Some("https://allowed.com"),
+  )
+}
+
+///|
+test "origin=* without credentials stays as *" {
+  let event = make_event(Get, { "origin": "https://any.com" })
+  append_cors_headers(event, origin="*", credentials=false)
+  assert_eq(event.res.headers.get("Access-Control-Allow-Origin"), Some("*"))
+}
+
+///|
 test "is_preflight_request requires cors headers and options" {
   inspect(
     is_preflight_request(

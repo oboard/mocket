@@ -450,7 +450,7 @@ async fn handle_request_async(
       options,
     )
     match app.find_ws_route(request_path) {
-      Some(ws_handler) => {
+      Some((ws_handler, _params)) => {
         handle_websocket_route_async(
           ws_runtime_id, request, conn, ws_handler, websocket_max_message_bytes,
           websocket_outgoing_queue_capacity, websocket_overflow_policy, websocket_read_timeout_ms,

@@ -176,3 +176,82 @@ test "find_ws_route miss" {
   app.ws("/ws", fn(_event) {  })
   inspect(app.find_ws_route("/other") is Some(_), content="false")
 }
+
+// -- CompiledRoute path matching tests
+// (previously a separate match_path function; now exercises CompiledRoute directly)
+
+///|
+fn match_path(
+  template : String,
+  path : String,
+) -> Map[String, StringView]? {
+  CompiledRoute::compile(template).match_path(path)
+}
+
+///|
+test "match_path: static path" {
+  assert_eq(match_path("/api/users", "/api/users"), Some({}))
+  assert_eq(match_path("/api/users", "/api/posts"), None)
+  assert_eq(match_path("/", "/"), Some({}))
+}
+
+///|
+test "match_path: named parameters" {
+  assert_eq(match_path("/users/:id", "/users/123"), Some({ "id": "123" }))
+  assert_eq(
+    match_path("/users/:userId/posts/:postId", "/users/456/posts/789"),
+    Some({ "userId": "456", "postId": "789" }),
+  )
+  assert_eq(match_path("/users/:id", "/users/123/extra"), None)
+}
+
+///|
+test "match_path: single-level wildcard" {
+  assert_eq(
+    match_path("/files/*", "/files/document.pdf"),
+    Some({ "_": "document.pdf" }),
+  )
+  assert_eq(match_path("/api/*/status", "/api/v1/status"), Some({ "_": "v1" }))
+  assert_eq(match_path("/files/*", "/files/docs/readme.txt"), None)
+}
+
+///|
+test "match_path: multi-level wildcard" {
+  assert_eq(
+    match_path("/static/**", "/static/css/main.css"),
+    Some({ "_": "css/main.css" }),
+  )
+  assert_eq(
+    match_path("/assets/**", "/assets/images/icons/user.png"),
+    Some({ "_": "images/icons/user.png" }),
+  )
+  assert_eq(match_path("/api/v1/**", "/api/v1/"), Some({ "_": "" }))
+  assert_eq(
+    match_path("/files/**/meta", "/files/a/b/meta"),
+    Some({ "_": "a/b" }),
+  )
+  assert_eq(match_path("/files/**/meta", "/files/a/b/raw"), None)
+}
+
+///|
+test "match_path: mixed patterns" {
+  let result = match_path("/users/:id/files/*", "/users/123/files/avatar.jpg")
+  assert_eq(result, Some({ "id": "123", "_": "avatar.jpg" }))
+  let result2 = match_path(
+    "/projects/:projectId/**", "/projects/abc/src/main.mbt",
+  )
+  assert_eq(result2, Some({ "projectId": "abc", "_": "src/main.mbt" }))
+}
+
+///|
+test "match_path: edge cases" {
+  // Template shorter than path
+  assert_eq(match_path("/api", "/api/users"), None)
+  // Path shorter than template (non-wildcard)
+  assert_eq(match_path("/api/users", "/api"), None)
+  // Special chars in parameter
+  assert_eq(
+    match_path("/search/:query", "/search/hello%20world"),
+    Some({ "query": "hello%20world" }),
+  )
+}
