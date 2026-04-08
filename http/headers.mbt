@@ -70,7 +70,10 @@ pub fn has_header_case_insensitive(
 /// otherwise the new key-value pair is inserted.
 
 ///|
-fn set_header_case_insensitive(
+/// Sets a header value using case-insensitive key matching. If a header with
+/// the same name (ignoring case) already exists, the existing entry is replaced;
+/// otherwise a new entry is inserted.
+pub fn set_header_case_insensitive(
   headers : Map[String, String],
   header_name : String,
   value : String,

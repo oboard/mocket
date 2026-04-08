@@ -245,11 +245,11 @@ fn parse_percent_encoding(source : BytesView) -> BytesView raise ParseError {
   match source {
     [
       '0'..='9'
-      | 'A'..='Z'
-      | 'a'..='z',
+      | 'A'..='F'
+      | 'a'..='f',
       '0'..='9'
-      | 'A'..='Z'
-      | 'a'..='z',
+      | 'A'..='F'
+      | 'a'..='f',
       .. source,
     ] => source
     [..] => raise InvalidPercentEncoding(source)
@@ -754,6 +754,32 @@ test "RFC 3986 Dot Segment Removal" {
   let path3 : Array[BytesView] = [".", "a", ".", "b", "."]
   let result3 = remove_dot_segments(path3)
   assert_eq(result3, ["a", "b"])
+}
+
+///|
+test "parse_percent_encoding accepts only hex digits" {
+  // Valid hex digits
+  let ok1 : Result[BytesView, ParseError] = try? parse_percent_encoding("20 rest")
+  assert_true(ok1 is Ok(_))
+  let ok2 : Result[BytesView, ParseError] = try? parse_percent_encoding("FF end")
+  assert_true(ok2 is Ok(_))
+  let ok3 : Result[BytesView, ParseError] = try? parse_percent_encoding("ab end")
+  assert_true(ok3 is Ok(_))
+  // Invalid: non-hex letters
+  let bad1 : Result[BytesView, ParseError] = try? parse_percent_encoding("GG end")
+  assert_true(bad1 is Err(_))
+  let bad2 : Result[BytesView, ParseError] = try? parse_percent_encoding("xz end")
+  assert_true(bad2 is Err(_))
+  let bad3 : Result[BytesView, ParseError] = try? parse_percent_encoding("ZZ end")
+  assert_true(bad3 is Err(_))
+}
+
+///|
+test "parse rejects URI with invalid percent encoding" {
+  let bad : Result[Uri, ParseError] = try? Uri::parse(
+    "http://example.com/path%GG",
+  )
+  assert_true(bad is Err(_))
 }
 
 ///|

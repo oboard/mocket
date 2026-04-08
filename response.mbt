@@ -40,18 +40,28 @@ pub fn HttpResponse::new(
 
 ///|
 /// Sets the response body from any `Responder` and returns the response for chaining.
+///
+/// Applies the responder's `options()` (e.g. sets Content-Type) and uses the
+/// `output_bytes()` fast path when available to avoid an intermediate buffer copy.
 pub fn HttpResponse::body(
   self : HttpResponse,
   body : &Responder,
 ) -> HttpResponse {
-  let buf = @buffer.new()
-  body.output(buf)
-  self.raw_body = buf.to_bytes()
+  body.options(self)
+  match body.output_bytes() {
+    Some(bytes) => self.raw_body = bytes
+    None => {
+      let buf = @buffer.new()
+      body.output(buf)
+      self.raw_body = buf.to_bytes()
+    }
+  }
   self
 }
 
 ///|
 /// Sets the response body to the JSON representation of the given value.
+/// Also sets `Content-Type: application/json; charset=utf-8`.
 pub fn HttpResponse::json(self : HttpResponse, obj : &ToJson) -> HttpResponse {
   self.body(obj.to_json())
 }
@@ -70,12 +80,15 @@ pub fn[T : ToJson] HttpResponse::json_value(
 
 ///|
 /// Sets a response header and returns self for fluent chaining.
+///
+/// Uses case-insensitive matching: setting `Content-Type` will replace any
+/// existing `content-type` or `CONTENT-TYPE` header.
 pub fn HttpResponse::header(
   self : HttpResponse,
   name : String,
   value : String,
 ) -> HttpResponse {
-  self.headers.set(name, value)
+  @mhttp.set_header_case_insensitive(self.headers, name, value)
   self
 }
 
