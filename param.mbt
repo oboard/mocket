@@ -1,8 +1,23 @@
 ///|
 /// Returns a route parameter value as a String, or None if not found.
+///
+/// The value is NOT URL-decoded — it's returned exactly as it appeared in the URL.
+/// For a decoded value (e.g. `hello%20world` → `hello world`), use `param_decoded()`.
 pub fn MocketEvent::param(self : MocketEvent, name : String) -> String? {
   match self.params.get(name) {
     Some(v) => Some(v.to_string())
+    None => None
+  }
+}
+
+///|
+/// Returns a URL-decoded route parameter value, or None if not found.
+///
+/// For example, if the URL is `/search/hello%20world` and the route is
+/// `/search/:query`, this returns `Some("hello world")`.
+pub fn MocketEvent::param_decoded(self : MocketEvent, name : String) -> String? {
+  match self.params.get(name) {
+    Some(v) => Some(@mhttp.url_decode(@utf8.encode(v.to_string())[:]))
     None => None
   }
 }

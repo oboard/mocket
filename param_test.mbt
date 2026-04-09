@@ -106,3 +106,24 @@ test "require_param_int64 raises on non-integer" {
   let result = try? event.require_param_int64("id")
   assert_true(result is Err(_))
 }
+
+///|
+test "param_decoded URL-decodes the value" {
+  let event = @crescent.MocketEvent::{
+    req: @crescent.HttpRequest(Get, "/", {}, raw_body=b""),
+    res: @crescent.HttpResponse(OK),
+    params: { "query": "hello%20world" },
+  }
+  assert_eq(event.param("query"), Some("hello%20world"))
+  assert_eq(event.param_decoded("query"), Some("hello world"))
+}
+
+///|
+test "param_decoded returns None when missing" {
+  let event = @crescent.MocketEvent::{
+    req: @crescent.HttpRequest(Get, "/", {}, raw_body=b""),
+    res: @crescent.HttpResponse(OK),
+    params: {},
+  }
+  assert_eq(event.param_decoded("missing"), None)
+}
