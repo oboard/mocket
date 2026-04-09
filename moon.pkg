@@ -1,5 +1,6 @@
 import {
   "bobzhang/crescent/native",
+  "bobzhang/crescent/uri" @uri,
   "bobzhang/crescent/http" @mhttp,
   "moonbitlang/async",
   "moonbitlang/async/http",
@@ -22,6 +23,7 @@ options(
   targets: {
     "fetch.native.mbt": [ "native" ],
     "fetch_integration_test.mbt": [ "native" ],
+    "fetch_url_wbtest.mbt": [ "native" ],
     "mocket.native.mbt": [ "native" ],
     "serve_async_integration_test.mbt": [ "native" ],
     "serve_async_native.mbt": [ "native" ],
