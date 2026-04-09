@@ -2,10 +2,14 @@
 fn main {
   let app = @crescent.Mocket()
   app.use_middleware(logger_middleware())
-  // Register global middleware
-  app.static_assets("/", @static_file.StaticFileProvider(path="./"))
 
-  // Text Response
+  // Mount static files under /assets — any file in ./public is served
+  // as /assets/<filename> (e.g. ./public/logo.png → /assets/logo.png).
+  // Previously this example mounted at "/" which intercepted the index
+  // route below, so the text response was never reached.
+  app.static_assets("/assets", @static_file.StaticFileProvider(path="./public"))
+
+  // Text Response at the root
   app.get("/", _ => "Tadaa!")
 
   // Print Server URL
