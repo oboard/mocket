@@ -12,7 +12,9 @@ pub struct Mocket {
   priv static_routes : Map[String, Map[String, HttpHandler]]
   priv dynamic_routes : RadixRouter[HttpHandler]
   priv ws_static_routes : Map[String, WebSocketHandler]
-  priv ws_dynamic_routes : Array[(CompiledRoute, WebSocketHandler)]
+  // WebSocket dynamic routes share the radix tree for consistent precedence
+  // with HTTP routes. "WS" is used as a synthetic method key.
+  priv ws_dynamic_routes : RadixRouter[WebSocketHandler]
   priv ws_runtime_id : String
   priv mut not_found_handler : HttpHandler?
 
@@ -38,7 +40,7 @@ pub fn Mocket::new(base_path? : String = "") -> Mocket {
     static_routes: {},
     dynamic_routes: RadixRouter::new(),
     ws_static_routes: {},
-    ws_dynamic_routes: [],
+    ws_dynamic_routes: RadixRouter::new(),
     ws_runtime_id: next_mocket_instance_id(),
     not_found_handler: None,
   }
@@ -320,7 +322,7 @@ pub fn Mocket::group(
   // Merge dynamic routes (radix tree)
   self.dynamic_routes.merge(group.dynamic_routes)
   group.ws_static_routes.iter().each(i => self.ws_static_routes.set(i.0, i.1))
-  self.ws_dynamic_routes.append(group.ws_dynamic_routes)
+  self.ws_dynamic_routes.merge(group.ws_dynamic_routes)
   // Merge middlewares
   self.middlewares.append(group.middlewares)
   // Merge not_found_handler (group's handler takes precedence if set)
@@ -346,17 +348,23 @@ pub fn Mocket::has_not_found_handler(self : Mocket) -> Bool {
 
 ///|
 /// Registers a WebSocket handler for the given path, matched regardless of HTTP method.
+///
+/// Dynamic patterns (`:param`, `*`, `**`) are inserted into the same radix
+/// tree implementation used for HTTP routes, giving them consistent precedence:
+/// static > param > wildcard > globstar. Re-registering the same path overrides
+/// the previous handler.
 pub fn Mocket::ws(
   self : Mocket,
   path : String,
   handler : WebSocketHandler,
 ) -> Unit {
   let path = self.base_path + path
-  // Static path: cache directly
+  // Static path: direct map lookup
   if !path.contains(":") && !path.contains("*") {
     self.ws_static_routes.set(path, handler)
   } else {
-    // Dynamic path: compile pattern and add to list
-    self.ws_dynamic_routes.push((CompiledRoute::compile(path), handler))
+    // Dynamic path: insert into radix tree (WS is a synthetic method key)
+    let compiled = CompiledRoute::compile(path)
+    self.ws_dynamic_routes.insert("WS", compiled, handler)
   }
 }

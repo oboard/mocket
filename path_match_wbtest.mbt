@@ -205,6 +205,58 @@ test "find_ws_route static returns empty params" {
 }
 
 ///|
+test "find_ws_route duplicate path overrides handler" {
+  // Before the radix tree refactor, re-registering the same dynamic path
+  // silently added a second entry and the first-registered handler won.
+  // Now re-registration overrides the previous handler.
+  let calls : Array[String] = []
+  let app = Mocket()
+  app.ws("/ws/:room", fn(_event) { calls.push("first") })
+  app.ws("/ws/:room", fn(_event) { calls.push("second") })
+  match app.find_ws_route("/ws/lobby") {
+    Some((handler, _)) => {
+      handler(Open(WebSocketPeer(connection_id="test")))
+      assert_eq(calls, ["second"])
+    }
+    None => fail("expected route match")
+  }
+}
+
+///|
+test "find_ws_route static beats param" {
+  // Precedence: when a URL could match both a static route and a param
+  // route, the static route wins regardless of registration order.
+  let calls : Array[String] = []
+  let app = Mocket()
+  app.ws("/ws/:room", fn(_event) { calls.push("param") })
+  app.ws("/ws/lobby", fn(_event) { calls.push("static") })
+  match app.find_ws_route("/ws/lobby") {
+    Some((handler, _)) => {
+      handler(Open(WebSocketPeer(connection_id="test")))
+      // Static routes are stored separately and checked first
+      assert_eq(calls, ["static"])
+    }
+    None => fail("expected route match")
+  }
+}
+
+///|
+test "find_ws_route param beats wildcard" {
+  // :name should be preferred over * for the same position
+  let calls : Array[String] = []
+  let app = Mocket()
+  app.ws("/ws/*", fn(_event) { calls.push("wildcard") })
+  app.ws("/ws/:room", fn(_event) { calls.push("param") })
+  match app.find_ws_route("/ws/lobby") {
+    Some((handler, _)) => {
+      handler(Open(WebSocketPeer(connection_id="test")))
+      assert_eq(calls, ["param"])
+    }
+    None => fail("expected route match")
+  }
+}
+
+///|
 test "find_ws_route miss" {
   let app = Mocket()
   app.ws("/ws", fn(_event) {  })

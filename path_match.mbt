@@ -87,12 +87,5 @@ fn Mocket::find_ws_route(
   if self.ws_static_routes.get(path) is Some(handler) {
     return Some((handler, {}))
   }
-  for route in self.ws_dynamic_routes {
-    let (compiled, handler) = route
-    match compiled.match_path(path) {
-      Some(params) => return Some((handler, params))
-      None => ()
-    }
-  }
-  None
+  self.ws_dynamic_routes.search("WS", path)
 }

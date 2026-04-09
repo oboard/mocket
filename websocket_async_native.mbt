@@ -446,6 +446,11 @@ async fn handle_websocket_route_async(
   register_native_ws_connection(
     runtime_id, connection_id, outgoing, overflow_policy,
   )
+  // Unconditional cleanup — runs even if the session loop or the Close
+  // handler exits abnormally (e.g. via async cancellation). Without this
+  // `defer`, a failing Close handler would leak the connection entry,
+  // channel memberships, and any subscriptions added during Close.
+  defer unregister_native_ws_connection(connection_id)
   @async.with_task_group(group => {
     group.spawn_bg(() => write_native_ws_outgoing(ws, outgoing))
     handler(Open(snapshot_native_ws_peer(connection_id, params)))
@@ -467,12 +472,10 @@ async fn handle_websocket_route_async(
         send_native_ws_shutdown_close(ws)
       }
       handler(Close(snapshot_native_ws_peer(connection_id, params)))
-      unregister_native_ws_connection(connection_id)
       raise err
     }
   }
   handler(Close(snapshot_native_ws_peer(connection_id, params)))
-  unregister_native_ws_connection(connection_id)
 }
 
 ///|

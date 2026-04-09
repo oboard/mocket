@@ -237,6 +237,14 @@ fn[T] RadixRouter::get_or_create_tree(
 
 ///|
 /// Inserts a compiled route for a given HTTP method.
+
+///|
+/// Returns `true` if no routes have been registered in this router.
+pub fn[T] RadixRouter::is_empty(self : RadixRouter[T]) -> Bool {
+  self.trees.is_empty() && self.fallback_routes.is_empty()
+}
+
+///|
 pub fn[T] RadixRouter::insert(
   self : RadixRouter[T],
   http_method : String,
