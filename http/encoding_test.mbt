@@ -90,6 +90,31 @@ test "parse_multipart with repeated field names" {
 }
 
 ///|
+test "parse_multipart handles semicolons inside quoted filenames" {
+  let boundary = "B"
+  let body = "--B\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a;b.txt\"\r\nContent-Type: text/plain\r\n\r\ncontents\r\n--B--"
+  let bytes = @utf8.encode(body)
+  let parts = parse_multipart(bytes[:], boundary)
+  let v = first_multipart_value(parts, "file").unwrap()
+  // The semicolon inside the quoted filename must be preserved
+  assert_eq(v.filename, Some("a;b.txt"))
+  assert_eq(v.content_type, Some("text/plain"))
+}
+
+///|
+test "parse_multipart handles colons in content-type" {
+  let boundary = "B"
+  // Content-Type values can contain colons (e.g. in boundary strings)
+  let body = "--B\r\nContent-Disposition: form-data; name=\"x\"\r\nContent-Type: application/foo; bar=a:b\r\n\r\nok\r\n--B--"
+  let bytes = @utf8.encode(body)
+  let parts = parse_multipart(bytes[:], boundary)
+  let v = first_multipart_value(parts, "x").unwrap()
+  // The colon inside the content-type value must be preserved, not
+  // treated as a new header separator.
+  assert_eq(v.content_type, Some("application/foo; bar=a:b"))
+}
+
+///|
 test "parse_multipart handles unquoted disposition values" {
   let boundary = "B"
   let body = "--B\r\nContent-Disposition: form-data; name=field1\r\n\r\nvalue1\r\n--B--"

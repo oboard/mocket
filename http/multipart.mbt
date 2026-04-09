@@ -102,6 +102,54 @@ fn parse_disposition_value(directive : String, key : String) -> String? {
   }
 }
 
+/// Splits a header line into (name, value) on the FIRST colon only.
+/// Returns None if there is no colon. Handles `Key: value with : colons`
+/// correctly (the value can contain colons).
+
+///|
+fn split_header_line(line : String) -> (String, String)? {
+  match line.find(":") {
+    Some(idx) => {
+      let key = line[:idx].trim(chars=" \t").to_string()
+      let value = line[idx + 1:].trim(chars=" \t").to_string()
+      Some((key, value))
+    }
+    None => None
+  }
+}
+
+/// Splits a semicolon-separated parameter list into individual directives,
+/// respecting double-quoted values. E.g. `form-data; name="a;b"; filename="x"`
+/// splits into `["form-data", "name=\"a;b\"", "filename=\"x\""]`.
+
+///|
+fn split_semicolon_quoted(input : String) -> Array[String] {
+  let result : Array[String] = []
+  let view = input.view()
+  let len = view.length()
+  let mut start = 0
+  let mut in_quote = false
+  for i in 0..<len {
+    let c = view.unsafe_get(i)
+    if c == '"' {
+      in_quote = !in_quote
+    } else if c == ';' && !in_quote {
+      let piece = view[start:i].trim(chars=" \t").to_string()
+      if piece != "" {
+        result.push(piece)
+      }
+      start = i + 1
+    }
+  }
+  if start < len {
+    let piece = view[start:len].trim(chars=" \t").to_string()
+    if piece != "" {
+      result.push(piece)
+    }
+  }
+  result
+}
+
 ///|
 fn parse_multipart_part(
   part : BytesView,
@@ -129,26 +177,27 @@ fn parse_multipart_part(
   let mut filename : String? = None
   let mut content_type : String? = None
   for header in headers {
-    let parts = header.split(":").to_array()
-    if parts.length() >= 2 {
-      let key = parts[0].trim().to_lower()
-      let val = parts[1].trim()
-      if key == "content-disposition" {
-        let directives = val.split(";").to_array()
-        for directive in directives {
-          let directive = directive.trim().to_string()
-          match parse_disposition_value(directive, "name") {
-            Some(n) => name = n
-            None => ()
+    match split_header_line(header.to_string()) {
+      Some((key, val)) => {
+        let lkey = key.to_lower()
+        if lkey == "content-disposition" {
+          // Split on ';' respecting quoted values so `name="a;b"` stays together
+          let directives = split_semicolon_quoted(val)
+          for directive in directives {
+            match parse_disposition_value(directive, "name") {
+              Some(n) => name = n
+              None => ()
+            }
+            match parse_disposition_value(directive, "filename") {
+              Some(f) => filename = Some(f)
+              None => ()
+            }
           }
-          match parse_disposition_value(directive, "filename") {
-            Some(f) => filename = Some(f)
-            None => ()
-          }
+        } else if lkey == "content-type" {
+          content_type = Some(val)
         }
-      } else if key == "content-type" {
-        content_type = Some(val.to_string())
       }
+      None => ()
     }
   }
   if name != "" {
