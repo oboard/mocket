@@ -10,6 +10,7 @@
 // ---- Shared types (would be in a shared package for frontend+backend) ----
 
 ///|
+#warnings("-unnecessary_annotation")
 struct Todo {
   id : Int
   title : String
@@ -28,11 +29,13 @@ impl Show for Todo with output(self, logger) {
 }
 
 ///|
+#warnings("-unnecessary_annotation")
 struct CreateTodo {
   title : String
 } derive(ToJson, FromJson)
 
 ///|
+#warnings("-unnecessary_annotation")
 struct UserProfile {
   id : Int
   name : String
@@ -50,11 +53,13 @@ impl Show for UserProfile with output(self, logger) {
 }
 
 ///|
+#warnings("-unnecessary_annotation")
 struct ApiErrorWrapper {
   error : ApiErrorDetail
 } derive(FromJson)
 
 ///|
+#warnings("-unnecessary_annotation")
 struct ApiErrorDetail {
   status : Int
   message : String

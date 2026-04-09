@@ -1,4 +1,5 @@
 ///|
+#warnings("-unnecessary_annotation")
 struct ResourceItem {
   id : Int
   name : String
@@ -10,6 +11,7 @@ impl Show for ResourceItem with output(self, logger) {
 }
 
 ///|
+#warnings("-unnecessary_annotation")
 struct CreateItem {
   name : String
 } derive(FromJson, ToJson)

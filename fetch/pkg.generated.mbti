@@ -27,9 +27,6 @@ pub async fn request(@crescent.HttpRequest) -> @crescent.HttpResponse
 pub async fn trace(String, data? : &@crescent.Responder, headers? : Map[String, String], credentials? : @crescent.FetchCredentials, mode? : @crescent.FetchMode) -> @crescent.HttpResponse
 
 // Errors
-pub suberror RequestError {
-  InvalidHttpMethod(String)
-}
 
 // Types and methods
 

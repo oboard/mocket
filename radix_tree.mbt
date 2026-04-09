@@ -245,6 +245,12 @@ pub fn[T] RadixRouter::is_empty(self : RadixRouter[T]) -> Bool {
 }
 
 ///|
+/// Inserts a route handler under the given HTTP method.
+///
+/// Routes whose pattern contains a `**` globstar followed by additional
+/// segments (e.g. `/files/**/meta`) cannot be represented in the radix tree
+/// and are stored in a per-method fallback list that is scanned linearly
+/// during dispatch. All other routes are added to the per-method radix tree.
 pub fn[T] RadixRouter::insert(
   self : RadixRouter[T],
   http_method : String,

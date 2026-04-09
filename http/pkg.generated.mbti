@@ -2,6 +2,10 @@
 package "bobzhang/crescent/http"
 
 // Values
+pub fn append_token_case_insensitive(Map[String, String], String, String) -> Unit
+
+pub fn first_multipart_value(Map[String, Array[MultipartFormValue]], String) -> MultipartFormValue?
+
 pub fn form_encode(Map[String, String]) -> String
 
 pub fn format_http_date(Int64) -> String
@@ -18,13 +22,15 @@ pub fn parse_form_data(BytesView) -> Map[String, String]
 
 pub fn parse_http_date(StringView) -> Int64?
 
-pub fn parse_multipart(BytesView, String) -> Map[String, MultipartFormValue]
+pub fn parse_multipart(BytesView, String) -> Map[String, Array[MultipartFormValue]]
 
 pub fn path_scope_matches(String, String) -> Bool
 
 pub fn request_target_path(String) -> String
 
 pub fn request_target_query_string(String) -> String?
+
+pub fn set_header_case_insensitive(Map[String, String], String, String) -> Unit
 
 pub fn set_missing_header_case_insensitive(Map[String, String], String, String) -> Unit
 

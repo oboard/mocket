@@ -217,6 +217,7 @@ pub(all) struct MocketEvent {
 }
 pub fn[T : @json.FromJson] MocketEvent::json(Self) -> T raise
 pub fn MocketEvent::param(Self, String) -> String?
+pub fn MocketEvent::param_decoded(Self, String) -> String?
 pub fn MocketEvent::param_int(Self, String) -> Int?
 pub fn MocketEvent::param_int64(Self, String) -> Int64?
 pub fn MocketEvent::request_id(Self) -> String?
@@ -246,6 +247,7 @@ pub impl Show for NativeWebSocketOverflowPolicy
 
 type RadixRouter[T]
 pub fn[T] RadixRouter::insert(Self[T], String, CompiledRoute, T) -> Unit
+pub fn[T] RadixRouter::is_empty(Self[T]) -> Bool
 pub fn[T] RadixRouter::merge(Self[T], Self[T]) -> Unit
 pub fn[T] RadixRouter::new() -> Self[T]
 pub fn[T] RadixRouter::search(Self[T], String, String) -> (T, Map[String, StringView])?
@@ -396,10 +398,11 @@ pub enum WebSocketEvent {
 pub struct WebSocketPeer {
   // private fields
 
-  fn new(connection_id~ : String) -> WebSocketPeer
+  fn new(connection_id~ : String, params? : Map[String, String]) -> WebSocketPeer
 }
 pub fn WebSocketPeer::binary(Self, Bytes) -> Unit
-pub fn WebSocketPeer::new(connection_id~ : String) -> Self
+pub fn WebSocketPeer::new(connection_id~ : String, params? : Map[String, String]) -> Self
+pub fn WebSocketPeer::param(Self, String) -> String?
 pub fn WebSocketPeer::publish(Self, String, String) -> Unit
 pub fn WebSocketPeer::subscribe(Self, String) -> Unit
 pub fn WebSocketPeer::text(Self, String) -> Unit

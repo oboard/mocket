@@ -1,12 +1,9 @@
 import {
-  "bobzhang/crescent/native",
   "bobzhang/crescent/uri" @uri,
   "bobzhang/crescent/http" @mhttp,
   "moonbitlang/async",
   "moonbitlang/async/http",
   "moonbitlang/async/io",
-  "moonbitlang/async/os_error",
-  "moonbitlang/async/process",
   "moonbitlang/async/socket",
   "moonbitlang/async/websocket",
   "moonbitlang/core/cmp",
@@ -17,19 +14,27 @@ import {
   "moonbitlang/core/encoding/utf8",
 }
 
-warnings = "-29+74"
+import {
+  "moonbitlang/async/os_error",
+} for "test"
 
+import {
+  "moonbitlang/async/os_error",
+} for "wbtest"
+
+warnings = "+missing_doc+unnecessary_annotation"
+
+// Crescent is native-only (depends on moonbitlang/async/{http,socket,websocket}
+// which are not available on wasm/js). Files using the `.native.mbt` extension
+// are auto-restricted to native; the entries below cover the test, whitebox-test,
+// and integration-test files where MoonBit has no naming convention for native-only.
 options(
   targets: {
-    "fetch.native.mbt": [ "native" ],
     "fetch_integration_test.mbt": [ "native" ],
     "fetch_url_wbtest.mbt": [ "native" ],
-    "mocket.native.mbt": [ "native" ],
     "serve_async_integration_test.mbt": [ "native" ],
-    "serve_async_native.mbt": [ "native" ],
     "serve_async_native_wbtest.mbt": [ "native" ],
     "serve_integration_test.mbt": [ "native" ],
-    "websocket_async_native.mbt": [ "native" ],
     "websocket_async_native_wbtest.mbt": [ "native" ],
   },
 )

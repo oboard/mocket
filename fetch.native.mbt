@@ -96,8 +96,8 @@ fn resolve_fetch_url(
   // Extract host: IPv6 literals need to be wrapped in brackets for the
   // HTTP Host header and URL reconstruction.
   let host = match authority.host {
-    @uri.Host::IPv6Address(addr) => "[" + bytesview_to_string(addr) + "]"
-    @uri.Host::RegName(name) => bytesview_to_string(name)
+    IPv6Address(addr) => "[" + bytesview_to_string(addr) + "]"
+    RegName(name) => bytesview_to_string(name)
   }
   guard host != "" && host != "[]" else {
     raise FetchError::RequestFailed("invalid URL: \{url} (empty host)")

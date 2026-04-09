@@ -5,6 +5,12 @@ A web framework for MoonBit. Native-first, type-safe, AI-agent friendly.
 > Hard fork of [oboard/mocket](https://github.com/oboard/mocket) by
 > [oboard](https://github.com/oboard). [Credits](#credits) at the bottom.
 
+> **Target:** native only. Crescent's HTTP/WebSocket runtime depends on
+> `moonbitlang/async/{http,socket,websocket}`, which are not available on the
+> wasm or js targets. Use `moon build`/`moon test` (which default to the
+> `preferred-target: "native"` declared in `moon.mod.json`) or pass
+> `--target native` explicitly.
+
 ## Install
 
 ```bash

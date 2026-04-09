@@ -1,4 +1,5 @@
 ///|
+#warnings("-unnecessary_annotation")
 struct TestUser {
   name : String
   age : Int
