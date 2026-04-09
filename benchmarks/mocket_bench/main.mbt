@@ -1,11 +1,13 @@
 ///|
 async fn main {
   let app = @crescent.Mocket()
-  app.get("/text", fn(_event) noraise { "Hello, World!" })
-  app.get("/json", fn(_event) noraise {
+  // Use get_raw to avoid the error-wrapping overhead on the hot path.
+  // These handlers never raise, so automatic error mapping is pure cost.
+  app.get_raw("/text", fn(_event) noraise { "Hello, World!" })
+  app.get_raw("/json", fn(_event) noraise {
     ({ "message": "Hello, World!" } : Json)
   })
-  app.get("/user/:id", fn(event) noraise {
+  app.get_raw("/user/:id", fn(event) noraise {
     let id = event.param("id").unwrap_or("0")
     ({ "id": id, "name": "User \{id}" } : Json)
   })

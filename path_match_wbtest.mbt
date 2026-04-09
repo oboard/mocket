@@ -171,6 +171,41 @@ test "find_ws_route dynamic hit" {
 }
 
 ///|
+test "find_ws_route extracts params from dynamic path" {
+  let app = Mocket()
+  app.ws("/ws/:room", fn(_event) {  })
+  match app.find_ws_route("/ws/lobby") {
+    Some((_, params)) => {
+      assert_eq(params.get("room").map(StringView::to_string), Some("lobby"))
+    }
+    None => fail("expected route match")
+  }
+}
+
+///|
+test "find_ws_route extracts multiple params" {
+  let app = Mocket()
+  app.ws("/ws/:room/user/:id", fn(_event) {  })
+  match app.find_ws_route("/ws/lobby/user/42") {
+    Some((_, params)) => {
+      assert_eq(params.get("room").map(StringView::to_string), Some("lobby"))
+      assert_eq(params.get("id").map(StringView::to_string), Some("42"))
+    }
+    None => fail("expected route match")
+  }
+}
+
+///|
+test "find_ws_route static returns empty params" {
+  let app = Mocket()
+  app.ws("/ws", fn(_event) {  })
+  match app.find_ws_route("/ws") {
+    Some((_, params)) => assert_eq(params.length(), 0)
+    None => fail("expected route match")
+  }
+}
+
+///|
 test "find_ws_route miss" {
   let app = Mocket()
   app.ws("/ws", fn(_event) {  })
