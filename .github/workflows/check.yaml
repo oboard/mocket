@@ -3,45 +3,29 @@ name: check
 on:
   schedule:
     # Runs at 02:30, only on Friday.
-    # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
     - cron: "30 2 * * 5"
   workflow_dispatch:
   push:
     branches:
       - master
       - main
-      
   pull_request:
 
 jobs:
   check:
-    strategy:
-      matrix:
-        version: [stable,pre-release]
-        os:
-          - name: ubuntu-latest
-            triple: x86_64-linux-gnu
-
-          # stable check
-
-          # pre-release check
-          
-      fail-fast: false
-    runs-on: ${{ matrix.os.name }}
-    continue-on-error: false
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      
-      - name: Setup Moon
+
+      - name: Setup Moon (nightly)
         uses: illusory0x0/setup-moonbit@v0.1.0
-        with: 
-          version: ${{ matrix.version }}
+        with:
+          version: pre-release
 
       - name: moon version
-        run: |
-          moon version --all
+        run: moon version --all
 
       - name: install module dependencies
         run: moon update
@@ -62,14 +46,8 @@ jobs:
           moon fmt
           git diff --exit-code
 
-      - name: Setup MSVC
-        if: ${{ matrix.os.name == 'windows-latest' }}
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Set ulimit on unix
-        if: ${{ matrix.os.name != 'windows-latest' }}
-        run: |
-          ulimit -s 8176
+      - name: Set ulimit
+        run: ulimit -s 8176
 
       - name: moon test
         run: |
