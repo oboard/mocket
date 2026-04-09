@@ -165,10 +165,19 @@ fn parse_scheme_or_segment_nz_nc(
       }
       ['#', .. k] as s => {
         uri.path.push(segment.slice_until(s))
-        return parse_query_then_fragment(k, uri)
+        // '#' introduces a fragment directly (no query present here).
+        // Previously this incorrectly called parse_query_then_fragment,
+        // causing the fragment to end up in uri.query.
+        return parse_fragment(k, uri)
       }
       [b, .. k] if is_unreserved_byte(b) || is_sub_delim_byte(b) || b == '@' =>
         continue k
+      [] => {
+        // EOF after a bare segment (e.g. "foo", ".", "..").
+        // Push the accumulated segment and return.
+        uri.path.push(segment)
+        return s
+      }
       _ => raise InvalidSchemeOrSegment(source)
     }
   }
@@ -284,7 +293,7 @@ fn parse_reg_name(
 ) -> BytesView raise ParseError {
   for s = source {
     match s {
-      ['%', ..] as s => continue parse_percent_encoding(s)
+      ['%', .. k] => continue parse_percent_encoding(k)
       [b, .. k] if is_unreserved_byte(b) || is_sub_delim_byte(b) => continue k
       _ as s => {
         authority.host = RegName(source.slice_until(s))
@@ -383,7 +392,7 @@ fn parse_done(source : BytesView, _uri : Uri) -> BytesView {
 fn parse_fragment(source : BytesView, uri : Uri) -> BytesView raise ParseError {
   for s = source {
     match s {
-      ['%', ..] as s => continue parse_percent_encoding(s)
+      ['%', .. k] => continue parse_percent_encoding(k)
       [b, .. k] if is_pchar_byte(b) || b == '/' || b == '?' => continue k
       [..] as s => {
         uri.fragment = Some(source.slice_until(s))
@@ -405,7 +414,7 @@ fn parse_query_then_fragment(
         uri.query = Some(start.slice_until(s))
         return parse_fragment(k, uri)
       }
-      ['%', ..] as s => continue parse_percent_encoding(s)
+      ['%', .. k] => continue parse_percent_encoding(k)
       [b, .. k] if is_pchar_byte(b) || b == '/' || b == '?' => continue k
       [..] as s => {
         uri.query = Some(start.slice_until(s))
@@ -792,6 +801,50 @@ test "parse rejects URI with invalid percent encoding" {
     "http://example.com/path%GG",
   )
   assert_true(bad is Err(_))
+}
+
+///|
+test "parse accepts percent-encoded query" {
+  // Regression test for percent-encoding bug in parse_query_then_fragment
+  let ok : Result[Uri, ParseError] = try? Uri::parse(
+    "http://example.com/?q=a%20b",
+  )
+  assert_true(ok is Ok(_))
+}
+
+///|
+test "parse accepts percent-encoded fragment" {
+  // Regression test for percent-encoding bug in parse_fragment
+  let ok : Result[Uri, ParseError] = try? Uri::parse(
+    "http://example.com/#sec%20tion",
+  )
+  assert_true(ok is Ok(_))
+}
+
+///|
+test "parse accepts percent-encoded host" {
+  // Regression test for percent-encoding bug in parse_reg_name
+  let ok : Result[Uri, ParseError] = try? Uri::parse("http://ex%C3%A4mple.com/")
+  assert_true(ok is Ok(_))
+}
+
+///|
+test "parse accepts bare relative reference" {
+  // Regression test: previously "foo" raised InvalidSchemeOrSegment at EOF
+  let ok1 : Result[Uri, ParseError] = try? Uri::parse("foo")
+  assert_true(ok1 is Ok(_))
+  let ok2 : Result[Uri, ParseError] = try? Uri::parse(".")
+  assert_true(ok2 is Ok(_))
+  let ok3 : Result[Uri, ParseError] = try? Uri::parse("..")
+  assert_true(ok3 is Ok(_))
+}
+
+///|
+test "parse relative ref with fragment puts value in fragment, not query" {
+  // Regression test: "foo#bar" previously put "bar" in query field
+  let uri = Uri::parse("foo#bar")
+  assert_eq(uri.query, None)
+  assert_eq(uri.fragment, Some("bar"))
 }
 
 ///|

@@ -36,6 +36,35 @@ test "request_target_path with empty path" {
 }
 
 ///|
+test "request_target_path extracts path from absolute-form URLs" {
+  // Regression test: previously the "//" normalization collapsed the scheme
+  // separator, turning "http://host/path" into "http:/host/path"
+  inspect(request_target_path("http://example.com/path"), content="/path")
+  inspect(
+    request_target_path("https://api.example.com/users/42"),
+    content="/users/42",
+  )
+  inspect(
+    request_target_path("http://example.com/search?q=hello"),
+    content="/search",
+  )
+  inspect(request_target_path("https://example.com/page#frag"), content="/page")
+}
+
+///|
+test "request_target_path absolute-form without path returns /" {
+  inspect(request_target_path("http://example.com"), content="/")
+  inspect(request_target_path("https://api.example.com"), content="/")
+}
+
+///|
+test "request_target_path still normalizes path double-slashes" {
+  // //internal// path segments should still collapse
+  inspect(request_target_path("/a//b"), content="/a/b")
+  inspect(request_target_path("//foo"), content="/foo")
+}
+
+///|
 test "request_target_query_string returns None for plain paths" {
   assert_eq(request_target_query_string("/"), None)
   assert_eq(request_target_query_string("/index.html"), None)
