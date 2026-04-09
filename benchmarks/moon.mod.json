@@ -1,5 +1,5 @@
 {
-  "name": "bobzhang/crescent-examples",
+  "name": "bobzhang/crescent-benchmarks",
   "version": "0.0.1",
   "deps": {
     "bobzhang/crescent": "0.8.7",
