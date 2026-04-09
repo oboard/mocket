@@ -59,5 +59,7 @@ async fn main {
   }
 
   // Serve
-  app.serve(port=4000) catch { err => println("Server error: \{err}") }
+  app.serve(port=4000) catch {
+    err => println("Server error: \{err}")
+  }
 }

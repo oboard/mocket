@@ -19,5 +19,7 @@ async fn main {
     }
   })
   println("WebSocket echo server listening on ws://localhost:8080/ws")
-  app.serve(port=8080) catch { err => println("Server error: \{err}") }
+  app.serve(port=8080) catch {
+    err => println("Server error: \{err}")
+  }
 }
