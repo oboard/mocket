@@ -17,7 +17,7 @@ struct UserInput {
 } derive(FromJson, ToJson)
 
 ///|
-fn main {
+async fn main {
   let app = @crescent.Mocket()
 
   // Custom BodyReader: parse CSV from request body
@@ -38,5 +38,5 @@ fn main {
   }
 
   // Serve
-  app.serve_blocking(port=4000)
+  app.serve(port=4000) catch { err => println("Server error: \{err}") }
 }

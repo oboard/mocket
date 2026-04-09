@@ -44,12 +44,13 @@ jobs:
           moon version --all
 
       - name: install module dependencies
-        run: |
-          moon update
-          moon install
+        run: moon update
 
       - name: moon check
         run: moon check --deny-warn --target native
+
+      - name: moon build
+        run: moon build --target native
 
       - name: moon info
         run: |
@@ -74,4 +75,3 @@ jobs:
         run: |
           moon test --target native
           moon test --target native
-          

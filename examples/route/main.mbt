@@ -1,5 +1,5 @@
 ///|
-fn main {
+async fn main {
   let app = @crescent.Mocket()
 
   // Register global middleware
@@ -80,7 +80,7 @@ fn main {
   }
 
   // Serve
-  app.serve_blocking(port=4000)
+  app.serve(port=4000) catch { err => println("Server error: \{err}") }
 }
 
 ///|

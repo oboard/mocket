@@ -1,4 +1,5 @@
 import {
+  "moonbitlang/async",
   "bobzhang/crescent",
   "bobzhang/crescent/fetch",
 }

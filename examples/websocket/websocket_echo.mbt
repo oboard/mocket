@@ -1,5 +1,5 @@
 ///|
-fn main {
+async fn main {
   let app = @crescent.Mocket()
   app.ws("/ws", event => {
     match event {
@@ -19,5 +19,5 @@ fn main {
     }
   })
   println("WebSocket echo server listening on ws://localhost:8080/ws")
-  app.serve_blocking(port=8080)
+  app.serve(port=8080) catch { err => println("Server error: \{err}") }
 }

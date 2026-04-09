@@ -1,9 +1,6 @@
 warnings = "-1-2-3-6"
 
 options(
-  link: {
-    "native": { "cc-flags": "-fwrapv -fsanitize=address -fsanitize=undefined" },
-  },
   "native-stub": [ "stub.c" ],
   targets: {
     "constptr.mbt": [ "native" ],
