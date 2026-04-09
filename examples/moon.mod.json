@@ -1,0 +1,10 @@
+{
+  "name": "bobzhang/crescent-examples",
+  "version": "0.0.1",
+  "deps": {
+    "bobzhang/crescent": "0.8.6",
+    "moonbitlang/x": "0.4.41",
+    "moonbitlang/async": "0.17.0"
+  },
+  "preferred-target": "native"
+}
