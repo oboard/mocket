@@ -11,45 +11,6 @@ pub fn is_preflight_request(event : @crescent.MocketEvent) -> Bool {
     access_control_request_method != None
 }
 
-/// Checks if a comma-separated header value contains a specific token,
-/// ignoring case and surrounding whitespace.
-
-///|
-fn vary_contains_token(header_value : String, token : String) -> Bool {
-  let lower_token = token.to_lower()
-  for part in header_value.split(",") {
-    if part.trim(chars=" \t").to_string().to_lower() == lower_token {
-      return true
-    }
-  }
-  false
-}
-
-///|
-/// Appends a token to the `Vary` header case-insensitively and token-safely.
-/// Does nothing if the token is already present.
-fn append_vary_token(
-  headers : Map[String, String],
-  token : String,
-) -> Unit noraise {
-  // Find existing Vary header regardless of case
-  let mut existing_key : String? = None
-  let mut existing_value : String? = None
-  headers.each((k, v) => {
-    if k.to_lower() == "vary" {
-      existing_key = Some(k)
-      existing_value = Some(v)
-    }
-  })
-  match (existing_key, existing_value) {
-    (Some(key), Some(value)) =>
-      if !vary_contains_token(value, token) {
-        headers[key] = value + ", " + token
-      }
-    _ => headers["Vary"] = token
-  }
-}
-
 /// Resolves the `Access-Control-Allow-Origin` value. When `credentials=true`
 /// and the configured origin is `"*"`, reflects the request's Origin header
 /// instead (since browsers reject `*` with credentials). Also sets `Vary: Origin`
@@ -65,7 +26,7 @@ fn resolve_allow_origin(
     // Reflect the request origin; browsers reject ACAO:* with credentials.
     // Always set Vary: Origin so caches don't serve the wrong origin, even
     // when the request has no Origin (in which case we fall back to "*").
-    append_vary_token(event.res.headers, "Origin")
+    @mhttp.append_token_case_insensitive(event.res.headers, "Vary", "Origin")
     match event.req.get_header("origin") {
       Some(origin) => origin
       None => "*" // fallback; browser will reject but we did our best

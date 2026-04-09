@@ -67,12 +67,19 @@ pub fn HttpResponse::json(self : HttpResponse, obj : &ToJson) -> HttpResponse {
 }
 
 ///|
-/// Serializes a typed value as JSON, sets Content-Type, and returns the response.
+/// Serializes a typed value as JSON, sets `Content-Type`, and returns the response.
+///
+/// Uses case-insensitive header matching: any existing `content-type` /
+/// `CONTENT-TYPE` header is replaced, not duplicated.
 pub fn[T : ToJson] HttpResponse::json_value(
   self : HttpResponse,
   value : T,
 ) -> HttpResponse {
-  self.headers.set("Content-Type", "application/json; charset=utf-8")
+  @mhttp.set_header_case_insensitive(
+    self.headers,
+    "Content-Type",
+    "application/json; charset=utf-8",
+  )
   let json_str = value.to_json().stringify()
   self.raw_body = @utf8.encode(json_str)
   self

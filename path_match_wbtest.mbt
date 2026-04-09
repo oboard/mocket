@@ -175,9 +175,8 @@ test "find_ws_route extracts params from dynamic path" {
   let app = Mocket()
   app.ws("/ws/:room", fn(_event) {  })
   match app.find_ws_route("/ws/lobby") {
-    Some((_, params)) => {
+    Some((_, params)) =>
       assert_eq(params.get("room").map(StringView::to_string), Some("lobby"))
-    }
     None => fail("expected route match")
   }
 }

@@ -258,7 +258,13 @@ pub fn Mocket::static_assets(
       let encodings = provider.get_encodings()
       let matched_encodings = []
       if !encodings.is_empty() {
-        event.res.headers.set("Vary", "Accept-Encoding")
+        // Token-safe Vary append: don't clobber existing Vary values
+        // (e.g. "Origin" from CORS middleware).
+        @mhttp.append_token_case_insensitive(
+          event.res.headers,
+          "Vary",
+          "Accept-Encoding",
+        )
       }
       if accept_encoding != "" {
         // split requires `chars` label

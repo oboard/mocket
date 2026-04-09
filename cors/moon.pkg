@@ -5,6 +5,7 @@ import {
   "moonbitlang/async/socket",
   "moonbitlang/core/encoding/utf8",
   "bobzhang/crescent",
+  "bobzhang/crescent/http" @mhttp,
 }
 
 warnings = "-29+74"

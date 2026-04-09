@@ -468,9 +468,18 @@ async fn handle_request_async(
     }
   }
   let http_method_text = request_method_to_string(request.meth)
-  // Skip body reading for methods that typically have no body,
-  // unless Content-Length indicates a body is present (for size limit enforcement)
-  let has_body_hint = request_content_length(request) is Some(len) && len > 0
+  // Skip body reading for methods that typically have no body, UNLESS
+  // - Content-Length > 0, or
+  // - Transfer-Encoding: chunked is set (chunked requests must still be
+  //   consumed to avoid desyncing keep-alive connections)
+  let has_content_length = request_content_length(request) is Some(len) &&
+    len > 0
+  let is_chunked = header_contains_token_case_insensitive(
+    request.headers,
+    "transfer-encoding",
+    "chunked",
+  )
+  let has_body_hint = has_content_length || is_chunked
   let request_body : Bytes = if !has_body_hint &&
     request.meth is (Get | Head | Delete | Options | Trace) {
     b""

@@ -11,6 +11,7 @@ fn wrap_error_handler(
   event => {
     handler(event) catch {
       HttpError(status, message) => HttpResponse::error(status, message)
+      // JSON parse errors from derive(FromJson) or @json.parse
       @json.JsonDecodeError(_) as err =>
         HttpResponse::error(BadRequest, err.to_string())
       @json.InvalidEof as err =>
@@ -23,6 +24,9 @@ fn wrap_error_handler(
         HttpResponse::error(BadRequest, err.to_string())
       @json.DepthLimitExceeded as err =>
         HttpResponse::error(BadRequest, err.to_string())
+      // UTF-8 decode failures — the client sent a body that isn't valid UTF-8
+      @utf8.Malformed(_) => HttpResponse::error(BadRequest, "invalid UTF-8")
+      // Unknown errors: 500
       err => HttpResponse::error(InternalServerError, err.to_string())
     }
   }

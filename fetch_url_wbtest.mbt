@@ -76,6 +76,15 @@ test "resolve_fetch_url handles empty path with query" {
 }
 
 ///|
+test "resolve_fetch_url rejects userinfo" {
+  let res = try? resolve_fetch_url("http://user:pass@example.com/api")
+  match res {
+    Err(FetchError::RequestFailed(msg)) => assert_true(msg.contains("userinfo"))
+    _ => fail("expected FetchError for URL with userinfo")
+  }
+}
+
+///|
 test "resolve_fetch_url rejects ftp" {
   let res = try? resolve_fetch_url("ftp://example.com/")
   match res {

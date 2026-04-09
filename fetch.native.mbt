@@ -83,6 +83,16 @@ fn resolve_fetch_url(
     None => raise FetchError::RequestFailed("invalid URL: \{url} (no host)")
   }
 
+  // Reject URLs with userinfo — we don't silently drop credentials.
+  // Users should pass credentials via the `headers` param (e.g. Authorization).
+  match authority.userinfo {
+    Some(_) =>
+      raise FetchError::RequestFailed(
+        "URL userinfo (user:pass@) is not supported; use the Authorization header instead",
+      )
+    None => ()
+  }
+
   // Extract host: IPv6 literals need to be wrapped in brackets for the
   // HTTP Host header and URL reconstruction.
   let host = match authority.host {

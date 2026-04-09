@@ -63,7 +63,18 @@ fn[T] insert_segments(
     }
     Param(name) => {
       let (_, child) = match node.param_child {
-        Some(existing) => existing
+        Some((existing_name, existing_child)) => {
+          // Conflict detection: if two routes at the same tree position
+          // use different param names (e.g. /users/:id and /users/:name),
+          // the second handler would extract the param under the wrong key.
+          // Warn at registration time so users catch this at startup.
+          if existing_name != name {
+            println(
+              "[crescent warning] route param name conflict: existing `:\{existing_name}` vs new `:\{name}` at the same tree position. Using `\{existing_name}`. Rename one to match.",
+            )
+          }
+          (existing_name, existing_child)
+        }
         None => {
           let new_node = RadixNode::new()
           let pair = (name, new_node)

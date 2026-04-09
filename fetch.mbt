@@ -2,6 +2,10 @@
 
 ///|
 /// Controls whether credentials (cookies, TLS certificates) are sent with a fetch request.
+///
+/// NOTE: On the native target, this option is currently accepted but not
+/// enforced — cookies/TLS certs must be managed manually via headers.
+/// Kept for future compatibility and for the JS target.
 pub(all) enum FetchCredentials {
   Omit
   SameOrigin
@@ -20,6 +24,10 @@ pub fn FetchCredentials::to_string(self : FetchCredentials) -> String {
 
 ///|
 /// Controls the CORS mode for a fetch request.
+///
+/// NOTE: On the native target, this option is currently accepted but not
+/// enforced — there is no browser sandbox. Kept for compatibility with the
+/// JS target and for future CORS-aware client implementations.
 pub(all) enum FetchMode {
   Cors
   NoCors

@@ -102,6 +102,38 @@ pub fn set_missing_header_case_insensitive(
 }
 
 ///|
+/// Appends a token to a comma-separated header (like `Vary`) in a
+/// case-insensitive, token-safe way. Does nothing if the token is already
+/// present. Used for `Vary` updates where multiple middlewares may contribute.
+pub fn append_token_case_insensitive(
+  headers : Map[String, String],
+  header_name : String,
+  token : String,
+) -> Unit {
+  let lower_token = token.to_lower()
+  match find_header_key_case_insensitive(headers, header_name) {
+    Some(key) =>
+      match headers.get(key) {
+        Some(value) => {
+          // Check if token is already present.
+          let mut already_present = false
+          for part in value.split(",") {
+            if part.trim(chars=" \t").to_string().to_lower() == lower_token {
+              already_present = true
+              break
+            }
+          }
+          if !already_present {
+            headers[key] = value + ", " + token
+          }
+        }
+        None => headers[key] = token
+      }
+    None => headers[header_name] = token
+  }
+}
+
+///|
 /// Merges all headers from the source map into the target map using
 /// case-insensitive key matching, overwriting existing entries on conflict.
 pub fn merge_headers_case_insensitive(
