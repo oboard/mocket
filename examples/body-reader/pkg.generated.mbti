@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "bobzhang/crescent/examples/body-reader"
+package "bobzhang/crescent-examples/body-reader"
 
 import {
   "moonbitlang/core/json",
