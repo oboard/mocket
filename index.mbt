@@ -1,8 +1,13 @@
 ///|
 /// The main application type that holds route mappings, middleware, and WebSocket handlers.
+///
+/// Routing state is split by access pattern:
+/// - `static_routes` — `Map[method, Map[path, handler]]` for O(1) static lookup
+/// - `dynamic_routes` — radix tree for O(path_length) dynamic lookup
+/// - `route_keys` — flat list of `(method, path)` for introspection via `routes()`
 pub struct Mocket {
   priv base_path : String
-  priv mappings : Map[(String, String), HttpHandler]
+  priv route_keys : Array[(String, String)]
   priv middlewares : Array[(String, Middleware)]
   priv static_routes : Map[String, Map[String, HttpHandler]]
   priv dynamic_routes : RadixRouter[HttpHandler]
@@ -28,7 +33,7 @@ fn next_mocket_instance_id() -> String {
 pub fn Mocket::new(base_path? : String = "") -> Mocket {
   {
     base_path,
-    mappings: {},
+    route_keys: [],
     middlewares: [],
     static_routes: {},
     dynamic_routes: RadixRouter::new(),
@@ -42,7 +47,7 @@ pub fn Mocket::new(base_path? : String = "") -> Mocket {
 ///|
 /// Returns an iterator over the registered route keys as `(method, path)` pairs.
 pub fn Mocket::routes(self : Mocket) -> Iter[(String, String)] {
-  self.mappings.keys()
+  self.route_keys.iter()
 }
 
 ///|
@@ -170,7 +175,7 @@ pub fn Mocket::on(
   handler : HttpHandler,
 ) -> Unit {
   let path = self.base_path + path
-  self.mappings.set((event, path), handler)
+  self.route_keys.push((event, path))
 
   // Cache routes by path type for faster lookup
   if !path.contains(":") && !path.contains("*") {
@@ -298,8 +303,9 @@ pub fn Mocket::group(
 ) -> Unit {
   let group = Mocket(base_path=self.base_path + base_path)
   configure(group)
-  // Merge routes
-  group.mappings.iter().each(i => self.mappings.set(i.0, i.1))
+  // Merge route keys for introspection
+  self.route_keys.append(group.route_keys)
+  // Merge static route tables
   group.static_routes
   .iter()
   .each(i => {
@@ -311,6 +317,7 @@ pub fn Mocket::group(
       None => self.static_routes.set(http_method, group_routes)
     }
   })
+  // Merge dynamic routes (radix tree)
   self.dynamic_routes.merge(group.dynamic_routes)
   group.ws_static_routes.iter().each(i => self.ws_static_routes.set(i.0, i.1))
   self.ws_dynamic_routes.append(group.ws_dynamic_routes)

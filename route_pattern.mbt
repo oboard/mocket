@@ -95,7 +95,9 @@ fn match_compiled_segments(
   let path_part = path_parts[path_idx]
   match segments[seg_idx] {
     Static(expected) =>
-      if expected == path_part.to_string() {
+      // Compare StringView directly with the stored String to avoid
+      // allocating a String from the StringView on every segment compare.
+      if path_part == expected[:] {
         match_compiled_segments(
           segments,
           path_parts,

@@ -133,7 +133,8 @@ fn[T] search_segments(
   }
   let part = parts[idx]
   // 1. Try static children first (exact match, fastest)
-  match node.static_children.get(part.to_string()) {
+  // Use get_from_string to avoid allocating a String from the StringView.
+  match Map::get_from_string(node.static_children, part) {
     Some(child) =>
       match search_segments(child, parts, idx + 1, params) {
         Some(result) => return Some(result)
