@@ -1,6 +1,6 @@
 ///|
 /// Configuration for registering a RESTful resource with standard CRUD routes.
-pub(all) struct ResourceConfig {
+pub struct ResourceConfig {
   /// GET /path — list all resources
   list : (async (MocketEvent) -> &Responder)?
   /// GET /path/:id — get a single resource by ID
