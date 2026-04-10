@@ -70,7 +70,7 @@ pub(all) struct CookieItem {
   same_site : SameSiteOption?
 
   fn new(name~ : String, value~ : String, max_age? : Int, path? : String, domain? : String, secure? : Bool, http_only? : Bool, same_site? : SameSiteOption) -> CookieItem
-} derive(Eq)
+} derive(Eq, @debug.Debug)
 pub fn CookieItem::new(name~ : String, value~ : String, max_age? : Int, path? : String, domain? : String, secure? : Bool, http_only? : Bool, same_site? : SameSiteOption) -> Self
 pub impl Show for CookieItem
 
@@ -139,7 +139,7 @@ pub(all) struct HttpResponse {
   mut raw_body : Bytes
 
   fn new(StatusCode, headers? : Map[String, String], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> HttpResponse
-}
+} derive(@debug.Debug)
 pub fn HttpResponse::bad_request() -> Self
 pub fn HttpResponse::body(Self, &Responder) -> Self
 pub fn HttpResponse::created() -> Self

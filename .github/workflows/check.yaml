@@ -20,9 +20,9 @@ jobs:
           fetch-depth: 1
 
       - name: Setup Moon (nightly)
-        uses: illusory0x0/setup-moonbit@v0.1.0
+        uses: moonbit-community/setup-moonbit@main
         with:
-          version: pre-release
+          version: nightly
 
       - name: moon version
         run: moon version --all

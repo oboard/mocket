@@ -12,7 +12,8 @@ pub(all) struct HttpResponse {
     cookies? : Map[String, CookieItem],
     raw_body? : Bytes,
   ) -> HttpResponse
-}
+  // TODO: better error message when using skip
+} derive(Debug(ignore=Bytes))
 
 ///|
 /// Deserializes the response body into a value of type `T` via the `BodyReader` trait.

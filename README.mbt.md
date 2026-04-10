@@ -70,11 +70,24 @@ struct JsonDemoUser {
 test "json_value sets content-type and serializes body" {
   let user = JsonDemoUser::{ name: "Alice", age: 30 }
   let res = HttpResponse::ok().json_value(user)
-  assert_eq(
-    res.headers.get("Content-Type"),
-    Some("application/json; charset=utf-8"),
+  debug_inspect(
+    res,
+    content=(
+      #|{
+      #|  status_code: OK,
+      #|  headers: { "Content-Type": "application/json; charset=utf-8" },
+      #|  cookies: {},
+      #|  raw_body: ...,
+      #|}
+    ),
   )
-  assert_eq(@utf8.decode(res.raw_body), "{\"name\":\"Alice\",\"age\":30}")
+
+  inspect(
+    @utf8.decode(res.raw_body),
+    content=(
+      #|{"name":"Alice","age":30}
+    ),
+  )
 }
 ```
 
@@ -84,12 +97,13 @@ All handlers automatically map errors to JSON — bad JSON returns 400,
 `raise HttpError(...)` returns a structured error, anything else returns 500.
 You never write error-handling boilerplate.
 
-```moonbit nocheck
+```moonbit check
 ///|
+#warnings("-unused_value")
 fn build_app() -> @crescent.Mocket {
   let app = @crescent.Mocket()
   let todos : Array[Todo] = [{ id: 1, title: "Learn MoonBit", done: false }]
-  let next_id = Ref(2)
+  let next_id = Ref::Ref(2)
 
   // List all
   app.get("/api/todos", _ => HttpResponse::ok().json_value(todos))
@@ -102,7 +116,7 @@ fn build_app() -> @crescent.Mocket {
         return HttpResponse::ok().json_value(todo)
       }
     }
-    raise HttpError(NotFound, "todo \{id} not found")
+    raise HttpError::HttpError(NotFound, "todo \{id} not found")
   })
 
   // Create — event.json() auto-returns 400 for invalid JSON
