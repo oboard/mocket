@@ -100,7 +100,7 @@ pub(all) struct CookieItem {
     http_only? : Bool,
     same_site? : SameSiteOption,
   ) -> CookieItem
-} derive(Eq)
+} derive(Eq, Debug)
 
 ///|
 /// Creates a new `CookieItem` with the given name, value, and optional attributes.
