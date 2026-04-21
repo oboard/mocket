@@ -59,8 +59,12 @@ pub async fn fetch(
     req_headers.each(fn(k, v) { headers_obj[k] = v })
     options["headers"] = headers_obj.to_value()
   }
-  ignore(credentials)
-  ignore(mode)
+  if credentials is Some(c) {
+    options["credentials"] = c.to_string()
+  }
+  if mode is Some(m) {
+    options["mode"] = m.to_string()
+  }
 
   let resp = fetch_ffi(url, options.to_value()).wait() catch {
     e => raise FetchError::RequestFailed("js fetch failed: \{e}")
