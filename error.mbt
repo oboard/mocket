@@ -1,8 +1,8 @@
 ///|
-pub suberror IOError derive(Show)
+pub suberror IOError
 
 ///|
-pub suberror NetworkError derive(Show)
+pub suberror NetworkError
 
 ///|
-pub suberror ExecError derive(Show)
+pub suberror ExecError

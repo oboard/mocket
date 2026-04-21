@@ -36,6 +36,16 @@ static int CHANNEL_COUNT = 0;
 static uint8_t *WS_LAST_MSG = NULL;
 static size_t WS_LAST_MSG_LEN = 0;
 
+static moonbit_bytes_t cstr_to_moonbit_bytes(const char *s) {
+  if (!s) return moonbit_empty_int8_array;
+  size_t len = strlen(s);
+  if (len == 0) return moonbit_empty_int8_array;
+  if (len > INT32_MAX) len = INT32_MAX;
+  moonbit_bytes_t buf = moonbit_make_bytes_raw((int32_t) len);
+  memcpy(buf, s, len);
+  return buf;
+}
+
 void ws_set_last_msg(const unsigned char *data, size_t len) {
   if (WS_LAST_MSG) {
     free(WS_LAST_MSG);
@@ -62,7 +72,7 @@ size_t ws_msg_copy(uint8_t *dst, size_t max_len) {
   return n;
 }
 
-typedef void (*ws_emit_cb_t)(const char *type, const char *id, const char *payload);
+typedef void (*ws_emit_cb_t)(moonbit_bytes_t type, moonbit_bytes_t id, moonbit_bytes_t payload);
 static ws_emit_cb_t WS_EMIT_CB = NULL;
 void set_ws_emit(ws_emit_cb_t cb) { WS_EMIT_CB = cb; }
 
@@ -92,12 +102,12 @@ static void register_client(struct mg_connection *c) {
   ws_client_t *slot = &WS_CLIENTS[WS_CLIENT_COUNT++];
   slot->c = c;
   snprintf(slot->id, sizeof(slot->id), "%s", id);
-  if (WS_EMIT_CB) WS_EMIT_CB("open", slot->id, "");
+  if (WS_EMIT_CB) WS_EMIT_CB(cstr_to_moonbit_bytes("open"), cstr_to_moonbit_bytes(slot->id), moonbit_empty_int8_array);
 }
 
 static void unregister_client(ws_client_t *cl) {
   if (!cl) return;
-  if (WS_EMIT_CB) WS_EMIT_CB("close", cl->id, "");
+  if (WS_EMIT_CB) WS_EMIT_CB(cstr_to_moonbit_bytes("close"), cstr_to_moonbit_bytes(cl->id), moonbit_empty_int8_array);
   for (int i = 0; i < CHANNEL_COUNT; i++) {
     int w = 0;
     for (int j = 0; j < CHANNELS[i].cid_count; j++) {
@@ -281,7 +291,7 @@ void res_end_bytes(response_t *res, uint8_t *body, size_t body_len)
 // =================== FFI Functions for MoonBit ===================
 
 // Get request method
-const char *req_method(request_t *req)
+moonbit_bytes_t req_method(request_t *req)
 {
   if (req && req->hm)
   {
@@ -289,13 +299,13 @@ const char *req_method(request_t *req)
     size_t len = req->hm->method.len < 15 ? req->hm->method.len : 15;
     strncpy(http_methodbuf, req->hm->method.buf, len);
     http_methodbuf[len] = '\0';
-    return http_methodbuf;
+    return cstr_to_moonbit_bytes(http_methodbuf);
   }
-  return "GET";
+  return cstr_to_moonbit_bytes("GET");
 }
 
 // Get request URL
-const char *req_url(request_t *req)
+moonbit_bytes_t req_url(request_t *req)
 {
   if (req && req->hm)
   {
@@ -303,13 +313,13 @@ const char *req_url(request_t *req)
     size_t len = req->hm->uri.len < 511 ? req->hm->uri.len : 511;
     strncpy(url_buf, req->hm->uri.buf, len);
     url_buf[len] = '\0';
-    return url_buf;
+    return cstr_to_moonbit_bytes(url_buf);
   }
-  return "/";
+  return cstr_to_moonbit_bytes("/");
 }
 
 // Get request headers (simplified)
-const char *req_headers(request_t *req)
+moonbit_bytes_t req_headers(request_t *req)
 {
   if (req && req->hm)
   {
@@ -334,9 +344,9 @@ const char *req_headers(request_t *req)
       buf_len += needed - 1; // -1 because null terminator is overwritten/handled by strcat
     }
 
-    return headers_buf;
+    return cstr_to_moonbit_bytes(headers_buf);
   }
-  return "";
+  return moonbit_empty_int8_array;
 }
 
 // Get complete request body as MoonBit Bytes object
@@ -472,13 +482,13 @@ static void ev_handler(struct mg_connection *c, int ev, void *ev_data)
       if (!tmp) return;
       memcpy(tmp, wm->data.buf, len);
       tmp[len] = '\0';
-      if (WS_EMIT_CB) WS_EMIT_CB("message", cl->id, tmp);
+      if (WS_EMIT_CB) WS_EMIT_CB(cstr_to_moonbit_bytes("message"), cstr_to_moonbit_bytes(cl->id), cstr_to_moonbit_bytes(tmp));
       free(tmp);
     } else if (op == WEBSOCKET_OP_BINARY) {
       ws_set_last_msg((const unsigned char *) wm->data.buf, wm->data.len);
-      if (WS_EMIT_CB) WS_EMIT_CB("binary", cl->id, "");
+      if (WS_EMIT_CB) WS_EMIT_CB(cstr_to_moonbit_bytes("binary"), cstr_to_moonbit_bytes(cl->id), moonbit_empty_int8_array);
     } else if (op == WEBSOCKET_OP_PING) {
-      if (WS_EMIT_CB) WS_EMIT_CB("ping", cl->id, "");
+      if (WS_EMIT_CB) WS_EMIT_CB(cstr_to_moonbit_bytes("ping"), cstr_to_moonbit_bytes(cl->id), moonbit_empty_int8_array);
     }
   }
   else if (ev == MG_EV_CLOSE)
@@ -826,8 +836,8 @@ int mocket_fetch(
 }
 
 int mocket_fetch_status(void) { return FETCH_SYNC_RESULT.status; }
-const char *mocket_fetch_headers(void) { return FETCH_SYNC_RESULT.headers ? FETCH_SYNC_RESULT.headers : ""; }
-const char *mocket_fetch_error(void) { return FETCH_SYNC_RESULT.error; }
+moonbit_bytes_t mocket_fetch_headers(void) { return cstr_to_moonbit_bytes(FETCH_SYNC_RESULT.headers ? FETCH_SYNC_RESULT.headers : ""); }
+moonbit_bytes_t mocket_fetch_error(void) { return cstr_to_moonbit_bytes(FETCH_SYNC_RESULT.error); }
 size_t mocket_fetch_body_len(void) { return FETCH_SYNC_RESULT.body_len; }
 size_t mocket_fetch_body_copy(uint8_t *dst, size_t max_len) {
   if (!dst || max_len == 0 || !FETCH_SYNC_RESULT.body || FETCH_SYNC_RESULT.body_len == 0) return 0;

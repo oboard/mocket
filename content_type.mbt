@@ -3,7 +3,7 @@ priv struct ContentType {
   media_type : StringView
   subtype : StringView
   params : Map[StringView, StringView]
-} derive(Show)
+}
 
 ///|
 fn parse_content_type(s : StringView) -> ContentType? {
@@ -58,34 +58,30 @@ fn parse_content_type(s : StringView) -> ContentType? {
 
 ///|
 test "parse_content_type" {
-  inspect(
-    parse_content_type("application/json; charset=utf-8"),
-    content=(
-      #|Some({media_type: "application", subtype: "json", params: {"charset": "utf-8"}})
-    ),
-  )
+  let ct = parse_content_type("application/json; charset=utf-8")
+  assert_true(ct is Some(_))
+  guard ct is Some(found) else { panic() }
+  assert_eq(found.media_type, "application")
+  assert_eq(found.subtype, "json")
+  assert_eq(found.params.get("charset"), Some("utf-8"))
 }
 
 ///|
 test "parse_content_type_with_quoted_params" {
-  inspect(
-    parse_content_type(
-      "multipart/form-data; boundary=\"foo;bar\"; charset = utf-8",
-    ),
-    content=(
-      #|Some({media_type: "multipart", subtype: "form-data", params: {"boundary": "foo;bar", "charset": "utf-8"}})
-    ),
+  let ct = parse_content_type(
+    "multipart/form-data; boundary=\"foo;bar\"; charset = utf-8",
   )
+  assert_true(ct is Some(_))
+  guard ct is Some(found) else { panic() }
+  assert_eq(found.media_type, "multipart")
+  assert_eq(found.subtype, "form-data")
+  assert_eq(found.params.get("boundary"), Some("foo;bar"))
+  assert_eq(found.params.get("charset"), Some("utf-8"))
 }
 
 ///|
 test "parse_content_type_invalid" {
-  inspect(
-    parse_content_type("application"),
-    content=(
-      #|None
-    ),
-  )
+  assert_true(parse_content_type("application") is None)
 }
 
 ///|

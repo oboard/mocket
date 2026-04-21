@@ -3,11 +3,10 @@ package "oboard/mocket"
 
 import {
   "moonbitlang/core/buffer",
-  "oboard/mocket/native",
 }
 
 // Values
-pub fn __ws_emit(@native.CStr, @native.CStr, @native.CStr) -> Unit
+pub fn __ws_emit(Bytes, Bytes, Bytes) -> Unit
 
 pub fn async_run(async () -> Unit noraise) -> Unit
 
@@ -56,15 +55,15 @@ pub fn ws_subscribe(String, String) -> Unit
 pub fn ws_unsubscribe(String, String) -> Unit
 
 // Errors
-pub suberror ExecError derive(Show)
+pub suberror ExecError
 
 pub suberror FetchError {
   RequestFailed(String)
-} derive(Show)
+}
 
-pub suberror IOError derive(Show)
+pub suberror IOError
 
-pub suberror NetworkError derive(Show)
+pub suberror NetworkError
 
 // Types and methods
 pub(all) struct CookieItem {
@@ -83,16 +82,16 @@ pub(all) enum FetchCredentials {
   Omit
   SameOrigin
   Include
-} derive(Eq, Show)
-pub fn FetchCredentials::to_string(Self) -> String
+} derive(Eq)
+pub impl Show for FetchCredentials
 
 pub(all) enum FetchMode {
   Cors
   NoCors
   SameOrigin
   Navigate
-} derive(Eq, Show)
-pub fn FetchMode::to_string(Self) -> String
+} derive(Eq)
+pub impl Show for FetchMode
 
 type Html
 pub impl Responder for Html
@@ -107,7 +106,8 @@ pub(all) enum HttpMethod {
   OPTIONS
   TRACE
   CONNECT
-} derive(Eq, Show)
+} derive(Eq)
+pub impl Show for HttpMethod
 
 pub(all) struct HttpRequest {
   http_method : String
@@ -122,7 +122,7 @@ pub impl Responder for HttpRequest
 #external
 pub type HttpRequestInternal
 pub fn HttpRequestInternal::on_complete(Self, FuncRef[() -> Unit]) -> Unit
-pub fn HttpRequestInternal::on_headers(Self, FuncRef[(@native.CStr) -> Unit]) -> Unit
+pub fn HttpRequestInternal::on_headers(Self, FuncRef[(Bytes) -> Unit]) -> Unit
 
 pub(all) struct HttpResponse {
   mut status_code : StatusCode
@@ -191,7 +191,8 @@ pub(all) enum SameSiteOption {
   Lax
   Strict
   SameSiteNone
-} derive(Eq, Show)
+} derive(Eq)
+pub impl Show for SameSiteOption
 pub impl ToJson for SameSiteOption
 
 pub(all) struct StaticAssetMeta {
@@ -268,7 +269,7 @@ pub(all) enum StatusCode {
   NotExtended
   NetworkAuthenticationRequired
   Custom(Int)
-} derive(Eq, Show, ToJson)
+} derive(Eq, ToJson)
 pub fn StatusCode::from_int(Int) -> Self
 pub fn StatusCode::to_int(Self) -> Int
 

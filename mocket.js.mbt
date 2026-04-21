@@ -281,7 +281,7 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
         http_method: req.req_method(),
         url: req.url(),
         headers: string_headers,
-        raw_body: "",
+        raw_body: b"",
       },
       res: HttpResponse::new(OK),
       params,

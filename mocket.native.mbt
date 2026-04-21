@@ -13,31 +13,27 @@ pub type HttpResponseInternal
 ///|
 extern "c" fn HttpRequestInternal::req_method(
   self : HttpRequestInternal,
-) -> @native.CStr = "req_method"
+) -> Bytes = "req_method"
 
 ///|
-extern "c" fn HttpRequestInternal::url(
-  self : HttpRequestInternal,
-) -> @native.CStr = "req_url"
+extern "c" fn HttpRequestInternal::url(self : HttpRequestInternal) -> Bytes = "req_url"
 
 ///|
-extern "c" fn HttpRequestInternal::headers(
-  self : HttpRequestInternal,
-) -> @native.CStr = "req_headers"
+extern "c" fn HttpRequestInternal::headers(self : HttpRequestInternal) -> Bytes = "req_headers"
 
 ///|
 #owned(self, key, value)
 extern "c" fn HttpResponseInternal::set_header(
   self : HttpResponseInternal,
-  key : @native.CStr,
-  value : @native.CStr,
+  key : Bytes,
+  value : Bytes,
 ) -> Unit = "res_set_header"
 
 ///|
 #owned(self, cb)
 pub extern "c" fn HttpRequestInternal::on_headers(
   self : HttpRequestInternal,
-  cb : FuncRef[(@native.CStr) -> Unit],
+  cb : FuncRef[(Bytes) -> Unit],
 ) -> Unit = "req_on_headers"
 
 ///|
@@ -61,7 +57,7 @@ extern "c" fn HttpRequestInternal::req_body_len(
 // #owned(self, body)
 // extern "c" fn HttpResponseInternal::end(
 //   self : HttpResponseInternal,
-//   body : @native.CStr,
+//   body : Bytes,
 // ) -> Unit = "res_end"
 
 ///|
@@ -90,9 +86,7 @@ extern "c" fn create_server(
 
 ///|
 #owned(cb)
-extern "c" fn set_ws_emit(
-  cb : FuncRef[(@native.CStr, @native.CStr, @native.CStr) -> Unit],
-) -> Unit = "set_ws_emit"
+extern "c" fn set_ws_emit(cb : FuncRef[(Bytes, Bytes, Bytes) -> Unit]) -> Unit = "set_ws_emit"
 
 ///|
 let server_map : Map[Int, Mocket] = Map::new()
@@ -115,11 +109,7 @@ pub fn register_ws_handler(mocket : Mocket, port : Int) -> Unit {
 pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
   server_map[port] = mocket
   register_ws_handler(mocket, port)
-  set_ws_emit(fn(
-    event_type : @native.CStr,
-    id : @native.CStr,
-    payload : @native.CStr,
-  ) {
+  set_ws_emit(fn(event_type : Bytes, id : Bytes, payload : Bytes) {
     __ws_emit(event_type, id, payload)
   })
   let server = create_server(fn(
@@ -140,9 +130,9 @@ fn handle_request_native(
 ) -> Unit {
   let mocket = server_map[port]
   // 直接使用 C FFI 获取请求数据
-  let url = from_cstr(req.url())
+  let url = from_cbytes(req.url())
   let path = url
-  let http_method = from_cstr(req.req_method())
+  let http_method = from_cbytes(req.req_method())
 
   // // 创建 HttpRequest
   // let http_req : HttpRequest = {
@@ -157,11 +147,11 @@ fn handle_request_native(
   // let event : HttpEvent = { req: http_req, res: http_res, params: Map::new() }
 
   // // 简单响应
-  // res.set_header(to_cstr("Content-Type"), to_cstr("application/json"))
+  // res.set_header(to_cbytes("Content-Type"), to_cbytes("application/json"))
   // res.status(200)
-  // res.end(to_cstr("{\"status\":\"ok\"}"))
+  // res.end(to_cbytes("{\"status\":\"ok\"}"))
 
-  let headers_str = from_cstr(req.headers())
+  let headers_str = from_cbytes(req.headers())
   let req_headers = Map::new()
   headers_str
   .split("\n")
@@ -184,7 +174,7 @@ fn handle_request_native(
     _ => ({}, handle_not_found())
   }
   let event = {
-    req: { http_method, url, raw_body: "", headers: req_headers },
+    req: { http_method, url, raw_body: b"", headers: req_headers },
     res: HttpResponse::new(OK),
     params,
   }
@@ -207,12 +197,12 @@ fn handle_request_native(
     responder.options(event.res)
     res.status(event.res.status_code.to_int())
     event.res.headers.each((key, value) => {
-      res.set_header(to_cstr(key), to_cstr(value))
+      res.set_header(to_cbytes(key), to_cbytes(value))
     })
     event.res.cookies
     .values()
     .each(cookie => {
-      res.set_header(to_cstr("Set-Cookie"), to_cstr(cookie.to_string()))
+      res.set_header(to_cbytes("Set-Cookie"), to_cbytes(cookie.to_string()))
     })
     let buf = @buffer.new()
     responder.output(buf)
@@ -223,12 +213,12 @@ fn handle_request_native(
 
 ///|
 pub fn __ws_emit(
-  event_type : @native.CStr,
-  connection_id : @native.CStr,
-  payload : @native.CStr,
+  event_type : Bytes,
+  connection_id : Bytes,
+  payload : Bytes,
 ) -> Unit {
-  let et = from_cstr(event_type)
-  let cid = from_cstr(connection_id)
+  let et = from_cbytes(event_type)
+  let cid = from_cbytes(connection_id)
   let handler = if ws_handler_map.is_empty() {
     fn(_) {  }
   } else {
@@ -238,7 +228,7 @@ pub fn __ws_emit(
   match et {
     "open" => handler(WebSocketEvent::Open(peer))
     "message" => {
-      let pl = from_cstr(payload)
+      let pl = from_cbytes(payload)
       handler(WebSocketEvent::Message(peer, Text(pl)))
     }
     "binary" => {
@@ -257,40 +247,31 @@ pub fn __ws_emit(
 
 ///|
 #owned(id, msg)
-extern "c" fn ws_send_native(id : @native.CStr, msg : @native.CStr) -> Unit = "ws_send"
+extern "c" fn ws_send_native(id : Bytes, msg : Bytes) -> Unit = "ws_send"
 
 ///|
 #owned(id, channel)
-extern "c" fn ws_subscribe_native(
-  id : @native.CStr,
-  channel : @native.CStr,
-) -> Unit = "ws_subscribe"
+extern "c" fn ws_subscribe_native(id : Bytes, channel : Bytes) -> Unit = "ws_subscribe"
 
 ///|
 #owned(id, channel)
-extern "c" fn ws_unsubscribe_native(
-  id : @native.CStr,
-  channel : @native.CStr,
-) -> Unit = "ws_unsubscribe"
+extern "c" fn ws_unsubscribe_native(id : Bytes, channel : Bytes) -> Unit = "ws_unsubscribe"
 
 ///|
 #owned(channel, msg)
-extern "c" fn ws_publish_native(
-  channel : @native.CStr,
-  msg : @native.CStr,
-) -> Unit = "ws_publish"
+extern "c" fn ws_publish_native(channel : Bytes, msg : Bytes) -> Unit = "ws_publish"
 
 ///|
 #owned(id, msg)
 extern "c" fn ws_send_bytes_len_native(
-  id : @native.CStr,
+  id : Bytes,
   msg : Bytes,
   len : Int,
 ) -> Unit = "ws_send_bytes_len"
 
 ///|
 #owned(id)
-extern "c" fn ws_pong_native(id : @native.CStr) -> Unit = "ws_pong"
+extern "c" fn ws_pong_native(id : Bytes) -> Unit = "ws_pong"
 
 ///|
 // extern "c" fn ws_msg_body() -> Bytes = "ws_msg_body"
@@ -304,44 +285,40 @@ extern "c" fn ws_msg_copy(dst : Bytes) -> Int = "ws_msg_copy"
 
 ///|
 pub fn ws_send(id : String, msg : String) -> Unit {
-  ws_send_native(to_cstr(id), to_cstr(msg))
+  ws_send_native(to_cbytes(id), to_cbytes(msg))
 }
 
 ///|
 pub fn ws_send_bytes(id : String, msg : Bytes) -> Unit {
-  ws_send_bytes_len_native(to_cstr(id), msg, msg.length())
+  ws_send_bytes_len_native(to_cbytes(id), msg, msg.length())
 }
 
 ///|
 pub fn ws_pong(id : String) -> Unit {
-  ws_pong_native(to_cstr(id))
+  ws_pong_native(to_cbytes(id))
 }
 
 ///|
 pub fn ws_subscribe(id : String, channel : String) -> Unit {
-  ws_subscribe_native(to_cstr(id), to_cstr(channel))
+  ws_subscribe_native(to_cbytes(id), to_cbytes(channel))
 }
 
 ///|
 pub fn ws_unsubscribe(id : String, channel : String) -> Unit {
-  ws_unsubscribe_native(to_cstr(id), to_cstr(channel))
+  ws_unsubscribe_native(to_cbytes(id), to_cbytes(channel))
 }
 
 ///|
 pub fn ws_publish(channel : String, msg : String) -> Unit {
-  ws_publish_native(to_cstr(channel), to_cstr(msg))
+  ws_publish_native(to_cbytes(channel), to_cbytes(msg))
 }
 
 ///|
-fn[T : Show] to_cstr(s : T) -> @native.CStr {
-  let bytes = @utf8.encode(s.to_string())
-  let utf8_ptr = @native.unsafe_coerce(bytes)
-  utf8_ptr
+fn[T : Show] to_cbytes(s : T) -> Bytes {
+  @utf8.encode(s.to_string())
 }
 
 ///|
-fn from_cstr(cstr : @native.CStr) -> String {
-  let bytes = cstr.to_bytes()[:-1]
-  let utf8 = @utf8.decode(bytes) catch { _ => panic() }
-  utf8
+fn from_cbytes(bytes : Bytes) -> String {
+  @utf8.decode_lossy(bytes)
 }

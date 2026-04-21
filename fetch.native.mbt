@@ -1,10 +1,10 @@
 ///|
 #owned(url, http_method_c, body, headers, timeout_ms)
 extern "c" fn fetch_ffi(
-  url : @native.CStr,
-  http_method_c : @native.CStr,
-  body : @native.CStr,
-  headers : @native.CStr,
+  url : Bytes,
+  http_method_c : Bytes,
+  body : Bytes,
+  headers : Bytes,
   timeout_ms : Int,
 ) -> Int = "mocket_fetch"
 
@@ -12,10 +12,10 @@ extern "c" fn fetch_ffi(
 extern "c" fn fetch_status_ffi() -> Int = "mocket_fetch_status"
 
 ///|
-extern "c" fn fetch_headers_ffi() -> @native.CStr = "mocket_fetch_headers"
+extern "c" fn fetch_headers_ffi() -> Bytes = "mocket_fetch_headers"
 
 ///|
-extern "c" fn fetch_error_ffi() -> @native.CStr = "mocket_fetch_error"
+extern "c" fn fetch_error_ffi() -> Bytes = "mocket_fetch_error"
 
 ///|
 extern "c" fn fetch_body_len_ffi() -> Int = "mocket_fetch_body_len"
@@ -93,19 +93,19 @@ pub async fn fetch(
   let headers_str = headers_to_lines(req_headers)
   let result : NativeFetchResult = suspend(fn(ok_cb, reject) {
     let ret = fetch_ffi(
-      to_cstr(url),
-      to_cstr(method_str),
-      to_cstr(body_str),
-      to_cstr(headers_str),
+      to_cbytes(url),
+      to_cbytes(method_str),
+      to_cbytes(body_str),
+      to_cbytes(headers_str),
       30000,
     )
     if ret != 0 {
-      reject(FetchError::RequestFailed(from_cstr(fetch_error_ffi())))
+      reject(FetchError::RequestFailed(from_cbytes(fetch_error_ffi())))
       return
     }
     ok_cb({
       status_code: fetch_status_ffi(),
-      headers: parse_headers_native(from_cstr(fetch_headers_ffi())),
+      headers: parse_headers_native(from_cbytes(fetch_headers_ffi())),
       body: fetch_body_native(),
     })
   })

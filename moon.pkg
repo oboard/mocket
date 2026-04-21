@@ -1,6 +1,5 @@
 import {
   "oboard/mocket/js",
-  "oboard/mocket/native",
   "oboard/mocket/uri",
   "moonbitlang/x/fs",
   "moonbitlang/x/crypto",

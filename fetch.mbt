@@ -9,22 +9,41 @@ pub(all) enum HttpMethod {
   OPTIONS
   TRACE
   CONNECT
-} derive(Eq, Show)
+} derive(Eq)
+
+///|
+pub impl Show for HttpMethod with output(self, logger) -> Unit {
+  logger.write_string(
+    match self {
+      GET => "GET"
+      POST => "POST"
+      PUT => "PUT"
+      PATCH => "PATCH"
+      DELETE => "DELETE"
+      HEAD => "HEAD"
+      OPTIONS => "OPTIONS"
+      TRACE => "TRACE"
+      CONNECT => "CONNECT"
+    },
+  )
+}
 
 ///|
 pub(all) enum FetchCredentials {
   Omit
   SameOrigin
   Include
-} derive(Eq, Show)
+} derive(Eq)
 
 ///|
-pub fn FetchCredentials::to_string(self : FetchCredentials) -> String {
-  match self {
-    Omit => "omit"
-    SameOrigin => "same-origin"
-    Include => "include"
-  }
+pub impl Show for FetchCredentials with output(self, logger) -> Unit {
+  logger.write_string(
+    match self {
+      Omit => "omit"
+      SameOrigin => "same-origin"
+      Include => "include"
+    },
+  )
 }
 
 ///|
@@ -33,22 +52,24 @@ pub(all) enum FetchMode {
   NoCors
   SameOrigin
   Navigate
-} derive(Eq, Show)
+} derive(Eq)
 
 ///|
-pub fn FetchMode::to_string(self : FetchMode) -> String {
-  match self {
-    Cors => "cors"
-    NoCors => "no-cors"
-    SameOrigin => "same-origin"
-    Navigate => "navigate"
-  }
+pub impl Show for FetchMode with output(self, logger) -> Unit {
+  logger.write_string(
+    match self {
+      Cors => "cors"
+      NoCors => "no-cors"
+      SameOrigin => "same-origin"
+      Navigate => "navigate"
+    },
+  )
 }
 
 ///|
 pub suberror FetchError {
   RequestFailed(String)
-} derive(Show)
+}
 
 ///|
 fn copy_headers(headers : Map[String, String]) -> Map[String, String] {

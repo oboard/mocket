@@ -4,14 +4,14 @@
 pub enum Host {
   IPv6Address(BytesView)
   RegName(BytesView)
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub struct Authority {
   mut userinfo : BytesView?
   mut host : Host
   mut port : Int?
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub struct Uri {
@@ -20,7 +20,7 @@ pub struct Uri {
   path : Array[BytesView]
   mut query : BytesView?
   mut fragment : BytesView?
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 pub suberror ParseError {
@@ -43,70 +43,70 @@ fn BytesView::slice_until(self : BytesView, other : BytesView) -> BytesView {
 
 ///|
 fn is_alpha_byte(b : Byte) -> Bool {
-  (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z')
+  (b >= b'A' && b <= b'Z') || (b >= b'a' && b <= b'z')
 }
 
 ///|
 fn is_digit_byte(b : Byte) -> Bool {
-  b >= '0' && b <= '9'
+  b >= b'0' && b <= b'9'
 }
 
 ///|
 fn is_hexdig_byte(b : Byte) -> Bool {
-  is_digit_byte(b) || (b >= 'A' && b <= 'F') || (b >= 'a' && b <= 'f')
+  is_digit_byte(b) || (b >= b'A' && b <= b'F') || (b >= b'a' && b <= b'f')
 }
 
 ///|
 fn is_unreserved_byte(b : Byte) -> Bool {
   is_alpha_byte(b) ||
   is_digit_byte(b) ||
-  b == '-' ||
-  b == '.' ||
-  b == '_' ||
-  b == '~'
+  b == b'-' ||
+  b == b'.' ||
+  b == b'_' ||
+  b == b'~'
 }
 
 ///|
 fn is_gen_delim_byte(b : Byte) -> Bool {
-  b == ':' ||
-  b == '/' ||
-  b == '?' ||
-  b == '#' ||
-  b == '[' ||
-  b == ']' ||
-  b == '@'
+  b == b':' ||
+  b == b'/' ||
+  b == b'?' ||
+  b == b'#' ||
+  b == b'[' ||
+  b == b']' ||
+  b == b'@'
 }
 
 ///|
 fn is_sub_delim_byte(b : Byte) -> Bool {
-  b == '!' ||
-  b == '$' ||
-  b == '&' ||
-  b == '\'' ||
-  b == '(' ||
-  b == ')' ||
-  b == '*' ||
-  b == '+' ||
-  b == ',' ||
-  b == ';' ||
-  b == '='
+  b == b'!' ||
+  b == b'$' ||
+  b == b'&' ||
+  b == b'\'' ||
+  b == b'(' ||
+  b == b')' ||
+  b == b'*' ||
+  b == b'+' ||
+  b == b',' ||
+  b == b';' ||
+  b == b'='
 }
 
 ///|
 fn is_pchar_byte(b : Byte) -> Bool {
-  is_unreserved_byte(b) || is_sub_delim_byte(b) || b == ':' || b == '@'
+  is_unreserved_byte(b) || is_sub_delim_byte(b) || b == b':' || b == b'@'
 }
 
 // RFC 3986 Parsing Functions
 
-// URI-reference = scheme ":" "//" authority path-abempty [ "?" query ] [ "#" fragment ]
-//               / scheme ":" "/" [ segment-nz *( "/" segment ) ] [ "?" query ] [ "#" fragment ]
-//               / scheme ":" segment-nz *( "/" segment ) [ "?" query ] [ "#" fragment ]
-//               / scheme ":" [ "?" query ] [ "#" fragment ]
-//               / "//" authority path-abempty [ "?" query ] [ "#" fragment ]
-//               / "/" [ segment-nz *( "/" segment ) ] [ "?" query ] [ "#" fragment ]
-//               / segment-nz-nc *( "/" segment ) [ "?" query ] [ "#" fragment ]
-//               / [ "?" query ] [ "#" fragment ]
+// URI-reference = scheme b":" b"//" authority path-abempty [ b"?" query ] [ b"#" fragment ]
+//               / scheme b":" b"/" [ segment-nz *( b"/" segment ) ] [ b"?" query ] [ b"#" fragment ]
+//               / scheme b":" segment-nz *( b"/" segment ) [ b"?" query ] [ b"#" fragment ]
+//               / scheme b":" [ b"?" query ] [ b"#" fragment ]
+//               / b"//" authority path-abempty [ b"?" query ] [ b"#" fragment ]
+//               / b"/" [ segment-nz *( b"/" segment ) ] [ b"?" query ] [ b"#" fragment ]
+//               / segment-nz-nc *( b"/" segment ) [ b"?" query ] [ b"#" fragment ]
+//               / [ b"?" query ] [ b"#" fragment ]
 
 ///|
 fn parse_scheme_or_segment_nz_nc(
@@ -116,23 +116,23 @@ fn parse_scheme_or_segment_nz_nc(
   let segment = source
   for s = source {
     match s {
-      [':', .. k] as s => {
+      [b':', .. k] as s => {
         uri.scheme = Some(source.slice_until(s))
         return parse_hier_part_then_query(k, uri)
       }
-      ['/', .. k] as s => {
+      [b'/', .. k] as s => {
         uri.path.push(segment.slice_until(s))
         return parse_path_abempty_then_query(k, uri)
       }
-      ['?', .. k] as s => {
+      [b'?', .. k] as s => {
         uri.path.push(segment.slice_until(s))
         return parse_query_then_fragment(k, uri)
       }
-      ['#', .. k] as s => {
+      [b'#', .. k] as s => {
         uri.path.push(segment.slice_until(s))
         return parse_query_then_fragment(k, uri)
       }
-      [b, .. k] if is_unreserved_byte(b) || is_sub_delim_byte(b) || b == '@' =>
+      [b, .. k] if is_unreserved_byte(b) || is_sub_delim_byte(b) || b == b'@' =>
         continue k
       _ => raise ParseError::InvalidSchemeOrSegment(source)
     }
@@ -145,19 +145,19 @@ fn parse_uri_reference(
   uri : Uri,
 ) -> BytesView raise ParseError {
   match source {
-    [.. "//", .. k] => {
-      // relative-ref > relative-part > "//" authority path-abempty
+    [.. b"//", .. k] => {
+      // relative-ref > relative-part > b"//" authority path-abempty
       let k = parse_authority(k, uri)
       parse_path_abempty_then_query(k, uri)
     }
-    ['/', .. k] =>
-      // relative-ref > relative-part > "/" [ segment-nz *( "/" segment ) ] [ "?" query ] [ "#" fragment ]
+    [b'/', .. k] =>
+      // relative-ref > relative-part > b"/" [ segment-nz *( b"/" segment ) ] [ b"?" query ] [ b"#" fragment ]
       parse_path_abempty_then_query(k, uri)
-    ['?', .. k] =>
-      // relative-ref > relative-part > "?" query
+    [b'?', .. k] =>
+      // relative-ref > relative-part > b"?" query
       parse_query_then_fragment(k, uri)
-    ['#', .. k] =>
-      // relative-ref > relative-part > "#" fragment
+    [b'#', .. k] =>
+      // relative-ref > relative-part > b"#" fragment
       parse_fragment(k, uri)
     [..] as s => parse_scheme_or_segment_nz_nc(s, uri)
   }
@@ -187,10 +187,10 @@ fn parse_scheme(source : BytesView, uri : Uri) -> BytesView raise ParseError {
         match s {
           [b, .. s] if is_alpha_byte(b) ||
             is_digit_byte(b) ||
-            b == '+' ||
-            b == '-' ||
-            b == '.' => continue s
-          [':', .. k] as s => {
+            b == b'+' ||
+            b == b'-' ||
+            b == b'.' => continue s
+          [b':', .. k] as s => {
             uri.scheme = Some(source.slice_until(s))
             return k
           }
@@ -207,12 +207,12 @@ fn parse_scheme(source : BytesView, uri : Uri) -> BytesView raise ParseError {
 fn parse_percent_encoding(source : BytesView) -> BytesView raise ParseError {
   match source {
     [
-      '0'..='9'
-      | 'A'..='Z'
-      | 'a'..='z',
-      '0'..='9'
-      | 'A'..='Z'
-      | 'a'..='z',
+      b'0'..=b'9'
+      | b'A'..=b'Z'
+      | b'a'..=b'z',
+      b'0'..=b'9'
+      | b'A'..=b'Z'
+      | b'a'..=b'z',
       .. source,
     ] => source
     [..] => raise ParseError::InvalidPercentEncoding(source)
@@ -227,12 +227,12 @@ fn parse_userinfo(
   let start = source
   for s = source {
     match s {
-      ['@', .. k] as s => {
+      [b'@', .. k] as s => {
         authority.userinfo = Some(start.slice_until(s))
         return k
       }
-      ['%', .. k] => continue parse_percent_encoding(k)
-      [b, .. k] if is_unreserved_byte(b) || is_sub_delim_byte(b) || b == ':' =>
+      [b'%', .. k] => continue parse_percent_encoding(k)
+      [b, .. k] if is_unreserved_byte(b) || is_sub_delim_byte(b) || b == b':' =>
         continue k
       [_, ..] as s => raise ParseError::InvalidHeirPart(s)
       [] as s => return s
@@ -247,7 +247,7 @@ fn parse_reg_name(
 ) -> BytesView raise ParseError {
   for s = source {
     match s {
-      ['%', ..] as s => continue parse_percent_encoding(s)
+      [b'%', ..] as s => continue parse_percent_encoding(s)
       [b, .. k] if is_unreserved_byte(b) || is_sub_delim_byte(b) => continue k
       _ as s => {
         authority.host = Host::RegName(source.slice_until(s))
@@ -262,14 +262,14 @@ fn parse_ipv6_address(
   source : BytesView,
   authority : Authority,
 ) -> BytesView raise ParseError {
-  // Simplified IPv6 parsing - match until ']'
+  // Simplified IPv6 parsing - match until b']'
   for s = source {
     match s {
-      [']', .. k] as s => {
+      [b']', .. k] as s => {
         authority.host = IPv6Address(source.slice_until(s))
         return k
       }
-      [b, .. s] if is_hexdig_byte(b) || b == ':' || b == '.' => continue s
+      [b, .. s] if is_hexdig_byte(b) || b == b':' || b == b'.' => continue s
       _ as s => raise ParseError::InvalidHeirPart(s)
     }
   }
@@ -282,7 +282,7 @@ fn parse_host(
 ) -> BytesView raise ParseError {
   // Try IP literal first
   match source {
-    ['[', .. k] => parse_ipv6_address(k, authority)
+    [b'[', .. k] => parse_ipv6_address(k, authority)
     _ =>
       // Try IPv4 address, fallback to reg-name
       parse_reg_name(source, authority)
@@ -292,12 +292,12 @@ fn parse_host(
 ///|
 fn parse_port(source : BytesView, authority : Authority) -> BytesView {
   match source {
-    [':', .. k] => {
+    [b':', .. k] => {
       let mut port_val = 0
       for s = k {
         match s {
           [d, .. s] if is_digit_byte(d) => {
-            port_val = port_val * 10 + (d.to_int() - '0')
+            port_val = port_val * 10 + (d.to_int() - b'0'.to_int())
             continue s
           }
           _ as s => {
@@ -313,7 +313,7 @@ fn parse_port(source : BytesView, authority : Authority) -> BytesView {
 
 ///|
 fn parse_authority(source : BytesView, uri : Uri) -> BytesView raise ParseError {
-  let authority = Authority::{ userinfo: None, host: RegName(""), port: None }
+  let authority = Authority::{ userinfo: None, host: RegName(b""), port: None }
   uri.authority = Some(authority)
 
   // Try to parse userinfo first
@@ -329,7 +329,7 @@ fn parse_segment(source : BytesView) -> (BytesView, BytesView) raise ParseError 
   let start = source
   for s = source {
     match s {
-      ['%', .. k] => continue parse_percent_encoding(k)
+      [b'%', .. k] => continue parse_percent_encoding(k)
       [b, .. k] if is_pchar_byte(b) => continue k
       _ as s => return (s, start.slice_until(s))
     }
@@ -346,8 +346,8 @@ fn parse_done(source : BytesView, _uri : Uri) -> BytesView {
 fn parse_fragment(source : BytesView, uri : Uri) -> BytesView raise ParseError {
   for s = source {
     match s {
-      ['%', ..] as s => continue parse_percent_encoding(s)
-      [b, .. k] if is_pchar_byte(b) || b == '/' || b == '?' => continue k
+      [b'%', ..] as s => continue parse_percent_encoding(s)
+      [b, .. k] if is_pchar_byte(b) || b == b'/' || b == b'?' => continue k
       [..] as s => {
         uri.fragment = Some(source.slice_until(s))
         return s
@@ -364,12 +364,12 @@ fn parse_query_then_fragment(
   let start = source
   for s = source {
     match s {
-      ['#', .. k] as s => {
+      [b'#', .. k] as s => {
         uri.query = Some(start.slice_until(s))
         return parse_fragment(k, uri)
       }
-      ['%', ..] as s => continue parse_percent_encoding(s)
-      [b, .. k] if is_pchar_byte(b) || b == '/' || b == '?' => continue k
+      [b'%', ..] as s => continue parse_percent_encoding(s)
+      [b, .. k] if is_pchar_byte(b) || b == b'/' || b == b'?' => continue k
       [..] as s => {
         uri.query = Some(start.slice_until(s))
         return s
@@ -385,24 +385,24 @@ fn parse_path_abempty_then_query(
 ) -> BytesView raise ParseError {
   for s = source {
     match s {
-      ['%', .. k] => continue parse_percent_encoding(k)
-      ['/', .. k] as s => {
+      [b'%', .. k] => continue parse_percent_encoding(k)
+      [b'/', .. k] as s => {
         let segment = source.slice_until(s)
-        if segment != "" {
+        if segment != b"" {
           uri.path.push(segment)
         }
         return parse_path_abempty_then_query(k, uri)
       }
-      ['?', .. k] as s => {
+      [b'?', .. k] as s => {
         let segment = source.slice_until(s)
-        if segment != "" {
+        if segment != b"" {
           uri.path.push(segment)
         }
         return parse_query_then_fragment(k, uri)
       }
-      ['#', .. k] as s => {
+      [b'#', .. k] as s => {
         let segment = source.slice_until(s)
-        if segment != "" {
+        if segment != b"" {
           uri.path.push(segment)
         }
         return parse_fragment(k, uri)
@@ -410,7 +410,7 @@ fn parse_path_abempty_then_query(
       [b, .. k] if is_pchar_byte(b) => continue k
       [] as s => {
         let segment = source.slice_until(s)
-        if segment != "" {
+        if segment != b"" {
           uri.path.push(segment)
         }
         return s
@@ -426,11 +426,11 @@ fn parse_hier_part_then_query(
   uri : Uri,
 ) -> BytesView raise ParseError {
   match source {
-    [.. "//", .. k] =>
+    [.. b"//", .. k] =>
       match parse_authority(k, uri) {
-        ['/', .. k] => parse_path_abempty_then_query(k, uri)
-        ['?', .. k] => parse_query_then_fragment(k, uri)
-        ['#', ..] => parse_fragment(k, uri)
+        [b'/', .. k] => parse_path_abempty_then_query(k, uri)
+        [b'?', .. k] => parse_query_then_fragment(k, uri)
+        [b'#', ..] => parse_fragment(k, uri)
         [] => parse_done(k, uri)
         [..] as s => raise ParseError::Invalid(s)
       }
@@ -443,7 +443,7 @@ fn parse_absolute_uri(
   source : BytesView,
   uri : Uri,
 ) -> BytesView raise ParseError {
-  let remaining = parse_scheme(source, uri) // already consumes the ':'
+  let remaining = parse_scheme(source, uri) // already consumes the b':'
   parse_hier_part_then_query_no_fragment(remaining, uri)
 }
 
@@ -453,7 +453,7 @@ fn parse_hier_part_then_query_no_fragment(
   uri : Uri,
 ) -> BytesView raise ParseError {
   match source {
-    [.. "//", .. k] => {
+    [.. b"//", .. k] => {
       let remaining = parse_authority(k, uri)
       parse_path_abempty_then_query_no_fragment(remaining, uri)
     }
@@ -468,9 +468,9 @@ fn parse_path_abempty_then_query_no_fragment(
 ) -> BytesView raise ParseError {
   for s = source {
     match s {
-      ['/', .. k] => {
+      [b'/', .. k] => {
         let (remaining, segment_val) = parse_segment(k)
-        if segment_val != "" {
+        if segment_val != b"" {
           uri.path.push(segment_val)
         }
         continue remaining
@@ -486,7 +486,7 @@ fn parse_query_no_fragment_or_done(
   uri : Uri,
 ) -> BytesView raise ParseError {
   match source {
-    ['?', .. k] => parse_query_no_fragment_then_done(k, uri)
+    [b'?', .. k] => parse_query_no_fragment_then_done(k, uri)
     _ => parse_done(source, uri)
   }
 }
@@ -499,8 +499,8 @@ fn parse_query_no_fragment_then_done(
   let start = source
   for s = source {
     match s {
-      ['%', .. k] => continue parse_percent_encoding(k)
-      [b, .. k] if is_pchar_byte(b) || b == '/' || b == '?' => continue k
+      [b'%', .. k] => continue parse_percent_encoding(k)
+      [b, .. k] if is_pchar_byte(b) || b == b'/' || b == b'?' => continue k
       _ as s => {
         uri.query = Some(start.slice_until(s))
         return parse_done(s, uri)
@@ -513,9 +513,9 @@ fn parse_query_no_fragment_then_done(
 fn remove_dot_segments(path : Array[BytesView]) -> Array[BytesView] {
   let output = Array::new()
   for segment in path {
-    if segment == "." {
+    if segment == b"." {
       continue // Remove single dot segments
-    } else if segment == ".." {
+    } else if segment == b".." {
       if output.length() > 0 {
         output.pop() |> ignore() // Remove last segment and the .. segment
       }
@@ -538,18 +538,22 @@ test "RFC 3986 URI Reference Parsing" {
   }
   assert_eq(
     parse_uri_reference(
-      "http://example.com/path/to/resource?query=parameter#fragment", uri,
+      b"http://example.com/path/to/resource?query=parameter#fragment", uri,
     ),
-    "",
+    b"",
   )
-  assert_eq(uri.scheme, Some("http"))
-  assert_eq(
-    uri.authority,
-    Some(Authority::{ userinfo: None, host: RegName("example.com"), port: None }),
+  assert_eq(uri.scheme, Some(b"http"))
+  assert_true(
+    uri.authority ==
+    Some(Authority::{
+      userinfo: None,
+      host: RegName(b"example.com"),
+      port: None,
+    }),
   )
-  assert_eq(uri.path, ["path", "to", "resource"])
-  assert_eq(uri.query, Some("query=parameter"))
-  assert_eq(uri.fragment, Some("fragment"))
+  assert_eq(uri.path, [b"path", b"to", b"resource"])
+  assert_eq(uri.query, Some(b"query=parameter"))
+  assert_eq(uri.fragment, Some(b"fragment"))
 }
 
 ///|
@@ -562,19 +566,19 @@ test "RFC 3986 Authority with Userinfo and Port" {
     fragment: None,
   }
   assert_eq(
-    parse_uri_reference("ftp://user:pass@ftp.example.com:21/path", uri),
-    "",
+    parse_uri_reference(b"ftp://user:pass@ftp.example.com:21/path", uri),
+    b"",
   )
-  assert_eq(uri.scheme, Some("ftp"))
-  assert_eq(
-    uri.authority,
+  assert_eq(uri.scheme, Some(b"ftp"))
+  assert_true(
+    uri.authority ==
     Some(Authority::{
-      userinfo: Some("user:pass"),
-      host: RegName("ftp.example.com"),
+      userinfo: Some(b"user:pass"),
+      host: RegName(b"ftp.example.com"),
       port: Some(21),
     }),
   )
-  assert_eq(uri.path, ["path"])
+  assert_eq(uri.path, [b"path"])
 }
 
 ///|
@@ -586,13 +590,13 @@ test "RFC 3986 IPv6 Literal" {
     query: None,
     fragment: None,
   }
-  assert_eq(parse_uri_reference("http://[2001:db8::1]:8080/", uri), "")
-  assert_eq(uri.scheme, Some("http"))
-  assert_eq(
-    uri.authority,
+  assert_eq(parse_uri_reference(b"http://[2001:db8::1]:8080/", uri), b"")
+  assert_eq(uri.scheme, Some(b"http"))
+  assert_true(
+    uri.authority ==
     Some(Authority::{
       userinfo: None,
-      host: IPv6Address("2001:db8::1"),
+      host: IPv6Address(b"2001:db8::1"),
       port: Some(8080),
     }),
   )
@@ -608,9 +612,9 @@ test "RFC 3986 Percent Encoding Preservation" {
     query: None,
     fragment: None,
   }
-  assert_eq(parse_uri_reference("http://example.com/hello%20world", uri), "")
-  assert_eq(uri.scheme, Some("http"))
-  assert_eq(uri.path, ["hello%20world"]) // preserved, not decoded
+  assert_eq(parse_uri_reference(b"http://example.com/hello%20world", uri), b"")
+  assert_eq(uri.scheme, Some(b"http"))
+  assert_eq(uri.path, [b"hello%20world"]) // preserved, not decoded
 }
 
 ///|
@@ -622,10 +626,10 @@ test "RFC 3986 Relative Reference" {
     query: None,
     fragment: None,
   }
-  assert_eq(parse_uri_reference("../path/file.txt", uri), "")
+  assert_eq(parse_uri_reference(b"../path/file.txt", uri), b"")
   assert_eq(uri.scheme, None)
-  assert_eq(uri.authority, None)
-  assert_eq(uri.path, ["..", "path", "file.txt"])
+  assert_true(uri.authority == None)
+  assert_eq(uri.path, [b"..", b"path", b"file.txt"])
 }
 
 ///|
@@ -637,10 +641,10 @@ test "RFC 3986 Absolute Path" {
     query: None,
     fragment: None,
   }
-  assert_eq(parse_uri_reference("/absolute/path", uri), "")
+  assert_eq(parse_uri_reference(b"/absolute/path", uri), b"")
   assert_eq(uri.scheme, None)
-  assert_eq(uri.authority, None)
-  assert_eq(uri.path, ["absolute", "path"])
+  assert_true(uri.authority == None)
+  assert_eq(uri.path, [b"absolute", b"path"])
 }
 
 ///|
@@ -652,11 +656,11 @@ test "RFC 3986 Query Only" {
     query: None,
     fragment: None,
   }
-  assert_eq(parse_uri_reference("?key=value&foo=bar", uri), "")
+  assert_eq(parse_uri_reference(b"?key=value&foo=bar", uri), b"")
   assert_eq(uri.scheme, None)
-  assert_eq(uri.authority, None)
+  assert_true(uri.authority == None)
   assert_eq(uri.path, [])
-  assert_eq(uri.query, Some("key=value&foo=bar"))
+  assert_eq(uri.query, Some(b"key=value&foo=bar"))
 }
 
 ///|
@@ -668,59 +672,59 @@ test "RFC 3986 Fragment Only" {
     query: None,
     fragment: None,
   }
-  assert_eq(parse_uri_reference("#section1", uri), "")
+  assert_eq(parse_uri_reference(b"#section1", uri), b"")
   assert_eq(uri.scheme, None)
-  assert_eq(uri.authority, None)
+  assert_true(uri.authority == None)
   assert_eq(uri.path, [])
-  assert_eq(uri.fragment, Some("section1"))
+  assert_eq(uri.fragment, Some(b"section1"))
 }
 
 ///|
 test "RFC 3986 Character Classification" {
   // Test unreserved characters
-  assert_eq(is_unreserved_byte('A'), true)
-  assert_eq(is_unreserved_byte('z'), true)
-  assert_eq(is_unreserved_byte('0'), true)
-  assert_eq(is_unreserved_byte('-'), true)
-  assert_eq(is_unreserved_byte('.'), true)
-  assert_eq(is_unreserved_byte('_'), true)
-  assert_eq(is_unreserved_byte('~'), true)
-  assert_eq(is_unreserved_byte('!'), false)
+  assert_eq(is_unreserved_byte(b'A'), true)
+  assert_eq(is_unreserved_byte(b'z'), true)
+  assert_eq(is_unreserved_byte(b'0'), true)
+  assert_eq(is_unreserved_byte(b'-'), true)
+  assert_eq(is_unreserved_byte(b'.'), true)
+  assert_eq(is_unreserved_byte(b'_'), true)
+  assert_eq(is_unreserved_byte(b'~'), true)
+  assert_eq(is_unreserved_byte(b'!'), false)
 
   // Test gen-delims
-  assert_eq(is_gen_delim_byte(':'), true)
-  assert_eq(is_gen_delim_byte('/'), true)
-  assert_eq(is_gen_delim_byte('?'), true)
-  assert_eq(is_gen_delim_byte('#'), true)
-  assert_eq(is_gen_delim_byte('['), true)
-  assert_eq(is_gen_delim_byte(']'), true)
-  assert_eq(is_gen_delim_byte('@'), true)
+  assert_eq(is_gen_delim_byte(b':'), true)
+  assert_eq(is_gen_delim_byte(b'/'), true)
+  assert_eq(is_gen_delim_byte(b'?'), true)
+  assert_eq(is_gen_delim_byte(b'#'), true)
+  assert_eq(is_gen_delim_byte(b'['), true)
+  assert_eq(is_gen_delim_byte(b']'), true)
+  assert_eq(is_gen_delim_byte(b'@'), true)
 
   // Test sub-delims
-  assert_eq(is_sub_delim_byte('!'), true)
-  assert_eq(is_sub_delim_byte('$'), true)
-  assert_eq(is_sub_delim_byte('&'), true)
-  assert_eq(is_sub_delim_byte('\''), true)
-  assert_eq(is_sub_delim_byte('('), true)
-  assert_eq(is_sub_delim_byte(')'), true)
-  assert_eq(is_sub_delim_byte('*'), true)
-  assert_eq(is_sub_delim_byte('+'), true)
-  assert_eq(is_sub_delim_byte(','), true)
-  assert_eq(is_sub_delim_byte(';'), true)
-  assert_eq(is_sub_delim_byte('='), true)
+  assert_eq(is_sub_delim_byte(b'!'), true)
+  assert_eq(is_sub_delim_byte(b'$'), true)
+  assert_eq(is_sub_delim_byte(b'&'), true)
+  assert_eq(is_sub_delim_byte(b'\''), true)
+  assert_eq(is_sub_delim_byte(b'('), true)
+  assert_eq(is_sub_delim_byte(b')'), true)
+  assert_eq(is_sub_delim_byte(b'*'), true)
+  assert_eq(is_sub_delim_byte(b'+'), true)
+  assert_eq(is_sub_delim_byte(b','), true)
+  assert_eq(is_sub_delim_byte(b';'), true)
+  assert_eq(is_sub_delim_byte(b'='), true)
 }
 
 ///|
 test "RFC 3986 Dot Segment Removal" {
-  let path1 : Array[BytesView] = ["a", "b", "c", ".", "..", "..", "g"]
+  let path1 : Array[BytesView] = [b"a", b"b", b"c", b".", b"..", b"..", b"g"]
   let result1 = remove_dot_segments(path1)
-  assert_eq(result1, ["a", "g"])
-  let path2 : Array[BytesView] = ["..", "..", "a", "b"]
+  assert_eq(result1, [b"a", b"g"])
+  let path2 : Array[BytesView] = [b"..", b"..", b"a", b"b"]
   let result2 = remove_dot_segments(path2)
-  assert_eq(result2, ["a", "b"])
-  let path3 : Array[BytesView] = [".", "a", ".", "b", "."]
+  assert_eq(result2, [b"a", b"b"])
+  let path3 : Array[BytesView] = [b".", b"a", b".", b"b", b"."]
   let result3 = remove_dot_segments(path3)
-  assert_eq(result3, ["a", "b"])
+  assert_eq(result3, [b"a", b"b"])
 }
 
 ///|
@@ -734,16 +738,20 @@ test "RFC 3986 Absolute URI Parsing" {
   }
   assert_eq(
     parse_absolute_uri(
-      "http://example.com/path/to/resource?query=parameter", uri,
+      b"http://example.com/path/to/resource?query=parameter", uri,
     ),
-    "",
+    b"",
   )
-  assert_eq(uri.scheme, Some("http"))
-  assert_eq(
-    uri.authority,
-    Some(Authority::{ userinfo: None, host: RegName("example.com"), port: None }),
+  assert_eq(uri.scheme, Some(b"http"))
+  assert_true(
+    uri.authority ==
+    Some(Authority::{
+      userinfo: None,
+      host: RegName(b"example.com"),
+      port: None,
+    }),
   )
-  assert_eq(uri.path, ["path", "to", "resource"])
-  assert_eq(uri.query, Some("query=parameter"))
+  assert_eq(uri.path, [b"path", b"to", b"resource"])
+  assert_eq(uri.query, Some(b"query=parameter"))
   assert_eq(uri.fragment, None)
 }

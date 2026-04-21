@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "oboard/mocket/uri"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
 
 // Errors
@@ -20,12 +24,12 @@ pub struct Authority {
   mut userinfo : BytesView?
   mut host : Host
   mut port : Int?
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 
 pub enum Host {
   IPv6Address(BytesView)
   RegName(BytesView)
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 
 pub struct Uri {
   mut scheme : BytesView?
@@ -33,7 +37,7 @@ pub struct Uri {
   path : Array[BytesView]
   mut query : BytesView?
   mut fragment : BytesView?
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn Uri::parse(BytesView) -> Self raise ParseError
 
 // Type aliases
