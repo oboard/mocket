@@ -16,5 +16,5 @@ async fn main {
   }
 
   // Serve
-  app.serve(port=3000)
+  app.listen("0.0.0.0:3000")
 }

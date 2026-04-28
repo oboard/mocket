@@ -1,5 +1,7 @@
 ///|
 async fn main {
+  let port = example_port()
+  let address = "0.0.0.0:\{port}"
   let app = @mocket.new()
 
   // Register global middleware
@@ -63,11 +65,22 @@ async fn main {
 
   // Print Server URL
   for path in app.mappings.keys() {
-    println("\{path.0} http://localhost:4000\{path.1}")
+    println("\{path.0} http://localhost:\{port}\{path.1}")
   }
 
   // Serve
-  app.serve(port=4000)
+  app.listen(address)
+}
+
+///|
+fn example_port() -> Int {
+  match @env.get_env_var("MOCKET_PORT") {
+    Some(port_text) => {
+      let port : Int = @strconv.from_str(port_text) catch { _ => 4000 }
+      port
+    }
+    None => 4000
+  }
 }
 
 ///|

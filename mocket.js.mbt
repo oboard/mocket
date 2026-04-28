@@ -73,10 +73,28 @@ extern "js" fn create_server(
 ///|
 pub extern "js" fn start_server(
   server : NodeServerInternal,
-  port : Int,
+  address : String,
   accept_key : (String) -> String,
 ) -> Unit =
-  #|(server, port, acceptKey) => { 
+  #|(server, address, acceptKey) => { 
+  #|    function parseAddress(address) {
+  #|      const text = String(address || '');
+  #|      if (text.startsWith('[')) {
+  #|        const end = text.lastIndexOf(']:');
+  #|        if (end >= 0) {
+  #|          return { host: text.slice(1, end), port: Number(text.slice(end + 2)) };
+  #|        }
+  #|      }
+  #|      const idx = text.lastIndexOf(':');
+  #|      if (idx < 0) return { host: '0.0.0.0', port: Number(text) };
+  #|      const host = text.slice(0, idx) || '0.0.0.0';
+  #|      return { host, port: Number(text.slice(idx + 1)) };
+  #|    }
+  #|    const listenAddr = parseAddress(address);
+  #|    const port = listenAddr.port;
+  #|    if (!Number.isInteger(port) || port < 0 || port > 65535) {
+  #|      throw new Error(`Invalid listen address: ${address}`);
+  #|    }
   #|    function start(server, port) {
   #|      const clientsById = new Map();
   #|    
@@ -251,11 +269,20 @@ pub extern "js" fn start_server(
   #|    
   #|      // console.log('[ws-bridge] WebSocket upgrade handler attached for port', port);
   #|    };
-  #|    start(server, port); server.listen(port, () => {});
+  #|    start(server, port); server.listen(port, listenAddr.host, () => {});
   #|}
 
 ///|
-pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
+fn listen_port(address : String) -> Int {
+  match address.rev_split_once(":") {
+    Some((_, port_text)) => @string.parse_int(port_text) catch { _ => 0 }
+    None => @string.parse_int(address) catch { _ => 0 }
+  }
+}
+
+///|
+pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
+  let port = listen_port(address)
   let server = create_server(fn(req, res, _) {
     // 优化：简化 headers 转换逻辑
     let string_headers : Map[StringView, StringView] = {}
@@ -324,13 +351,18 @@ pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
       res.end(@js.Value::cast_from(event.res.raw_body))
     })
   })
-  start_server(server, port, websocket_accept_key)
+  start_server(server, address, websocket_accept_key)
   register_ws_handler(mocket, port)
   __ws_emit_js_export(__ws_emit_js_port)
   __ws_state_js_export(
     __ws_subscribe_js, __ws_unsubscribe_js, __ws_get_members_js,
   )
   __get_port_by_connection_js_export(__get_port_by_connection_js)
+}
+
+///|
+pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
+  listen_ffi(mocket, "0.0.0.0:\{port}")
 }
 
 ///|

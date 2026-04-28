@@ -24,6 +24,8 @@ pub fn handle_not_found() -> async (MocketEvent) -> &Responder noraise
 
 pub fn html(&Show) -> &Responder
 
+pub async fn listen_ffi(Mocket, String) -> Unit noraise
+
 pub fn new(base_path? : String) -> Mocket
 
 pub fn parse_cookie(StringView) -> Map[String, CookieItem]
@@ -159,11 +161,13 @@ pub fn Mocket::delete(Self, String, async (MocketEvent) -> &Responder noraise) -
 pub fn Mocket::get(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::group(Self, String, (Self) -> Unit) -> Unit
 pub fn Mocket::head(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub async fn Mocket::listen(Self, String) -> Unit noraise
 pub fn Mocket::on(Self, String, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::options(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::patch(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::post(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::put(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+#deprecated
 pub async fn Mocket::serve(Self, port~ : Int) -> Unit noraise
 pub fn Mocket::static_assets(Self, String, &ServeStaticProvider) -> Unit
 pub fn Mocket::trace(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit

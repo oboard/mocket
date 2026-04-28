@@ -333,10 +333,21 @@ async fn handle_websocket_request(
 }
 
 ///|
-pub async fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit noraise {
+pub async fn listen_ffi(mocket : Mocket, address : String) -> Unit noraise {
+  let addr = @socket.Addr::parse(address) catch {
+    err => {
+      println("mocket: invalid native listen address \{address}: \{err}")
+      return
+    }
+  }
+  let port = addr.port()
   register_ws_handler(mocket, port)
-  let addr = @socket.Addr::parse("127.0.0.1:\{port}") catch { _ => return }
-  let server = @http.Server(addr) catch { _ => return }
+  let server = @http.Server(addr) catch {
+    err => {
+      println("mocket: failed to listen on \{address}: \{err}")
+      return
+    }
+  }
   server.run_forever((request, body_reader, conn) => {
     if is_websocket_upgrade(request) {
       handle_websocket_request(port, mocket, request, conn)
@@ -344,8 +355,13 @@ pub async fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit noraise {
       handle_http_request(mocket, request, body_reader, conn)
     }
   }) catch {
-    _ => ()
+    err => println("mocket: native server on \{address} stopped: \{err}")
   }
+}
+
+///|
+pub async fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit noraise {
+  listen_ffi(mocket, "127.0.0.1:\{port}")
 }
 
 ///|
