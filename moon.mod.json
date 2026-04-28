@@ -1,6 +1,6 @@
 {
   "name": "oboard/mocket",
-  "version": "0.6.13",
+  "version": "0.7.0",
   "deps": {
     "moonbitlang/async": "0.17.0",
     "moonbitlang/x": "0.4.41"
