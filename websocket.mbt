@@ -62,14 +62,14 @@ pub fn WebSocketPeer::to_string(self : WebSocketPeer) -> String {
 }
 
 ///|
-pub enum WebSocketEvent {
+pub(all) enum WebSocketEvent {
   Open(WebSocketPeer)
   Message(WebSocketPeer, WebSocketAggregatedMessage)
   Close(WebSocketPeer)
 }
 
 ///|
-pub enum WebSocketAggregatedMessage {
+pub(all) enum WebSocketAggregatedMessage {
   Text(String)
   Binary(Bytes)
   Ping

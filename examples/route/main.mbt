@@ -1,5 +1,5 @@
 ///|
-fn main {
+async fn main {
   let app = @mocket.new()
 
   // Register global middleware

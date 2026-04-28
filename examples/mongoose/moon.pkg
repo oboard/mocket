@@ -1,0 +1,11 @@
+import {
+  "oboard/mocket",
+  // import from mongoose backend
+  "oboard/mocket/native/mongoose" @mongoose_backend,
+}
+
+supported_targets = "+native"
+
+options(
+  "is-main": true,
+)

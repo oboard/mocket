@@ -1,8 +1,11 @@
 import {
+  "moonbitlang/async",
   "moonbitlang/core/env",
   "oboard/mocket",
   "oboard/mocket/static_file",
 }
+
+warnings = "-67"
 
 options(
   "is-main": true,

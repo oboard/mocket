@@ -1,5 +1,5 @@
 ///|
-fn main {
+async fn main {
   let app = @mocket.new()
   app.get("/", e => {
     e.res.set_cookie("session_id", "12345", max_age=3600)

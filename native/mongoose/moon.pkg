@@ -1,0 +1,12 @@
+import {
+  "oboard/mocket",
+  "moonbitlang/core/encoding/utf8",
+}
+
+warnings = "-15-29"
+
+supported_targets = "+native"
+
+options(
+  "native-stub": [ "mocket.stub.c", "mongoose.c" ],
+)

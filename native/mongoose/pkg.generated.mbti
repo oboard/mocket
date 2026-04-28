@@ -1,0 +1,20 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/mocket/native/mongoose"
+
+import {
+  "oboard/mocket",
+}
+
+// Values
+pub fn __ws_emit(Bytes, Bytes, Bytes) -> Unit
+
+pub fn serve(@mocket.Mocket, port~ : Int) -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

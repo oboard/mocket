@@ -2,6 +2,7 @@
   "name": "oboard/mocket",
   "version": "0.6.13",
   "deps": {
+    "moonbitlang/async": "0.17.0",
     "moonbitlang/x": "0.4.41"
   },
   "readme": "README.md",

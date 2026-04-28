@@ -1,214 +1,351 @@
 ///|
-#external
-pub type HttpServerInternal
+type WsTextSender = (String) -> Unit
 
 ///|
-#external
-pub type HttpRequestInternal
+type WsBinarySender = (Bytes) -> Unit
 
 ///|
-#external
-pub type HttpResponseInternal
+type WsPongSender = () -> Unit
 
 ///|
-extern "c" fn HttpRequestInternal::req_method(
-  self : HttpRequestInternal,
-) -> Bytes = "req_method"
+let ws_text_senders : Map[String, WsTextSender] = {}
 
 ///|
-extern "c" fn HttpRequestInternal::url(self : HttpRequestInternal) -> Bytes = "req_url"
+let ws_binary_senders : Map[String, WsBinarySender] = {}
 
 ///|
-extern "c" fn HttpRequestInternal::headers(self : HttpRequestInternal) -> Bytes = "req_headers"
+let ws_pong_senders : Map[String, WsPongSender] = {}
 
 ///|
-#owned(self, key, value)
-extern "c" fn HttpResponseInternal::set_header(
-  self : HttpResponseInternal,
-  key : Bytes,
-  value : Bytes,
-) -> Unit = "res_set_header"
+let ws_client_channels : Map[String, Array[String]] = {}
 
 ///|
-#owned(self, cb)
-pub extern "c" fn HttpRequestInternal::on_headers(
-  self : HttpRequestInternal,
-  cb : FuncRef[(Bytes) -> Unit],
-) -> Unit = "req_on_headers"
+let ws_channel_clients : Map[String, Map[String, Unit]] = {}
 
 ///|
-#owned(self, cb)
-pub extern "c" fn HttpRequestInternal::on_complete(
-  self : HttpRequestInternal,
-  cb : FuncRef[() -> Unit],
-) -> Unit = "req_on_complete"
+let native_ws_handler_map : Map[Int, Mocket] = {}
 
 ///|
-#owned(self)
-extern "c" fn HttpRequestInternal::body(self : HttpRequestInternal) -> Bytes = "req_body"
+fn request_method_to_string(meth : @http.RequestMethod) -> String {
+  match meth {
+    Get => "GET"
+    Head => "HEAD"
+    Post => "POST"
+    Put => "PUT"
+    Delete => "DELETE"
+    Connect => "CONNECT"
+    Options => "OPTIONS"
+    Trace => "TRACE"
+    Patch => "PATCH"
+  }
+}
 
 ///|
-#owned(self)
-extern "c" fn HttpRequestInternal::req_body_len(
-  self : HttpRequestInternal,
-) -> Int = "req_body_len"
-
-// ///|
-// #owned(self, body)
-// extern "c" fn HttpResponseInternal::end(
-//   self : HttpResponseInternal,
-//   body : Bytes,
-// ) -> Unit = "res_end"
+fn string_headers_to_views(
+  headers : Map[String, String],
+) -> Map[StringView, StringView] {
+  let out : Map[StringView, StringView] = {}
+  headers.each((key, value) => out.set(key, value))
+  out
+}
 
 ///|
-#owned(self, body)
-extern "c" fn HttpResponseInternal::end_bytes(
-  self : HttpResponseInternal,
-  body : Bytes,
-) -> Unit = "res_end_bytes"
+fn view_headers_to_strings(
+  headers : Map[StringView, StringView],
+) -> Map[String, String] {
+  let out : Map[String, String] = {}
+  headers.each((key, value) => out.set(key.to_string(), value.to_string()))
+  out
+}
 
 ///|
-#owned(self, status_code)
-extern "c" fn HttpResponseInternal::status(
-  self : HttpResponseInternal,
-  status_code : Int,
-) -> Unit = "res_status"
+fn header_contains_token(
+  headers : Map[String, String],
+  header_name : String,
+  token : String,
+) -> Bool {
+  let token = token.to_lower()
+  let header_name = header_name.to_lower()
+  for pair in headers {
+    let (key, value) = pair
+    if key.to_lower() == header_name {
+      for part in value.split(",") {
+        if part.trim().to_lower() == token {
+          return true
+        }
+      }
+    }
+  }
+  false
+}
 
 ///|
-#owned(port)
-extern "c" fn server_listen(server : HttpServerInternal, port : Int) -> Unit = "server_listen"
+fn header_equals(
+  headers : Map[String, String],
+  header_name : String,
+  expected : String,
+) -> Bool {
+  let header_name = header_name.to_lower()
+  let expected = expected.to_lower()
+  for pair in headers {
+    let (key, value) = pair
+    if key.to_lower() == header_name {
+      return value.trim().to_lower() == expected
+    }
+  }
+  false
+}
 
 ///|
-#owned(handler)
-extern "c" fn create_server(
-  handler : FuncRef[(Int, HttpRequestInternal, HttpResponseInternal) -> Unit],
-) -> HttpServerInternal = "create_server"
+fn is_websocket_upgrade(request : @http.Request) -> Bool {
+  header_contains_token(request.headers, "connection", "upgrade") &&
+  header_equals(request.headers, "upgrade", "websocket")
+}
 
 ///|
-#owned(cb)
-extern "c" fn set_ws_emit(cb : FuncRef[(Bytes, Bytes, Bytes) -> Unit]) -> Unit = "set_ws_emit"
+fn find_ws_route(
+  mocket : Mocket,
+  path : String,
+) -> (WebSocketHandler, Map[String, StringView])? {
+  match mocket.ws_static_routes.get(path) {
+    Some(handler) => return Some((handler, {}))
+    None => ()
+  }
+  for route in mocket.ws_dynamic_routes {
+    let (route_path, handler) = route
+    match match_path(route_path, path) {
+      Some(params) => return Some((handler, params))
+      None => ()
+    }
+  }
+  None
+}
 
 ///|
-let server_map : Map[Int, Mocket] = Map::new()
+fn next_ws_connection_id(port : Int) -> String {
+  "native-\{port}-\{@async.now()}"
+}
 
 ///|
-let ws_handler_map : Map[Int, WebSocketHandler] = Map::new()
+pub fn register_ws_connection(
+  connection_id : String,
+  text_sender : WsTextSender,
+  binary_sender : WsBinarySender,
+  pong_sender : WsPongSender,
+) -> Unit {
+  ws_text_senders.set(connection_id, text_sender)
+  ws_binary_senders.set(connection_id, binary_sender)
+  ws_pong_senders.set(connection_id, pong_sender)
+  ws_client_channels.set(connection_id, [])
+}
+
+///|
+pub fn unregister_ws_connection(connection_id : String) -> Unit {
+  let channels = ws_client_channels.get(connection_id)
+  ignore(ws_text_senders.remove(connection_id))
+  ignore(ws_binary_senders.remove(connection_id))
+  ignore(ws_pong_senders.remove(connection_id))
+  ignore(ws_client_channels.remove(connection_id))
+  match channels {
+    Some(channels) =>
+      for channel in channels {
+        match ws_channel_clients.get(channel) {
+          Some(clients) => ignore(clients.remove(connection_id))
+          None => ()
+        }
+      }
+    None => ()
+  }
+}
 
 ///|
 pub fn register_ws_handler(mocket : Mocket, port : Int) -> Unit {
-  let mut done = false
-  mocket.ws_static_routes.each(fn(_, handler) {
-    if !done {
-      ws_handler_map.set(port, handler)
-      done = true
-    }
-  })
+  native_ws_handler_map.set(port, mocket)
 }
 
 ///|
-pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
-  server_map[port] = mocket
-  register_ws_handler(mocket, port)
-  set_ws_emit(fn(event_type : Bytes, id : Bytes, payload : Bytes) {
-    __ws_emit(event_type, id, payload)
-  })
-  let server = create_server(fn(
-    port : Int,
-    req : HttpRequestInternal,
-    res : HttpResponseInternal,
-  ) {
-    handle_request_native(port, req, res)
-  })
-  server_listen(server, port)
+pub fn ws_send(id : String, msg : String) -> Unit {
+  match ws_text_senders.get(id) {
+    Some(send) => send(msg)
+    None => ()
+  }
 }
 
 ///|
-fn handle_request_native(
-  port : Int,
-  req : HttpRequestInternal,
-  res : HttpResponseInternal,
-) -> Unit {
-  let mocket = server_map[port]
-  // 直接使用 C FFI 获取请求数据
-  let url = from_cbytes(req.url())
-  let path = url
-  let http_method = from_cbytes(req.req_method())
+pub fn ws_send_bytes(id : String, msg : Bytes) -> Unit {
+  match ws_binary_senders.get(id) {
+    Some(send) => send(msg)
+    None => ()
+  }
+}
 
-  // // 创建 HttpRequest
-  // let http_req : HttpRequest = {
-  //   http_method: http_method,
-  //   url,
-  //   body,
-  //   headers: Map::new(),
-  // }
-  // let http_res = { status_code: 200, headers: Map::new() }
+///|
+pub fn ws_pong(id : String) -> Unit {
+  match ws_pong_senders.get(id) {
+    Some(send) => send()
+    None => ()
+  }
+}
 
-  // // 创建 HttpEvent
-  // let event : HttpEvent = { req: http_req, res: http_res, params: Map::new() }
-
-  // // 简单响应
-  // res.set_header(to_cbytes("Content-Type"), to_cbytes("application/json"))
-  // res.status(200)
-  // res.end(to_cbytes("{\"status\":\"ok\"}"))
-
-  let headers_str = from_cbytes(req.headers())
-  let req_headers = Map::new()
-  headers_str
-  .split("\n")
-  .each(fn(line) {
-    let line = line.trim()
-    if line == "" {
-      return
+///|
+pub fn ws_subscribe(id : String, channel : String) -> Unit {
+  let client_channels = match ws_client_channels.get(id) {
+    Some(channels) => channels
+    None => {
+      let channels = []
+      ws_client_channels.set(id, channels)
+      channels
     }
+  }
+  if !client_channels.contains(channel) {
+    client_channels.push(channel)
+  }
+  let channel_clients = match ws_channel_clients.get(channel) {
+    Some(clients) => clients
+    None => {
+      let clients : Map[String, Unit] = {}
+      ws_channel_clients.set(channel, clients)
+      clients
+    }
+  }
+  channel_clients.set(id, ())
+}
 
-    if line.find(":") is Some(idx) {
-      let key = line[0:idx].trim()
-      let value = line[idx + 1:].trim()
-      if key != "" {
-        req_headers.set(key, value)
+///|
+pub fn ws_unsubscribe(id : String, channel : String) -> Unit {
+  match ws_channel_clients.get(channel) {
+    Some(clients) => ignore(clients.remove(id))
+    None => ()
+  }
+  match ws_client_channels.get(id) {
+    Some(channels) => {
+      let mut index = None
+      for i = 0; i < channels.length(); i = i + 1 {
+        if channels[i] == channel {
+          index = Some(i)
+          break
+        }
+      }
+      match index {
+        Some(i) => ignore(channels.remove(i))
+        None => ()
       }
     }
-  })
-  let (params, handler) = match mocket.find_route(http_method, path) {
-    Some((h, p)) => (p, h)
-    _ => ({}, handle_not_found())
+    None => ()
   }
-  let event = {
-    req: { http_method, url, raw_body: b"", headers: req_headers },
-    res: HttpResponse::new(OK),
-    params,
+}
+
+///|
+pub fn ws_publish(channel : String, msg : String) -> Unit {
+  match ws_channel_clients.get(channel) {
+    Some(clients) => clients.keys().each(id => ws_send(id, msg))
+    None => ()
   }
-  if http_method == "POST" {
-    let req_body_len = req.req_body_len()
-    let req_body = req.body()
-    let safe_body_len = if req_body_len < 0 {
-      0
-    } else if req_body_len > req_body.length() {
-      req_body.length()
-    } else {
-      req_body_len
+}
+
+///|
+async fn send_native_response(
+  request : @http.Request,
+  conn : @http.ServerConnection,
+  response : HttpResponse,
+) -> Unit {
+  let headers = view_headers_to_strings(response.headers)
+  if !response.cookies.is_empty() {
+    let cookies = response.cookies
+      .values()
+      .map(cookie => cookie.to_string())
+      .to_array()
+    headers.set("Set-Cookie", cookies.join("\r\nSet-Cookie: "))
+  }
+  conn.send_response(response.status_code.to_int(), "OK", extra_headers=headers)
+  if request.meth != Head && !response.raw_body.is_empty() {
+    conn.write(response.raw_body)
+  }
+  conn.end_response()
+}
+
+///|
+async fn handle_http_request(
+  mocket : Mocket,
+  request : @http.Request,
+  body_reader : &@io.Reader,
+  conn : @http.ServerConnection,
+) -> Unit {
+  let raw_body = body_reader.read_all().binary()
+  let response = dispatch_http(
+    mocket,
+    request_method_to_string(request.meth),
+    request.path,
+    string_headers_to_views(request.headers),
+    raw_body,
+  )
+  send_native_response(request, conn, response)
+}
+
+///|
+async fn handle_websocket_request(
+  port : Int,
+  mocket : Mocket,
+  request : @http.Request,
+  conn : @http.ServerConnection,
+) -> Unit {
+  match find_ws_route(mocket, request.path) {
+    Some((handler, _params)) => {
+      let ws = @websocket.from_http_server(request, conn)
+      defer ws.close()
+      let connection_id = next_ws_connection_id(port)
+      let peer = WebSocketPeer::{ connection_id, subscribed_channels: [] }
+      register_ws_connection(
+        connection_id,
+        msg => {
+          async_run(async fn() noraise { ws.send_text(msg) catch { _ => () } })
+        },
+        msg => {
+          async_run(async fn() noraise { ws.send_binary(msg) catch { _ => () } })
+        },
+        () => async_run(async fn() noraise { ws.ping() catch { _ => () } }),
+      )
+      handler(Open(peer))
+      try {
+        for ;; {
+          let msg = ws.recv()
+          match msg.kind {
+            Text => {
+              let text = msg.read_all().text() catch { _ => "" }
+              handler(Message(peer, Text(text)))
+            }
+            Binary => handler(Message(peer, Binary(msg.read_all().binary())))
+          }
+        }
+      } catch {
+        @websocket.ConnectionClosed(_, _) => ()
+        _ => ()
+      }
+      handler(Close(peer))
+      unregister_ws_connection(connection_id)
     }
-    let body_bytes = req_body[0:safe_body_len]
-    event.req.raw_body = body_bytes.to_bytes()
+    None => {
+      let response = HttpResponse::new(NotFound, raw_body=b"Not Found")
+      response.headers.set("Content-Type", "text/plain; charset=utf-8")
+      send_native_response(request, conn, response)
+    }
   }
-  async_run(async fn() noraise {
-    // 执行中间件链和处理器
-    let responder = execute_middlewares(mocket.middlewares, event, handler)
-    responder.options(event.res)
-    res.status(event.res.status_code.to_int())
-    event.res.headers.each((key, value) => {
-      res.set_header(to_cbytes(key), to_cbytes(value))
-    })
-    event.res.cookies
-    .values()
-    .each(cookie => {
-      res.set_header(to_cbytes("Set-Cookie"), to_cbytes(cookie.to_string()))
-    })
-    let buf = @buffer.new()
-    responder.output(buf)
-    event.res.raw_body = buf.to_bytes()
-    res.end_bytes(event.res.raw_body)
-  })
+}
+
+///|
+pub async fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit noraise {
+  register_ws_handler(mocket, port)
+  let addr = @socket.Addr::parse("127.0.0.1:\{port}") catch { _ => return }
+  let server = @http.Server(addr) catch { _ => return }
+  server.run_forever((request, body_reader, conn) => {
+    if is_websocket_upgrade(request) {
+      handle_websocket_request(port, mocket, request, conn)
+    } else {
+      handle_http_request(mocket, request, body_reader, conn)
+    }
+  }) catch {
+    _ => ()
+  }
 }
 
 ///|
@@ -217,108 +354,24 @@ pub fn __ws_emit(
   connection_id : Bytes,
   payload : Bytes,
 ) -> Unit {
-  let et = from_cbytes(event_type)
-  let cid = from_cbytes(connection_id)
-  let handler = if ws_handler_map.is_empty() {
-    fn(_) {  }
-  } else {
-    ws_handler_map.get(ws_handler_map.keys().collect()[0]).unwrap()
+  let peer = WebSocketPeer::{
+    connection_id: @utf8.decode_lossy(connection_id),
+    subscribed_channels: [],
   }
-  let peer = WebSocketPeer::{ connection_id: cid, subscribed_channels: [] }
-  match et {
-    "open" => handler(WebSocketEvent::Open(peer))
-    "message" => {
-      let pl = from_cbytes(payload)
-      handler(WebSocketEvent::Message(peer, Text(pl)))
-    }
-    "binary" => {
-      let len = ws_msg_body_len()
-      let arr = Array::make(len, b'\x00')
-      let buf = Bytes::from_array(arr)
-      let copied = ws_msg_copy(buf)
-      let body = buf[0:copied].to_bytes()
-      handler(WebSocketEvent::Message(peer, Binary(body)))
-    }
-    "ping" => handler(WebSocketEvent::Message(peer, Ping))
-    "close" => handler(WebSocketEvent::Close(peer))
+  let handler = match native_ws_handler_map.values().collect() {
+    [mocket, ..] =>
+      match mocket.ws_static_routes.values().collect() {
+        [handler, ..] => handler
+        [] => fn(_) {  }
+      }
+    [] => fn(_) {  }
+  }
+  match @utf8.decode_lossy(event_type) {
+    "open" => handler(Open(peer))
+    "message" => handler(Message(peer, Text(@utf8.decode_lossy(payload))))
+    "binary" => handler(Message(peer, Binary(payload)))
+    "ping" => handler(Message(peer, Ping))
+    "close" => handler(Close(peer))
     _ => ()
   }
-}
-
-///|
-#owned(id, msg)
-extern "c" fn ws_send_native(id : Bytes, msg : Bytes) -> Unit = "ws_send"
-
-///|
-#owned(id, channel)
-extern "c" fn ws_subscribe_native(id : Bytes, channel : Bytes) -> Unit = "ws_subscribe"
-
-///|
-#owned(id, channel)
-extern "c" fn ws_unsubscribe_native(id : Bytes, channel : Bytes) -> Unit = "ws_unsubscribe"
-
-///|
-#owned(channel, msg)
-extern "c" fn ws_publish_native(channel : Bytes, msg : Bytes) -> Unit = "ws_publish"
-
-///|
-#owned(id, msg)
-extern "c" fn ws_send_bytes_len_native(
-  id : Bytes,
-  msg : Bytes,
-  len : Int,
-) -> Unit = "ws_send_bytes_len"
-
-///|
-#owned(id)
-extern "c" fn ws_pong_native(id : Bytes) -> Unit = "ws_pong"
-
-///|
-// extern "c" fn ws_msg_body() -> Bytes = "ws_msg_body"
-
-///|
-extern "c" fn ws_msg_body_len() -> Int = "ws_msg_body_len"
-
-///|
-#owned(dst)
-extern "c" fn ws_msg_copy(dst : Bytes) -> Int = "ws_msg_copy"
-
-///|
-pub fn ws_send(id : String, msg : String) -> Unit {
-  ws_send_native(to_cbytes(id), to_cbytes(msg))
-}
-
-///|
-pub fn ws_send_bytes(id : String, msg : Bytes) -> Unit {
-  ws_send_bytes_len_native(to_cbytes(id), msg, msg.length())
-}
-
-///|
-pub fn ws_pong(id : String) -> Unit {
-  ws_pong_native(to_cbytes(id))
-}
-
-///|
-pub fn ws_subscribe(id : String, channel : String) -> Unit {
-  ws_subscribe_native(to_cbytes(id), to_cbytes(channel))
-}
-
-///|
-pub fn ws_unsubscribe(id : String, channel : String) -> Unit {
-  ws_unsubscribe_native(to_cbytes(id), to_cbytes(channel))
-}
-
-///|
-pub fn ws_publish(channel : String, msg : String) -> Unit {
-  ws_publish_native(to_cbytes(channel), to_cbytes(msg))
-}
-
-///|
-fn[T : Show] to_cbytes(s : T) -> Bytes {
-  @utf8.encode(s.to_string())
-}
-
-///|
-fn from_cbytes(bytes : Bytes) -> String {
-  @utf8.decode_lossy(bytes)
 }

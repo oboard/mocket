@@ -1,7 +1,10 @@
 import {
+  "moonbitlang/async",
   "oboard/mocket",
   "moonbitlang/core/json",
 }
+
+warnings = "-67"
 
 options(
   "is-main": true,

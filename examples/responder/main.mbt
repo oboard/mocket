@@ -13,7 +13,7 @@ impl @mocket.BodyReader for Person with from_request(req) -> Person raise {
 }
 
 ///|
-fn main {
+async fn main {
   let app = @mocket.new()
 
   // Text Response

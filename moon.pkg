@@ -4,6 +4,11 @@ import {
   "moonbitlang/x/fs",
   "moonbitlang/x/crypto",
   "moonbitlang/x/codec/base64",
+  "moonbitlang/async",
+  "moonbitlang/async/http",
+  "moonbitlang/async/io",
+  "moonbitlang/async/socket",
+  "moonbitlang/async/websocket",
   "moonbitlang/core/json",
   "moonbitlang/core/strconv",
   "moonbitlang/core/string",
@@ -26,7 +31,6 @@ options(
     "ws_unsubscribe",
     "ws_publish",
   ],
-  "native-stub": [ "mocket.stub.c", "mongoose.c" ],
   targets: {
     "fetch.js.mbt": [ "js" ],
     "fetch.native.mbt": [ "native" ],
@@ -34,5 +38,7 @@ options(
     "mocket.js.mbt": [ "js" ],
     "mocket.native.mbt": [ "native" ],
     "mocket.wasm.mbt": [ "wasm", "wasm-gc" ],
+    "serve.mbt": [ "js", "wasm", "wasm-gc" ],
+    "serve.native.mbt": [ "native" ],
   },
 )
