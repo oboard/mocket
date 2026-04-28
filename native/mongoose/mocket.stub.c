@@ -536,11 +536,29 @@ server_t *create_server(request_handler_t handler)
 
 // 开始监听
 MOONBIT_FFI_EXPORT
+void server_listen_address(server_t *srv, const char *address, int port);
+
+MOONBIT_FFI_EXPORT
 void server_listen(server_t *srv, int port)
 {
-  char url[32];
+  char address[64];
+  snprintf(address, sizeof(address), "0.0.0.0:%d", port);
+  server_listen_address(srv, address, port);
+}
+
+MOONBIT_FFI_EXPORT
+void server_listen_address(server_t *srv, const char *address, int port)
+{
+  char url[256];
   srv->port = port;
-  snprintf(url, sizeof(url), "http://0.0.0.0:%d", port);
+  if (!address || address[0] == '\0') {
+    address = "0.0.0.0:0";
+  }
+  if (strncmp(address, "http://", 7) == 0 || strncmp(address, "https://", 8) == 0) {
+    snprintf(url, sizeof(url), "%s", address);
+  } else {
+    snprintf(url, sizeof(url), "http://%s", address);
+  }
   if (mg_http_listen(&srv->mgr, url, ev_handler, srv) == NULL)
   {
     fprintf(stderr, "Cannot listen on %s\n", url);

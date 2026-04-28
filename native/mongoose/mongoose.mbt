@@ -58,8 +58,12 @@ extern "c" fn HttpResponseInternal::status(
 ) -> Unit = "res_status"
 
 ///|
-#borrow(server)
-extern "c" fn server_listen(server : HttpServerInternal, port : Int) -> Unit = "server_listen"
+#borrow(server, address)
+extern "c" fn server_listen_address(
+  server : HttpServerInternal,
+  address : Bytes,
+  port : Int,
+) -> Unit = "server_listen_address"
 
 ///|
 #owned(handler)
@@ -192,7 +196,14 @@ fn handle_request(
 }
 
 ///|
+#deprecated("use `listen(mocket, address)` instead")
 pub fn serve(mocket : @mocket.Mocket, port~ : Int) -> Unit {
+  listen(mocket, "0.0.0.0:\{port}")
+}
+
+///|
+pub fn listen(mocket : @mocket.Mocket, address : String) -> Unit {
+  let port = listen_port(address)
   server_map.set(port, mocket)
   register_ws_handlers(mocket, port)
   set_ws_emit(fn(event_type : Bytes, id : Bytes, payload : Bytes) {
@@ -205,7 +216,15 @@ pub fn serve(mocket : @mocket.Mocket, port~ : Int) -> Unit {
   ) {
     handle_request(port, req, res)
   })
-  server_listen(server, port)
+  server_listen_address(server, to_cbytes(address), port)
+}
+
+///|
+fn listen_port(address : String) -> Int {
+  match address.rev_split_once(":") {
+    Some((_, port_text)) => @string.parse_int(port_text) catch { _ => 0 }
+    None => @string.parse_int(address) catch { _ => 0 }
+  }
 }
 
 ///|

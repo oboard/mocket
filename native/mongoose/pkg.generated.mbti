@@ -8,6 +8,9 @@ import {
 // Values
 pub fn __ws_emit(Bytes, Bytes, Bytes) -> Unit
 
+pub fn listen(@mocket.Mocket, String) -> Unit
+
+#deprecated
 pub fn serve(@mocket.Mocket, port~ : Int) -> Unit
 
 // Errors

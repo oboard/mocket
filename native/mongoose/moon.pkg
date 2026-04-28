@@ -1,6 +1,7 @@
 import {
   "oboard/mocket",
   "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/string",
 }
 
 warnings = "-15-29"
