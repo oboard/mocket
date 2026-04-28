@@ -17,6 +17,11 @@ pub fn[T : BodyReader] HttpRequest::body(self : HttpRequest) -> T raise {
 }
 
 ///|
+pub fn[T : FromJson] HttpRequest::json(self : HttpRequest) -> T raise {
+  @json.from_json(self.body())
+}
+
+///|
 pub impl BodyReader for String with from_request(req : HttpRequest) -> String raise {
   let bytes = req.raw_body
   let arr = bytes.to_array()

@@ -8,11 +8,6 @@ struct Person {
 } derive(ToJson, FromJson)
 
 ///|
-impl @mocket.BodyReader for Person with from_request(req) -> Person raise {
-  @json.from_json(req.body())
-}
-
-///|
 async fn main {
   let app = @mocket.new()
 
@@ -32,12 +27,10 @@ async fn main {
   // }'
   ..post("/json", event => {
     try {
-      let person : Person = event.req.body()
-      HttpResponse::new(OK).body(
-        "Hello, \{person.name}. You are \{person.age} years old.",
-      )
+      let person : Person = event.req.json()
+      "Hello, \{person.name}. You are \{person.age} years old."
     } catch {
-      _ => HttpResponse::new(BadRequest).body("Invalid JSON")
+      _ => return HttpResponse::new(BadRequest).body("Invalid JSON")
     }
   })
 
