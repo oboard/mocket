@@ -1,29 +1,89 @@
 ///|
 pub(all) enum HttpMethod {
-  GET
-  POST
-  PUT
-  PATCH
-  DELETE
-  HEAD
-  OPTIONS
-  TRACE
+  ACL
+  BIND
+  CHECKIN
+  CHECKOUT
   CONNECT
+  COPY
+  DELETE
+  GET
+  HEAD
+  LABEL
+  LINK
+  LOCK
+  MERGE
+  MKACTIVITY
+  MKCALENDAR
+  MKCOL
+  MKREDIRECTREF
+  MKWORKSPACE
+  MOVE
+  OPTIONS
+  ORDERPATCH
+  PATCH
+  POST
+  PRI
+  PROPFIND
+  PROPPATCH
+  PUT
+  QUERY
+  REBIND
+  REPORT
+  SEARCH
+  TRACE
+  UNBIND
+  UNCHECKOUT
+  UNLINK
+  UNLOCK
+  UPDATE
+  UPDATEREDIRECTREF
+  VERSION_CONTROL
 } derive(Eq)
 
 ///|
 pub impl Show for HttpMethod with output(self, logger) -> Unit {
   logger.write_string(
     match self {
-      GET => "GET"
-      POST => "POST"
-      PUT => "PUT"
-      PATCH => "PATCH"
-      DELETE => "DELETE"
-      HEAD => "HEAD"
-      OPTIONS => "OPTIONS"
-      TRACE => "TRACE"
+      ACL => "ACL"
+      BIND => "BIND"
+      CHECKIN => "CHECKIN"
+      CHECKOUT => "CHECKOUT"
       CONNECT => "CONNECT"
+      COPY => "COPY"
+      DELETE => "DELETE"
+      GET => "GET"
+      HEAD => "HEAD"
+      LABEL => "LABEL"
+      LINK => "LINK"
+      LOCK => "LOCK"
+      MERGE => "MERGE"
+      MKACTIVITY => "MKACTIVITY"
+      MKCALENDAR => "MKCALENDAR"
+      MKCOL => "MKCOL"
+      MKREDIRECTREF => "MKREDIRECTREF"
+      MKWORKSPACE => "MKWORKSPACE"
+      MOVE => "MOVE"
+      OPTIONS => "OPTIONS"
+      ORDERPATCH => "ORDERPATCH"
+      PATCH => "PATCH"
+      POST => "POST"
+      PRI => "PRI"
+      PROPFIND => "PROPFIND"
+      PROPPATCH => "PROPPATCH"
+      PUT => "PUT"
+      QUERY => "QUERY"
+      REBIND => "REBIND"
+      REPORT => "REPORT"
+      SEARCH => "SEARCH"
+      TRACE => "TRACE"
+      UNBIND => "UNBIND"
+      UNCHECKOUT => "UNCHECKOUT"
+      UNLINK => "UNLINK"
+      UNLOCK => "UNLOCK"
+      UPDATE => "UPDATE"
+      UPDATEREDIRECTREF => "UPDATEREDIRECTREF"
+      VERSION_CONTROL => "VERSION-CONTROL"
     },
   )
 }

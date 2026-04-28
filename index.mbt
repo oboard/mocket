@@ -221,6 +221,268 @@ pub fn Mocket::trace(
 }
 
 ///|
+pub fn Mocket::acl(self : Mocket, path : String, handler : HttpHandler) -> Unit {
+  self.on("ACL", path, handler)
+}
+
+///|
+pub fn Mocket::bind(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("BIND", path, handler)
+}
+
+///|
+pub fn Mocket::checkin(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("CHECKIN", path, handler)
+}
+
+///|
+pub fn Mocket::checkout(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("CHECKOUT", path, handler)
+}
+
+///|
+pub fn Mocket::copy(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("COPY", path, handler)
+}
+
+///|
+pub fn Mocket::label(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("LABEL", path, handler)
+}
+
+///|
+pub fn Mocket::link(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("LINK", path, handler)
+}
+
+///|
+pub fn Mocket::lock(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("LOCK", path, handler)
+}
+
+///|
+pub fn Mocket::merge(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("MERGE", path, handler)
+}
+
+///|
+pub fn Mocket::mkactivity(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("MKACTIVITY", path, handler)
+}
+
+///|
+pub fn Mocket::mkcalendar(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("MKCALENDAR", path, handler)
+}
+
+///|
+pub fn Mocket::mkcol(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("MKCOL", path, handler)
+}
+
+///|
+pub fn Mocket::mkredirectref(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("MKREDIRECTREF", path, handler)
+}
+
+///|
+pub fn Mocket::mkworkspace(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("MKWORKSPACE", path, handler)
+}
+
+///|
+pub fn Mocket::move_(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("MOVE", path, handler)
+}
+
+///|
+pub fn Mocket::orderpatch(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("ORDERPATCH", path, handler)
+}
+
+///|
+pub fn Mocket::pri(self : Mocket, path : String, handler : HttpHandler) -> Unit {
+  self.on("PRI", path, handler)
+}
+
+///|
+pub fn Mocket::propfind(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("PROPFIND", path, handler)
+}
+
+///|
+pub fn Mocket::proppatch(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("PROPPATCH", path, handler)
+}
+
+///|
+pub fn Mocket::query(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("QUERY", path, handler)
+}
+
+///|
+pub fn Mocket::rebind(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("REBIND", path, handler)
+}
+
+///|
+pub fn Mocket::report(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("REPORT", path, handler)
+}
+
+///|
+pub fn Mocket::search(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("SEARCH", path, handler)
+}
+
+///|
+pub fn Mocket::unbind(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("UNBIND", path, handler)
+}
+
+///|
+pub fn Mocket::uncheckout(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("UNCHECKOUT", path, handler)
+}
+
+///|
+pub fn Mocket::unlink(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("UNLINK", path, handler)
+}
+
+///|
+pub fn Mocket::unlock(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("UNLOCK", path, handler)
+}
+
+///|
+pub fn Mocket::update(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("UPDATE", path, handler)
+}
+
+///|
+pub fn Mocket::updateredirectref(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("UPDATEREDIRECTREF", path, handler)
+}
+
+///|
+pub fn Mocket::version_control(
+  self : Mocket,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  self.on("VERSION-CONTROL", path, handler)
+}
+
+///|
 pub fn Mocket::all(self : Mocket, path : String, handler : HttpHandler) -> Unit {
   self.on("*", path, handler)
 }

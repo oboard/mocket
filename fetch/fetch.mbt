@@ -7,16 +7,45 @@ pub suberror RequestError {
 
 ///|
 fn parse_http_method(http_method : String) -> @mocket.HttpMethod raise Error {
-  match http_method.to_lower() {
-    "get" => GET
-    "post" => POST
-    "put" => PUT
-    "patch" => PATCH
-    "delete" => DELETE
-    "head" => HEAD
-    "options" => OPTIONS
-    "trace" => TRACE
-    "connect" => CONNECT
+  match http_method.to_upper() {
+    "ACL" => ACL
+    "BIND" => BIND
+    "CHECKIN" => CHECKIN
+    "CHECKOUT" => CHECKOUT
+    "COPY" => COPY
+    "DELETE" => DELETE
+    "GET" => GET
+    "HEAD" => HEAD
+    "LABEL" => LABEL
+    "LINK" => LINK
+    "LOCK" => LOCK
+    "MERGE" => MERGE
+    "MKACTIVITY" => MKACTIVITY
+    "MKCALENDAR" => MKCALENDAR
+    "MKCOL" => MKCOL
+    "MKREDIRECTREF" => MKREDIRECTREF
+    "MKWORKSPACE" => MKWORKSPACE
+    "MOVE" => MOVE
+    "OPTIONS" => OPTIONS
+    "ORDERPATCH" => ORDERPATCH
+    "PATCH" => PATCH
+    "POST" => POST
+    "PRI" => PRI
+    "PROPFIND" => PROPFIND
+    "PROPPATCH" => PROPPATCH
+    "PUT" => PUT
+    "QUERY" => QUERY
+    "REBIND" => REBIND
+    "REPORT" => REPORT
+    "SEARCH" => SEARCH
+    "TRACE" => TRACE
+    "UNBIND" => UNBIND
+    "UNCHECKOUT" => UNCHECKOUT
+    "UNLINK" => UNLINK
+    "UNLOCK" => UNLOCK
+    "UPDATE" => UPDATE
+    "UPDATEREDIRECTREF" => UPDATEREDIRECTREF
+    "VERSION-CONTROL" => VERSION_CONTROL
     _ => raise RequestError::InvalidHttpMethod(http_method)
   }
 }

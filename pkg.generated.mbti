@@ -3,6 +3,7 @@ package "oboard/mocket"
 
 import {
   "moonbitlang/core/buffer",
+  "moonbitlang/core/json",
 }
 
 // Values
@@ -105,15 +106,45 @@ type Html
 pub impl Responder for Html
 
 pub(all) enum HttpMethod {
-  GET
-  POST
-  PUT
-  PATCH
-  DELETE
-  HEAD
-  OPTIONS
-  TRACE
+  ACL
+  BIND
+  CHECKIN
+  CHECKOUT
   CONNECT
+  COPY
+  DELETE
+  GET
+  HEAD
+  LABEL
+  LINK
+  LOCK
+  MERGE
+  MKACTIVITY
+  MKCALENDAR
+  MKCOL
+  MKREDIRECTREF
+  MKWORKSPACE
+  MOVE
+  OPTIONS
+  ORDERPATCH
+  PATCH
+  POST
+  PRI
+  PROPFIND
+  PROPPATCH
+  PUT
+  QUERY
+  REBIND
+  REPORT
+  SEARCH
+  TRACE
+  UNBIND
+  UNCHECKOUT
+  UNLINK
+  UNLOCK
+  UPDATE
+  UPDATEREDIRECTREF
+  VERSION_CONTROL
 } derive(Eq)
 pub impl Show for HttpMethod
 
@@ -125,6 +156,7 @@ pub(all) struct HttpRequest {
 }
 pub fn[T : BodyReader] HttpRequest::body(Self) -> T raise
 pub fn HttpRequest::get_cookie(Self, String) -> CookieItem?
+pub fn[T : @json.FromJson] HttpRequest::json(Self) -> T raise
 pub impl Responder for HttpRequest
 
 pub(all) struct HttpResponse {
@@ -155,23 +187,53 @@ pub(all) struct Mocket {
   ws_channels : Map[String, Map[String, Unit]]
   ws_client_port : Map[String, Int]
 }
+pub fn Mocket::acl(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::all(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::bind(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::checkin(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::checkout(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::connect(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::copy(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::delete(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::get(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::group(Self, String, (Self) -> Unit) -> Unit
 pub fn Mocket::head(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::label(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::link(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub async fn Mocket::listen(Self, String) -> Unit noraise
+pub fn Mocket::lock(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::merge(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::mkactivity(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::mkcalendar(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::mkcol(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::mkredirectref(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::mkworkspace(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::move_(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::on(Self, String, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::options(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::orderpatch(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::patch(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::post(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::pri(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::propfind(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::proppatch(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::put(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::query(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::rebind(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::report(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::search(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 #deprecated
 pub async fn Mocket::serve(Self, port~ : Int) -> Unit noraise
 pub fn Mocket::static_assets(Self, String, &ServeStaticProvider) -> Unit
 pub fn Mocket::trace(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::unbind(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::uncheckout(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::unlink(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::unlock(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::update(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::updateredirectref(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::use_middleware(Self, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise, base_path? : String) -> Unit
+pub fn Mocket::version_control(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::ws(Self, String, (WebSocketEvent) -> Unit) -> Unit
 
 pub(all) struct MocketEvent {

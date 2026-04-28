@@ -1,15 +1,45 @@
 ///|
 fn http_method_to_async(http_method : HttpMethod) -> @http.RequestMethod {
   match http_method {
-    GET => Get
-    POST => Post
-    PUT => Put
-    PATCH => Patch
-    DELETE => Delete
-    HEAD => Head
-    OPTIONS => Options
-    TRACE => Trace
+    ACL => Get
+    BIND => Get
+    CHECKIN => Get
+    CHECKOUT => Get
     CONNECT => Connect
+    COPY => Get
+    DELETE => Delete
+    GET => Get
+    HEAD => Head
+    LABEL => Get
+    LINK => Get
+    LOCK => Get
+    MERGE => Post
+    MKACTIVITY => Post
+    MKCALENDAR => Post
+    MKCOL => Post
+    MKREDIRECTREF => Get
+    MKWORKSPACE => Post
+    MOVE => Get
+    OPTIONS => Options
+    ORDERPATCH => Patch
+    PATCH => Patch
+    POST => Post
+    PRI => Get
+    PROPFIND => Get
+    PROPPATCH => Post
+    PUT => Put
+    QUERY => Get
+    REBIND => Post
+    REPORT => Get
+    SEARCH => Get
+    TRACE => Trace
+    UNBIND => Post
+    UNCHECKOUT => Post
+    UNLINK => Post
+    UNLOCK => Post
+    UPDATE => Post
+    UPDATEREDIRECTREF => Put
+    VERSION_CONTROL => Post
   }
 }
 
