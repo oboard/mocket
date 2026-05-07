@@ -4,7 +4,7 @@ pub async fn[T, E : Error] suspend(
 ) -> T raise E = "%async.suspend"
 
 ///|
-pub fn async_run(f : async () -> Unit noraise) -> Unit = "%async.run"
+fn async_run(f : async () -> Unit noraise) -> Unit = "%async.run"
 
 ///|
 /// # Safety

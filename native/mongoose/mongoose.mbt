@@ -168,6 +168,9 @@ fn register_ws_handlers(mocket : @mocket.Mocket, port : Int) -> Unit {
 }
 
 ///|
+fn async_run(f : async () -> Unit noraise) -> Unit = "%async.run"
+
+///|
 fn handle_request(
   port : Int,
   req : HttpRequestInternal,
@@ -178,7 +181,7 @@ fn handle_request(
   let http_method = from_cbytes(req.req_method())
   let headers = parse_headers(from_cbytes(req.headers()))
   let raw_body = safe_request_body(req)
-  @mocket.async_run(async fn() noraise {
+  async_run(async fn() noraise {
     let response = @mocket.dispatch_http(
       mocket, http_method, url, headers, raw_body,
     )

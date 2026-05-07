@@ -1,8 +1,0 @@
-import {
-  "oboard/mocket",
-  "oboard/mocket/fetch",
-}
-
-options(
-  "is-main": true,
-)

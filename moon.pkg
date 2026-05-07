@@ -33,9 +33,7 @@ options(
     "ws_publish",
   ],
   targets: {
-    "fetch.js.mbt": [ "js" ],
-    "fetch.native.mbt": [ "native" ],
-    "fetch.wasm.mbt": [ "wasm", "wasm-gc" ],
+    "async.mbt": [ "js", "native" ],
     "mocket.js.mbt": [ "js" ],
     "mocket.native.mbt": [ "native" ],
     "mocket.wasm.mbt": [ "wasm", "wasm-gc" ],

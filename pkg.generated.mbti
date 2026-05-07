@@ -9,15 +9,11 @@ import {
 // Values
 pub fn __ws_emit(Bytes, Bytes, Bytes) -> Unit
 
-pub fn async_run(async () -> Unit noraise) -> Unit
-
 pub fn cookie_to_string(Array[CookieItem]) -> String
 
 pub async fn dispatch_http(Mocket, String, String, Map[StringView, StringView], Bytes) -> HttpResponse noraise
 
 pub async fn execute_middlewares(Array[(String, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise)], MocketEvent, async (MocketEvent) -> &Responder noraise) -> &Responder noraise
-
-pub async fn fetch(String, body? : String, HttpMethod, data? : &Responder, headers? : Map[String, String], credentials? : FetchCredentials, mode? : FetchMode) -> HttpResponse
 
 pub fn form_encode(Map[String, String]) -> String
 
@@ -66,10 +62,6 @@ pub fn ws_unsubscribe(String, String) -> Unit
 // Errors
 pub suberror ExecError
 
-pub suberror FetchError {
-  RequestFailed(String)
-}
-
 pub suberror IOError
 
 pub suberror NetworkError
@@ -87,66 +79,8 @@ pub(all) struct CookieItem {
 } derive(Eq)
 pub impl Show for CookieItem
 
-pub(all) enum FetchCredentials {
-  Omit
-  SameOrigin
-  Include
-} derive(Eq)
-pub impl Show for FetchCredentials
-
-pub(all) enum FetchMode {
-  Cors
-  NoCors
-  SameOrigin
-  Navigate
-} derive(Eq)
-pub impl Show for FetchMode
-
 type Html
 pub impl Responder for Html
-
-pub(all) enum HttpMethod {
-  ACL
-  BIND
-  CHECKIN
-  CHECKOUT
-  CONNECT
-  COPY
-  DELETE
-  GET
-  HEAD
-  LABEL
-  LINK
-  LOCK
-  MERGE
-  MKACTIVITY
-  MKCALENDAR
-  MKCOL
-  MKREDIRECTREF
-  MKWORKSPACE
-  MOVE
-  OPTIONS
-  ORDERPATCH
-  PATCH
-  POST
-  PRI
-  PROPFIND
-  PROPPATCH
-  PUT
-  QUERY
-  REBIND
-  REPORT
-  SEARCH
-  TRACE
-  UNBIND
-  UNCHECKOUT
-  UNLINK
-  UNLOCK
-  UPDATE
-  UPDATEREDIRECTREF
-  VERSION_CONTROL
-} derive(Eq)
-pub impl Show for HttpMethod
 
 pub(all) struct HttpRequest {
   http_method : String

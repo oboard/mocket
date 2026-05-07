@@ -1,5 +1,5 @@
 ///|
-pub fn async_run(f : async () -> Unit noraise) -> Unit = "%async.run"
+fn async_run(f : async () -> Unit noraise) -> Unit = "%async.run"
 
 ///|
 /// `suspend` 会中断当前协程的运行。
