@@ -23,7 +23,7 @@ pub fn HttpResponse::new(
   cookies? : Map[String, CookieItem],
   raw_body? : Bytes,
 ) -> HttpResponse {
-  HttpResponse::{
+  {
     status_code,
     headers: headers.unwrap_or({}),
     cookies: cookies.unwrap_or({}),

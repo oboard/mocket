@@ -60,8 +60,8 @@ pub fn parse_cookie(cookie : StringView) -> Map[String, CookieItem] {
   let res = Map::new()
   let mut last_cookie_item : (String, CookieItem)? = None
   fn on_key_value(key : StringView, value : StringView) -> Unit {
-    let key = key.to_string()
-    let value = dequote(value).to_string()
+    let key = key.to_owned()
+    let value = dequote(value).to_owned()
     if last_cookie_item is Some((name, item)) {
       let new_item = lexmatch key with longest {
         "(?i:path)" => { ..item, path: Some(value) }

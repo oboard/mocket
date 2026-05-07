@@ -54,7 +54,7 @@ fn view_headers_to_strings(
   headers : Map[StringView, StringView],
 ) -> Map[String, String] {
   let out : Map[String, String] = {}
-  headers.each((key, value) => out.set(key.to_string(), value.to_string()))
+  headers.each((key, value) => out.set(key.to_owned(), value.to_owned()))
   out
 }
 
@@ -100,6 +100,19 @@ fn header_equals(
 fn is_websocket_upgrade(request : @http.Request) -> Bool {
   header_contains_token(request.headers, "connection", "upgrade") &&
   header_equals(request.headers, "upgrade", "websocket")
+}
+
+///|
+fn request_has_body(request : @http.Request) -> Bool {
+  match request.meth {
+    Post | Put | Patch => true
+    _ =>
+      request.headers.get("transfer-encoding") is Some(_) ||
+      request.headers
+      .get("content-length")
+      .map(value => value.trim() != "0")
+      .unwrap_or(false)
+  }
 }
 
 ///|
@@ -271,7 +284,11 @@ async fn handle_http_request(
   body_reader : &@io.Reader,
   conn : @http.ServerConnection,
 ) -> Unit {
-  let raw_body = body_reader.read_all().binary()
+  let raw_body = if request_has_body(request) {
+    body_reader.read_all().binary()
+  } else {
+    b""
+  }
   let response = dispatch_http(
     mocket,
     request_method_to_string(request.meth),

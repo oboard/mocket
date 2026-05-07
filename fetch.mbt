@@ -153,8 +153,9 @@ fn prepare_fetch_payload(
           let res = HttpResponse::new(OK)
           responder_data.options(res)
           res.headers.each(fn(k, v) {
-            if req_headers.get(k.to_string()) is None {
-              req_headers.set(k.to_string(), v.to_string())
+            let key = k.to_owned()
+            if req_headers.get(key) is None {
+              req_headers.set(key, v.to_owned())
             }
           })
           let body_buf = @buffer.new()

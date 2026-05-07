@@ -145,7 +145,7 @@ fn safe_request_body(req : HttpRequestInternal) -> Bytes {
   } else {
     req_body_len
   }
-  req_body[0:safe_body_len].to_bytes()
+  req_body[0:safe_body_len].to_owned()
 }
 
 ///|
@@ -258,38 +258,21 @@ pub fn __ws_emit(
         msg => ws_send_bytes_len_native(to_cbytes(cid), msg, msg.length()),
         () => ws_pong_native(to_cbytes(cid)),
       )
-      handler(@mocket.WebSocketEvent::Open(peer))
+      handler(Open(peer))
     }
-    "message" =>
-      handler(
-        @mocket.WebSocketEvent::Message(
-          peer,
-          @mocket.WebSocketAggregatedMessage::Text(from_cbytes(payload)),
-        ),
-      )
+    "message" => handler(Message(peer, Text(from_cbytes(payload))))
     "binary" => {
       let len = ws_msg_body_len()
       let arr = Array::make(len, b'\x00')
       let buf = Bytes::from_array(arr)
       let copied = ws_msg_copy(buf, buf.length())
-      let body = buf[0:copied].to_bytes()
-      handler(
-        @mocket.WebSocketEvent::Message(
-          peer,
-          @mocket.WebSocketAggregatedMessage::Binary(body),
-        ),
-      )
+      let body = buf[0:copied].to_owned()
+      handler(Message(peer, Binary(body)))
     }
-    "ping" =>
-      handler(
-        @mocket.WebSocketEvent::Message(
-          peer,
-          @mocket.WebSocketAggregatedMessage::Ping,
-        ),
-      )
+    "ping" => handler(Message(peer, Ping))
     "close" => {
       @mocket.unregister_ws_connection(cid)
-      handler(@mocket.WebSocketEvent::Close(peer))
+      handler(Close(peer))
     }
     _ => ()
   }

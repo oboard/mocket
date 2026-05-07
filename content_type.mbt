@@ -61,9 +61,9 @@ test "parse_content_type" {
   let ct = parse_content_type("application/json; charset=utf-8")
   assert_true(ct is Some(_))
   guard ct is Some(found) else { panic() }
-  assert_eq(found.media_type, "application")
-  assert_eq(found.subtype, "json")
-  assert_eq(found.params.get("charset"), Some("utf-8"))
+  @test.assert_eq(found.media_type, "application")
+  @test.assert_eq(found.subtype, "json")
+  @test.assert_eq(found.params.get("charset"), Some("utf-8"))
 }
 
 ///|
@@ -73,10 +73,10 @@ test "parse_content_type_with_quoted_params" {
   )
   assert_true(ct is Some(_))
   guard ct is Some(found) else { panic() }
-  assert_eq(found.media_type, "multipart")
-  assert_eq(found.subtype, "form-data")
-  assert_eq(found.params.get("boundary"), Some("foo;bar"))
-  assert_eq(found.params.get("charset"), Some("utf-8"))
+  @test.assert_eq(found.media_type, "multipart")
+  @test.assert_eq(found.subtype, "form-data")
+  @test.assert_eq(found.params.get("boundary"), Some("foo;bar"))
+  @test.assert_eq(found.params.get("charset"), Some("utf-8"))
 }
 
 ///|

@@ -2,12 +2,6 @@
 using @mocket {type HttpResponse}
 
 ///|
-struct Person {
-  name : String
-  age : Int
-} derive(ToJson, FromJson)
-
-///|
 async fn main {
   let app = @mocket.new()
 
@@ -16,7 +10,9 @@ async fn main {
   ..get("/", _event => "⚡️ Tadaa!")
 
   // Object Response
-  ..get("/json", _event => { name: "oboard", age: 21 }.to_json())
+  ..get("/json", _event => {
+    Json::object({ "name": Json::string("oboard"), "age": Json::number(21) })
+  })
 
   // JSON Request
   // curl --location 'localhost:4000/json' \
@@ -27,8 +23,17 @@ async fn main {
   // }'
   ..post("/json", event => {
     try {
-      let person : Person = event.req.json()
-      "Hello, \{person.name}. You are \{person.age} years old."
+      let payload : Json = event.req.json()
+      guard payload is Object(obj) else {
+        return HttpResponse::new(BadRequest).body("Invalid JSON")
+      }
+      guard obj.get("name") is Some(String(name)) else {
+        return HttpResponse::new(BadRequest).body("Invalid JSON")
+      }
+      guard obj.get("age") is Some(Number(age, ..)) else {
+        return HttpResponse::new(BadRequest).body("Invalid JSON")
+      }
+      "Hello, \{name}. You are \{age.to_int()} years old."
     } catch {
       _ => return HttpResponse::new(BadRequest).body("Invalid JSON")
     }

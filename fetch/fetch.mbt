@@ -56,7 +56,7 @@ pub async fn request(
 ) -> @mocket.HttpResponse raise Error {
   let http_method = parse_http_method(req.http_method)
   let headers : Map[String, String] = {}
-  req.headers.each((k, v) => headers.set(k.to_string(), v.to_string()))
+  req.headers.each((k, v) => headers.set(k.to_owned(), v.to_owned()))
   if req.raw_body.length() == 0 {
     @mocket.fetch(req.url, http_method, headers~)
   } else {

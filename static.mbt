@@ -55,7 +55,7 @@ pub fn Mocket::static_assets(
       event.res.headers.set("Allow", "GET, HEAD")
       return HttpResponse::new(MethodNotAllowed)
     }
-    let original_id = event.req.url[path.length():].to_string()
+    let original_id = event.req.url[path.length():].to_owned()
 
     // Parse Accept-Encoding
     // Headers are Map[StringView, StringView]
@@ -65,7 +65,7 @@ pub fn Mocket::static_assets(
     if accept_encoding != "" {
       // split requires `chars` label
       for pair in accept_encoding.split(",") {
-        let encoding = pair.trim(chars=" ").to_string()
+        let encoding = pair.trim(chars=" ").to_owned()
         match encodings.get(encoding) {
           Some(mapped) => matched_encodings.push(mapped)
           None => ()
@@ -144,7 +144,7 @@ pub fn Mocket::static_assets(
               // Simple extension extraction
               let parts = id.split(".").collect()
               if parts.length() > 1 {
-                match provider.get_type(parts[parts.length() - 1].to_string()) {
+                match provider.get_type(parts[parts.length() - 1].to_owned()) {
                   Some(t) => event.res.headers.set("Content-Type", t)
                   None => ()
                 }

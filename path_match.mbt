@@ -41,10 +41,10 @@ fn match_path_segments(
   let template_part = template_parts[template_idx]
   let path_part = path_parts[path_idx]
 
-  // 使用 lexmatch? 匹配参数模式
-  if template_part.view() lexmatch? (":", param_name) {
+  // 使用正则匹配参数模式
+  if template_part.view() =~ (re"^:", after=param_name) {
     // 命名参数：:param_name
-    params.set(param_name.to_string(), path_part)
+    params.set(param_name.to_owned(), path_part)
     match_path_segments(
       template_parts,
       path_parts,
@@ -96,14 +96,11 @@ fn Mocket::find_route(
 ) -> (HttpHandler, Map[String, StringView])? {
   // 优化：首先尝试静态路由缓存
   match self.static_routes.get(http_method) {
-    Some(http_methodroutes) => {
-      let routes = []
-      http_methodroutes.iter().each(fn(item) { routes.push(item.0) })
+    Some(http_methodroutes) =>
       match http_methodroutes.get(path) {
         Some(handler) => return Some((handler, {}))
         None => ignore(())
       }
-    }
     None => ignore(())
   }
 
@@ -151,101 +148,104 @@ fn Mocket::find_route(
 // 路径匹配测试用例 - 全面覆盖各种场景
 
 test "静态路径匹配" {
-  assert_eq(match_path("/api/users", "/api/users"), Some({}))
-  assert_eq(match_path("/api/users", "/api/posts"), None)
-  assert_eq(match_path("/", "/"), Some({}))
+  @test.assert_eq(match_path("/api/users", "/api/users"), Some({}))
+  @test.assert_eq(match_path("/api/users", "/api/posts"), None)
+  @test.assert_eq(match_path("/", "/"), Some({}))
 }
 
 ///|
 test "命名参数匹配" {
-  assert_eq(match_path("/users/:id", "/users/123"), Some({ "id": "123" }))
-  assert_eq(
+  @test.assert_eq(match_path("/users/:id", "/users/123"), Some({ "id": "123" }))
+  @test.assert_eq(
     match_path("/users/:userId/posts/:postId", "/users/456/posts/789"),
     Some({ "userId": "456", "postId": "789" }),
   )
-  assert_eq(match_path("/users/:id", "/users/123/extra"), None)
+  @test.assert_eq(match_path("/users/:id", "/users/123/extra"), None)
 }
 
 ///|
 test "单级通配符匹配" {
-  assert_eq(
+  @test.assert_eq(
     match_path("/files/*", "/files/document.pdf"),
     Some({ "_": "document.pdf" }),
   )
-  assert_eq(match_path("/api/*/status", "/api/v1/status"), Some({ "_": "v1" }))
-  assert_eq(match_path("/files/*", "/files/docs/readme.txt"), None)
+  @test.assert_eq(
+    match_path("/api/*/status", "/api/v1/status"),
+    Some({ "_": "v1" }),
+  )
+  @test.assert_eq(match_path("/files/*", "/files/docs/readme.txt"), None)
 }
 
 ///|
 test "多级通配符匹配" {
-  assert_eq(
+  @test.assert_eq(
     match_path("/static/**", "/static/css/main.css"),
     Some({ "_": "css/main.css" }),
   )
-  assert_eq(
+  @test.assert_eq(
     match_path("/assets/**", "/assets/images/icons/user.png"),
     Some({ "_": "images/icons/user.png" }),
   )
-  assert_eq(
+  @test.assert_eq(
     match_path("/docs/**", "/docs/readme.md"),
     Some({ "_": "readme.md" }),
   )
-  assert_eq(match_path("/api/v1/**", "/api/v1/"), Some({ "_": "" }))
+  @test.assert_eq(match_path("/api/v1/**", "/api/v1/"), Some({ "_": "" }))
 }
 
 ///|
 test "复杂混合模式" {
   // 参数 + 通配符
   let result = match_path("/users/:id/files/*", "/users/123/files/avatar.jpg")
-  assert_eq(result, Some({ "id": "123", "_": "avatar.jpg" }))
+  @test.assert_eq(result, Some({ "id": "123", "_": "avatar.jpg" }))
 
   // 参数 + 多级通配符
   let result2 = match_path(
     "/projects/:projectId/**", "/projects/abc/src/main.mbt",
   )
-  assert_eq(result2, Some({ "projectId": "abc", "_": "src/main.mbt" }))
+  @test.assert_eq(result2, Some({ "projectId": "abc", "_": "src/main.mbt" }))
 
   // 多个参数 + 静态段
   let result3 = match_path(
     "/api/:version/users/:id/profile", "/api/v2/users/456/profile",
   )
-  assert_eq(result3, Some({ "version": "v2", "id": "456" }))
+  @test.assert_eq(result3, Some({ "version": "v2", "id": "456" }))
 }
 
 ///|
 test "边界情况" {
   // 空路径段
   let result = match_path("/api//users", "/api//users")
-  assert_eq(result, Some({}))
+  @test.assert_eq(result, Some({}))
 
   // 路径末尾斜杠
   let result2 = match_path("/api/users/", "/api/users/")
-  assert_eq(result2, Some({}))
+  @test.assert_eq(result2, Some({}))
 
   // 参数名为空
   let result3 = match_path("/users/:", "/users/123")
-  assert_eq(result3, Some({ "": "123" }))
+  @test.assert_eq(result3, Some({ "": "123" }))
 
   // 模板比路径短
   let result4 = match_path("/api", "/api/users")
-  assert_eq(result4, None)
+  @test.assert_eq(result4, None)
 
   // 路径比模板短（非通配符）
   let result5 = match_path("/api/users", "/api")
-  assert_eq(result5, None)
+  @test.assert_eq(result5, None)
 }
 
 ///|
 test "性能对比场景" {
   // 静态路径应该快速返回
   let result = match_path("/health", "/health")
-  assert_eq(result, Some({}))
+  @test.assert_eq(result, Some({}))
 
   // 复杂模式也应该高效
   let result2 = match_path(
     "/api/:v/users/:id/posts/:postId/comments/*", "/api/v1/users/123/posts/456/comments/789",
   )
-  assert_eq(
+  @test.assert_eq(
     result2,
     Some({ "v": "v1", "id": "123", "postId": "456", "_": "789" }),
   )
@@ -255,9 +255,9 @@ test "性能对比场景" {
 test "lexmatch 特殊字符处理" {
   // 包含特殊字符的参数
   let result = match_path("/search/:query", "/search/hello%20world")
-  assert_eq(result, Some({ "query": "hello%20world" }))
+  @test.assert_eq(result, Some({ "query": "hello%20world" }))
 
   // 包含点号的文件名
   let result2 = match_path("/files/*", "/files/config.json")
-  assert_eq(result2, Some({ "_": "config.json" }))
+  @test.assert_eq(result2, Some({ "_": "config.json" }))
 }

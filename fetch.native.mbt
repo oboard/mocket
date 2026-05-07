@@ -58,16 +58,16 @@ fn split_fetch_url(url : String) -> (String, String) raise Error {
     (None, Some(query)) => query
     (None, None) => rest.length()
   }
-  let origin = url[:rest_start + split_idx].to_string()
-  guard origin != url[:rest_start].to_string() else {
+  let origin = url[:rest_start + split_idx].to_owned()
+  guard origin != url[:rest_start].to_owned() else {
     raise FetchError::RequestFailed("invalid URL: \{url}")
   }
   let path = if split_idx == rest.length() {
     "/"
   } else if rest[split_idx:split_idx + 1] == "?" {
-    "/" + rest[split_idx:].to_string()
+    "/" + rest[split_idx:].to_owned()
   } else {
-    rest[split_idx:].to_string()
+    rest[split_idx:].to_owned()
   }
   (origin, path)
 }

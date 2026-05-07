@@ -24,6 +24,10 @@ pub async fn execute_middlewares(
   event : MocketEvent,
   final_handler : HttpHandler,
 ) -> &Responder noraise {
+  if middlewares.is_empty() {
+    return final_handler(event)
+  }
+
   // 过滤出匹配路径的中间件
   let matched_middlewares = []
   middlewares.each(middleware => {
