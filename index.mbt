@@ -11,6 +11,7 @@ pub(all) struct Mocket {
   base_path : String
   mappings : Map[(String, String), HttpHandler]
   middlewares : Array[(String, Middleware)]
+  priv middleware_trie : MiddlewareTrieNode
   // 添加静态路由缓存（精确匹配的路由）
   static_routes : Map[String, Map[String, HttpHandler]]
   // 添加动态路由缓存（包含参数的路由）
@@ -29,6 +30,7 @@ pub fn new(base_path? : String = "") -> Mocket {
     base_path,
     mappings: {},
     middlewares: [],
+    middleware_trie: new_middleware_trie_node(),
     static_routes: {},
     dynamic_routes: {},
     ws_static_routes: {},
@@ -521,7 +523,10 @@ pub fn Mocket::group(
     }
   })
   // 合并中间件
-  self.middlewares.append(group.middlewares)
+  group.middlewares.each(middleware => {
+    let (base_path, middleware) = middleware
+    self.use_middleware(middleware, base_path~)
+  })
 }
 
 ///|

@@ -7,6 +7,7 @@ backend.
 Routes:
 
 - `GET /plaintext` returns `Hello, World!`
+- `GET /api/plaintext` returns `Hello, World!` for middleware-focused Mocket runs
 - `GET /json` returns `{ "message": "Hello, World!" }`
 - `GET /echo/:name` returns the path parameter
 - `POST /echo` echoes the request body
@@ -27,6 +28,12 @@ Run a subset:
 
 ```sh
 python3 benchmarks/run.py --prepare mocket nodejs bun deno gin axum
+```
+
+Run the middleware-index benchmark:
+
+```sh
+python3 benchmarks/run.py --prepare mocket-middleware --routes plaintext api_plaintext --duration 10 --connections 100
 ```
 
 The runner uses `oha` when it is installed. If `oha` is not available, it falls

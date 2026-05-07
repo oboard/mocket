@@ -16,6 +16,7 @@ BENCH_ROOT = ROOT / "benchmarks"
 
 ROUTES = {
     "plaintext": "/plaintext",
+    "api_plaintext": "/api/plaintext",
     "json": "/json",
     "echo": "/echo/moonbit",
 }
@@ -35,6 +36,21 @@ TARGETS = {
         ROOT,
         ["moon", "run", "--release", "--target", "native", "benchmarks/mocket"],
         (("moon", "build", "--release", "--target", "native", "benchmarks/mocket"),),
+    ),
+    "mocket-middleware": Target(
+        "mocket-middleware",
+        ROOT,
+        ["moon", "run", "--release", "--target", "native", "benchmarks/mocket_middleware"],
+        (
+            (
+                "moon",
+                "build",
+                "--release",
+                "--target",
+                "native",
+                "benchmarks/mocket_middleware",
+            ),
+        ),
     ),
     "nodejs": Target("nodejs", BENCH_ROOT / "nodejs", ["node", "server.mjs"]),
     "bun": Target("bun", BENCH_ROOT / "bun", ["bun", "server.js"]),
@@ -90,7 +106,12 @@ def main() -> int:
     parser.add_argument("--warmup", type=int, default=2)
     parser.add_argument("--connections", type=int, default=100)
     parser.add_argument("--port", type=int, default=3000)
-    parser.add_argument("--routes", nargs="+", choices=sorted(ROUTES), default=list(ROUTES))
+    parser.add_argument(
+        "--routes",
+        nargs="+",
+        choices=sorted(ROUTES),
+        default=["plaintext", "json", "echo"],
+    )
     parser.add_argument("--results-dir", type=Path, default=BENCH_ROOT / "results")
     args = parser.parse_args()
 
@@ -139,7 +160,7 @@ def main() -> int:
                     "target": target.name,
                     "route": route_name,
                     "url": url,
-                    "file": str(result_file.relative_to(ROOT)),
+                    "file": display_path(result_file),
                 })
                 print(f"{target.name} {route_name}: {result_file}")
         except Exception as exc:
@@ -247,6 +268,13 @@ def write_result(results_dir: Path, target: str, route: str, tool: str, output: 
     path = results_dir / f"{stamp}-{target}-{route}-{tool}.json"
     path.write_text(output)
     return path
+
+
+def display_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
 
 
 if __name__ == "__main__":

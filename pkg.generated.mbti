@@ -120,6 +120,7 @@ pub(all) struct Mocket {
   ws_clients : Map[String, Unit]
   ws_channels : Map[String, Map[String, Unit]]
   ws_client_port : Map[String, Int]
+  // private fields
 }
 pub fn Mocket::acl(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
 pub fn Mocket::all(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit

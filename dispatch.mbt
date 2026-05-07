@@ -15,7 +15,7 @@ pub async fn dispatch_http(
     res: HttpResponse::new(OK),
     params,
   }
-  let responder = execute_middlewares(mocket.middlewares, event, handler)
+  let responder = mocket.execute_middlewares(event, handler)
   responder.options(event.res)
   let buf = @buffer.new()
   responder.output(buf)
