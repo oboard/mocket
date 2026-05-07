@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nitro build",
+    "start": "node .output/server/index.mjs"
+  },
+  "dependencies": {
+    "nitropack": "^2.10.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

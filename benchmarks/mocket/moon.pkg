@@ -1,0 +1,13 @@
+import {
+  "moonbitlang/async",
+  "moonbitlang/core/env",
+  "moonbitlang/core/json",
+  "moonbitlang/core/strconv",
+  "oboard/mocket" @mocket_lib,
+}
+
+supported_targets = "+native"
+
+options(
+  "is-main": true,
+)

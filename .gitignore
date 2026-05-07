@@ -4,3 +4,7 @@ target
 _build/
 .mooncakes/
 .DS_Store
+__pycache__/
+benchmarks/results/
+benchmarks/nitro/.nitro/
+benchmarks/nitro/.output/
