@@ -88,6 +88,285 @@ fn match_path_segments(
 }
 
 ///|
+priv struct DynamicRouteHandlerEntry {
+  order : Int
+  handler : HttpHandler
+}
+
+///|
+priv enum DynamicRouteTrieEdge {
+  Static(String, DynamicRouteTrieNode)
+  Param(String, DynamicRouteTrieNode)
+  Wildcard(DynamicRouteTrieNode)
+  DeepWildcard(DynamicRouteHandlerEntry)
+}
+
+///|
+priv struct DynamicRouteTrieNode {
+  mut handler_entry : DynamicRouteHandlerEntry?
+  children : Map[String, DynamicRouteTrieNode]
+  edges : Array[DynamicRouteTrieEdge]
+}
+
+///|
+priv struct DynamicRouteMatch {
+  order : Int
+  handler : HttpHandler
+  params : Map[String, StringView]
+}
+
+///|
+fn new_dynamic_route_trie_node() -> DynamicRouteTrieNode {
+  { handler_entry: None, children: {}, edges: [] }
+}
+
+///|
+fn copy_route_params(
+  params : Map[String, StringView],
+) -> Map[String, StringView] {
+  let copied : Map[String, StringView] = {}
+  params.iter().each(item => copied.set(item.0, item.1))
+  copied
+}
+
+///|
+fn better_dynamic_route_match(
+  current : DynamicRouteMatch?,
+  candidate : DynamicRouteMatch?,
+) -> DynamicRouteMatch? {
+  match (current, candidate) {
+    (None, None) => None
+    (Some(found), None) => Some(found)
+    (None, Some(found)) => Some(found)
+    (Some(found), Some(next)) =>
+      if next.order < found.order {
+        Some(next)
+      } else {
+        Some(found)
+      }
+  }
+}
+
+///|
+fn dynamic_route_remaining_path(
+  path_parts : Array[StringView],
+  path_idx : Int,
+) -> String {
+  let remaining_path = []
+  let mut i = path_idx
+  while i < path_parts.length() {
+    remaining_path.push(path_parts[i])
+    i = i + 1
+  }
+  remaining_path.join("/")
+}
+
+///|
+fn DynamicRouteTrieNode::static_child(
+  self : DynamicRouteTrieNode,
+  segment : String,
+) -> DynamicRouteTrieNode? {
+  self.children.get(segment)
+}
+
+///|
+fn DynamicRouteTrieNode::param_child(
+  self : DynamicRouteTrieNode,
+  name : String,
+) -> DynamicRouteTrieNode? {
+  let mut found : DynamicRouteTrieNode? = None
+  let mut searching = true
+  let mut i = 0
+  while i < self.edges.length() && searching {
+    match self.edges[i] {
+      Param(param_name, child) =>
+        if param_name == name {
+          found = Some(child)
+          searching = false
+        }
+      _ => ignore(())
+    }
+    i = i + 1
+  }
+  found
+}
+
+///|
+fn DynamicRouteTrieNode::wildcard_child(
+  self : DynamicRouteTrieNode,
+) -> DynamicRouteTrieNode? {
+  let mut found : DynamicRouteTrieNode? = None
+  let mut searching = true
+  let mut i = 0
+  while i < self.edges.length() && searching {
+    match self.edges[i] {
+      Wildcard(child) => {
+        found = Some(child)
+        searching = false
+      }
+      _ => ignore(())
+    }
+    i = i + 1
+  }
+  found
+}
+
+///|
+fn DynamicRouteTrieNode::insert(
+  self : DynamicRouteTrieNode,
+  template : String,
+  handler : HttpHandler,
+  order : Int,
+) -> Unit {
+  let template_parts = template.split("/")
+  let parts = template_parts.to_array()
+  let mut node = self
+  let mut i = 0
+  while i < parts.length() {
+    let part = parts[i]
+    if part == "**" {
+      node.edges.push(DeepWildcard({ order, handler }))
+      return
+    } else if part == "*" {
+      node = match node.wildcard_child() {
+        Some(child) => child
+        None => {
+          let child = new_dynamic_route_trie_node()
+          node.edges.push(Wildcard(child))
+          child
+        }
+      }
+    } else if part.view() =~ (re"^:", after=param_name) {
+      let param_name = param_name.to_owned()
+      node = match node.param_child(param_name) {
+        Some(child) => child
+        None => {
+          let child = new_dynamic_route_trie_node()
+          node.edges.push(Param(param_name, child))
+          child
+        }
+      }
+    } else {
+      let segment = part.to_owned()
+      node = match node.static_child(segment) {
+        Some(child) => child
+        None => {
+          let child = new_dynamic_route_trie_node()
+          node.children.set(segment, child)
+          node.edges.push(Static(segment, child))
+          child
+        }
+      }
+    }
+    i = i + 1
+  }
+  match node.handler_entry {
+    None => node.handler_entry = Some({ order, handler })
+    Some(_) => ignore(())
+  }
+}
+
+///|
+fn DynamicRouteTrieNode::find(
+  self : DynamicRouteTrieNode,
+  path_parts : Array[StringView],
+  path_idx : Int,
+  params : Map[String, StringView],
+) -> DynamicRouteMatch? {
+  let mut found = if path_idx >= path_parts.length() {
+    match self.handler_entry {
+      Some(entry) =>
+        Some({ order: entry.order, handler: entry.handler, params })
+      None => None
+    }
+  } else {
+    None
+  }
+  let mut i = 0
+  while i < self.edges.length() {
+    let edge = self.edges[i]
+    let candidate = match edge {
+      Static(segment, child) =>
+        if path_idx < path_parts.length() && path_parts[path_idx] == segment {
+          child.find(path_parts, path_idx + 1, copy_route_params(params))
+        } else {
+          None
+        }
+      Param(param_name, child) =>
+        if path_idx < path_parts.length() {
+          let next_params = copy_route_params(params)
+          next_params.set(param_name, path_parts[path_idx])
+          child.find(path_parts, path_idx + 1, next_params)
+        } else {
+          None
+        }
+      Wildcard(child) =>
+        if path_idx < path_parts.length() {
+          let next_params = copy_route_params(params)
+          next_params.set("_", path_parts[path_idx])
+          child.find(path_parts, path_idx + 1, next_params)
+        } else {
+          None
+        }
+      DeepWildcard(entry) => {
+        let next_params = copy_route_params(params)
+        if path_idx < path_parts.length() {
+          next_params.set(
+            "_",
+            dynamic_route_remaining_path(path_parts, path_idx),
+          )
+        }
+        Some({ order: entry.order, handler: entry.handler, params: next_params })
+      }
+    }
+    found = better_dynamic_route_match(found, candidate)
+    i = i + 1
+  }
+  found
+}
+
+///|
+fn Mocket::insert_dynamic_route(
+  self : Mocket,
+  event : String,
+  path : String,
+  handler : HttpHandler,
+) -> Unit {
+  let order = match self.dynamic_routes.get(event) {
+    Some(routes) => {
+      let order = routes.length()
+      routes.push((path, handler))
+      order
+    }
+    None => {
+      self.dynamic_routes.set(event, [(path, handler)])
+      0
+    }
+  }
+  let trie = match self.dynamic_route_tries.get(event) {
+    Some(existing) => existing
+    None => {
+      let trie = new_dynamic_route_trie_node()
+      self.dynamic_route_tries.set(event, trie)
+      trie
+    }
+  }
+  trie.insert(path, handler, order)
+}
+
+///|
+fn DynamicRouteTrieNode::find_path(
+  self : DynamicRouteTrieNode,
+  path : String,
+) -> (HttpHandler, Map[String, StringView])? {
+  let path_parts = path.split("/").collect()
+  match self.find(path_parts, 0, {}) {
+    Some(found) => Some((found.handler, found.params))
+    None => None
+  }
+}
+
+///|
 // 查找匹配的路由和参数
 fn Mocket::find_route(
   self : Mocket,
@@ -114,31 +393,17 @@ fn Mocket::find_route(
     None => ignore(())
   }
 
-  // 然后尝试动态路由
-  if self.dynamic_routes.get(http_method) is Some(routes) {
-    let mut i = 0
-    while i < routes.length() {
-      let route_item = routes[i]
-      let route_path = route_item.0
-      let handler = route_item.1
-      if match_path(route_path, path) is Some(params) {
-        return Some((handler, params))
-      }
-      i = i + 1
+  // 然后尝试动态路由 trie
+  if self.dynamic_route_tries.get(http_method) is Some(trie) {
+    if trie.find_path(path) is Some(found) {
+      return Some(found)
     }
   }
 
-  // 最后检查通配符方法的动态路由
-  if self.dynamic_routes.get("*") is Some(routes) {
-    let mut i = 0
-    while i < routes.length() {
-      let route_item = routes[i]
-      let route_path = route_item.0
-      let handler = route_item.1
-      if match_path(route_path, path) is Some(params) {
-        return Some((handler, params))
-      }
-      i = i + 1
+  // 最后检查通配符方法的动态路由 trie
+  if self.dynamic_route_tries.get("*") is Some(trie) {
+    if trie.find_path(path) is Some(found) {
+      return Some(found)
     }
   }
   None
@@ -260,4 +525,35 @@ test "lexmatch 特殊字符处理" {
   // 包含点号的文件名
   let result2 = match_path("/files/*", "/files/config.json")
   @test.assert_eq(result2, Some({ "_": "config.json" }))
+}
+
+///|
+test "动态路由 trie 匹配命名参数" {
+  let app = new()
+  app.get("/name/:id/x", _ => "ok")
+  match app.find_route("GET", "/name/42/x") {
+    Some((_, params)) => @test.assert_eq(params, { "id": "42" })
+    None => fail("Expected dynamic route match")
+  }
+}
+
+///|
+test "动态路由 trie 保留注册顺序" {
+  let app = new()
+  app.get("/users/:id/profile", _ => "first")
+  app.get("/users/me/:tab", _ => "second")
+  match app.find_route("GET", "/users/me/profile") {
+    Some((_, params)) => @test.assert_eq(params, { "id": "me" })
+    None => fail("Expected first registered dynamic route")
+  }
+}
+
+///|
+test "动态路由 trie 合并分组路由" {
+  let app = new()
+  app.group("/api", group => group.get("/users/:id", _ => "ok"))
+  match app.find_route("GET", "/api/users/7") {
+    Some((_, params)) => @test.assert_eq(params, { "id": "7" })
+    None => fail("Expected grouped dynamic route match")
+  }
 }

@@ -12,6 +12,7 @@ pub(all) struct Mocket {
   mappings : Map[(String, String), HttpHandler]
   middlewares : Array[(String, Middleware)]
   priv middleware_trie : MiddlewareTrieNode
+  priv dynamic_route_tries : Map[String, DynamicRouteTrieNode]
   // 添加静态路由缓存（精确匹配的路由）
   static_routes : Map[String, Map[String, HttpHandler]]
   // 添加动态路由缓存（包含参数的路由）
@@ -31,6 +32,7 @@ pub fn new(base_path? : String = "") -> Mocket {
     mappings: {},
     middlewares: [],
     middleware_trie: new_middleware_trie_node(),
+    dynamic_route_tries: {},
     static_routes: {},
     dynamic_routes: {},
     ws_static_routes: {},
@@ -138,14 +140,7 @@ pub fn Mocket::on(
       }
     }
   } else {
-    // 动态路径，加入动态路由列表
-    match self.dynamic_routes.get(event) {
-      Some(routes) => routes.push((path, handler))
-      None => {
-        let new_routes = [(path, handler)]
-        self.dynamic_routes.set(event, new_routes)
-      }
-    }
+    self.insert_dynamic_route(event, path, handler)
   }
 }
 
@@ -515,12 +510,7 @@ pub fn Mocket::group(
   .iter()
   .each(i => {
     let event = i.0
-    let routes = i.1
-    if self.dynamic_routes.get(event) is Some(existing_routes) {
-      existing_routes.append(routes)
-    } else {
-      self.dynamic_routes.set(event, routes)
-    }
+    i.1.each(route => self.insert_dynamic_route(event, route.0, route.1))
   })
   // 合并中间件
   group.middlewares.each(middleware => {
