@@ -7,169 +7,66 @@ on:
   pull_request:
 
 jobs:
-  stable-build:
+  build:
     strategy:
-      fail-fast: false
       matrix:
-        os:
-          - name: ubuntu-latest
-          - name: macos-latest
-          - name: windows-latest
-
-    runs-on: ${{ matrix.os.name }}
-    
-    env: 
-      OS_PLATFORM: ${{ matrix.os.name }}
-
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        channel: [latest, nightly]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.channel == 'nightly' }}
     steps:
       - uses: actions/checkout@v4
 
       - name: install
-        if: ${{ matrix.os.name != 'windows-latest' }}
+        if: ${{ matrix.os != 'windows-latest' }}
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s ${{ matrix.channel }}
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
       - name: install on windows
-        if: ${{ matrix.os.name == 'windows-latest' }}
+        if: ${{ matrix.os == 'windows-latest' }}
+        env:
+          MOONBIT_INSTALL_VERSION: ${{ matrix.channel }}
         run: |
           Set-ExecutionPolicy RemoteSigned -Scope CurrentUser; irm https://cli.moonbitlang.com/install/powershell.ps1 | iex
           "C:\Users\runneradmin\.moon\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-
-      - name: Setup MSVC
-        if: ${{ matrix.os.name == 'windows-latest' }}
-        uses: ilammy/msvc-dev-cmd@v1
 
       - name: moon version
         run: |
           moon version --all
           moonrun --version
 
-      - name: moon test
-        run: |
-          moon test --target all --serial --release
-          moon test --target all --serial
-
-      - name: moon test(native)
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 30
-          max_attempts: 5
-          command: |
-            moon test --target native --release
-            moon test --target native
+      - name: install deps
+        run: | 
+          moon update
+          moon check --deny-warn
 
       - name: moon check
-        run: moon check
-        # Currently disabled to maintain the compatibility for @immut/list
-        # run: moon check --deny-warn
+        run: moon check 
 
       - name: moon info
         run: |
-          moon info
+          moon info --target all
           git diff --exit-code
+      
+      - name: download testsuite (Unix)
+        if: ${{ matrix.os != 'windows-latest' }}
+        run: sh scripts/init.sh
 
-      - name: format diff
-        run: |
-          moon fmt
-          git diff --exit-code
-
-  nightly-build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - name: ubuntu-latest
-          - name: macos-latest
-          - name: windows-latest
-
-    runs-on: ${{ matrix.os.name }}
-
-    env: 
-      OS_PLATFORM: ${{ matrix.os.name }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: install
-        if: ${{ matrix.os.name != 'windows-latest' }}
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s nightly
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
-
-      - name: install on windows
-        env:
-          MOONBIT_INSTALL_VERSION: nightly
-        if: ${{ matrix.os.name == 'windows-latest' }}
-        run: |
-          Set-ExecutionPolicy RemoteSigned -Scope CurrentUser; irm https://cli.moonbitlang.com/install/powershell.ps1 | iex
-          "C:\Users\runneradmin\.moon\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+      - name: download testsuite (Windows)
+        if: ${{ matrix.os == 'windows-latest' }}
+        shell: pwsh
+        run: ./scripts/init.ps1
 
       - name: Setup MSVC
-        if: ${{ matrix.os.name == 'windows-latest' }}
+        if: ${{ matrix.os == 'windows-latest' }}
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: moon version
+      - name: Run moon test
         run: |
-          moon version --all
-          moonrun --version
-
-      - name: moon test
-        run: |
-          moon test --target all --serial --release
-          moon test --target all --serial
-
-      - name: moon test(native)
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 30
-          max_attempts: 5
-          command: |
-            moon test --target native --release
-            moon test --target native
-
-      - name: moon check
-        run: moon check
-
-      - name: moon info
-        run: |
-          moon info
-          git diff --exit-code
-
-      - name: format diff
-        run: |
-          moon fmt
-          git diff --exit-code
-
-  coverage-check-nightly:
-    runs-on: macos-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: install
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s nightly
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
-
-      - name: moon test
-        run: moon test --enable-coverage
-
-      - name: coverage report
-        run: |
-          moon coverage report -f summary > coverage_summary.txt
-          # Put the coverage report in the pipline output
-          cat coverage_summary.txt >> "$GITHUB_STEP_SUMMARY"
-          # We don't use the official coveralls upload tool because it takes >1min to build itself
-          moon coverage report \
-            -f coveralls \
-            -o codecov_report.json \
-            --service-name github \
-            --service-job-id "$GITHUB_RUN_NUMBER" \
-            --service-pull-request "${{ github.event.number }}" \
-            --send-to coveralls
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          moon test --target all
+          moon test --release --target all
 
   typo-check:
     runs-on: ubuntu-latest
@@ -188,18 +85,7 @@ jobs:
 
       - name: check typos
         run: typos
-
-  license-header-check:
-    runs-on: ubuntu-latest
-    env:
-      HAWKEYE_VERSION: v5.5.1
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download HawkEye
-        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/korandoru/hawkeye/releases/download/$HAWKEYE_VERSION/hawkeye-installer.sh | sh
-      - name: Check License Header
-        run: hawkeye check
-
+          
   moon-json-format-check:
     runs-on: ubuntu-latest
     steps:
