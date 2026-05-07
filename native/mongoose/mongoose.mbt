@@ -203,6 +203,7 @@ pub fn serve(mocket : @mocket.Mocket, port~ : Int) -> Unit {
 
 ///|
 pub fn listen(mocket : @mocket.Mocket, address : String) -> Unit {
+  let address = normalize_listen_address(address)
   let port = listen_port(address)
   server_map.set(port, mocket)
   register_ws_handlers(mocket, port)
@@ -217,6 +218,15 @@ pub fn listen(mocket : @mocket.Mocket, address : String) -> Unit {
     handle_request(port, req, res)
   })
   server_listen_address(server, to_cbytes(address), port)
+}
+
+///|
+fn normalize_listen_address(address : String) -> String {
+  if address.has_prefix(":") {
+    "0.0.0.0\{address}"
+  } else {
+    address
+  }
 }
 
 ///|

@@ -58,5 +58,5 @@ async fn main {
   }
 
   // Serve
-  app.listen("0.0.0.0:4000")
+  app.listen(":4000")
 }

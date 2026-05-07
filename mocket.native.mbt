@@ -334,6 +334,7 @@ async fn handle_websocket_request(
 
 ///|
 pub async fn listen_ffi(mocket : Mocket, address : String) -> Unit noraise {
+  let address = normalize_listen_address(address)
   let addr = @socket.Addr::parse(address) catch {
     err => {
       println("mocket: invalid native listen address \{address}: \{err}")
@@ -356,6 +357,15 @@ pub async fn listen_ffi(mocket : Mocket, address : String) -> Unit noraise {
     }
   }) catch {
     err => println("mocket: native server on \{address} stopped: \{err}")
+  }
+}
+
+///|
+fn normalize_listen_address(address : String) -> String {
+  if address.has_prefix(":") {
+    "0.0.0.0\{address}"
+  } else {
+    address
   }
 }
 

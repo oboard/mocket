@@ -14,5 +14,5 @@ fn main {
     println("\{path.0} http://localhost:4010\{path.1}")
   }
 
-  @mongoose_backend.listen(app, "0.0.0.0:4010")
+  @mongoose_backend.listen(app, ":4010")
 }

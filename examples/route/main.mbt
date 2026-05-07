@@ -1,7 +1,7 @@
 ///|
 async fn main {
   let port = example_port()
-  let address = "0.0.0.0:\{port}"
+  let address = ":\{port}"
   let app = @mocket.new()
 
   // Register global middleware

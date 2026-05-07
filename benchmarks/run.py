@@ -33,8 +33,8 @@ TARGETS = {
     "mocket": Target(
         "mocket",
         ROOT,
-        ["moon", "run", "--target", "native", "benchmarks/mocket"],
-        (("moon", "build", "--target", "native", "benchmarks/mocket"),),
+        ["moon", "run", "--release", "--target", "native", "benchmarks/mocket"],
+        (("moon", "build", "--release", "--target", "native", "benchmarks/mocket"),),
     ),
     "nodejs": Target("nodejs", BENCH_ROOT / "nodejs", ["node", "server.mjs"]),
     "bun": Target("bun", BENCH_ROOT / "bun", ["bun", "server.js"]),
