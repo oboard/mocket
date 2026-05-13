@@ -127,6 +127,10 @@ async fn Mocket::execute_middlewares(
   event : MocketEvent,
   final_handler : HttpHandler,
 ) -> &Responder noraise {
+  if self.middlewares.is_empty() {
+    return final_handler(event)
+  }
+
   let matched_middlewares = self.match_middlewares(event.req.url)
   execute_middleware_chain(matched_middlewares, 0, event, final_handler)
 }

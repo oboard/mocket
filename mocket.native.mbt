@@ -116,6 +116,14 @@ fn request_has_body(request : @http.Request) -> Bool {
 }
 
 ///|
+fn request_route_path(path : String) -> String {
+  match path.find("?") {
+    Some(query_start) => path[:query_start].to_owned()
+    None => path
+  }
+}
+
+///|
 fn find_ws_route(
   mocket : Mocket,
   path : String,
@@ -292,7 +300,7 @@ async fn handle_http_request(
   let response = dispatch_http(
     mocket,
     request_method_to_string(request.meth),
-    request.path,
+    request_route_path(request.path),
     string_headers_to_views(request.headers),
     raw_body,
   )

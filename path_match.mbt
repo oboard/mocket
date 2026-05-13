@@ -288,7 +288,7 @@ fn DynamicRouteTrieNode::find(
     let candidate = match edge {
       Static(segment, child) =>
         if path_idx < path_parts.length() && path_parts[path_idx] == segment {
-          child.find(path_parts, path_idx + 1, copy_route_params(params))
+          child.find(path_parts, path_idx + 1, params)
         } else {
           None
         }
