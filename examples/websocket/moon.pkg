@@ -5,6 +5,8 @@ import {
 
 warnings = "-67"
 
+supported_targets = "+js+native"
+
 options(
   "is-main": true,
 )
