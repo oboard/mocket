@@ -36,7 +36,7 @@ pub fn WebSocketPeer::unsubscribe(
   channel : String,
 ) -> Unit {
   let mut index = None
-  for i = 0; i < self.subscribed_channels.length(); i = i + 1 {
+  for i in 0..<self.subscribed_channels.length() {
     if self.subscribed_channels[i] == channel {
       index = Some(i)
       break

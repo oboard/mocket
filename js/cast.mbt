@@ -21,22 +21,27 @@ pub(open) trait Cast {
 // then the default implementation is not type-safe.
 
 ///|
+#borrow(value)
 extern "js" fn checked_cast_string_ffi(value : Value) -> Nullable[String] =
   #| (x) => typeof x === 'string' ? x : null
 
 ///|
+#borrow(value)
 extern "js" fn checked_cast_int_ffi(value : Value) -> Nullable[Int] =
   #| (x) => typeof x === 'number' && Number.isInteger(x) ? x : null
 
 ///|
+#borrow(value)
 extern "js" fn checked_cast_double_ffi(value : Value) -> Nullable[Double] =
   #| (x) => typeof x === 'number' ? x : null
 
 ///|
+#borrow(value)
 extern "js" fn checked_cast_bool_ffi(value : Value) -> Nullable[Bool] =
   #| (x) => typeof x === 'boolean' ? x : null
 
 ///|
+#borrow(value)
 extern "js" fn checked_cast_array_ffi(value : Value) -> Nullable[Array[Value]] =
   #| (x) => Array.isArray(x) ? x : null
 

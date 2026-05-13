@@ -57,38 +57,55 @@ pub fn parse_cookie(cookie : StringView) -> Map[String, CookieItem] {
     }
   }
 
-  let res = Map::new()
+  let res = Map([])
   let mut last_cookie_item : (String, CookieItem)? = None
   fn on_key_value(key : StringView, value : StringView) -> Unit {
     let key = key.to_owned()
     let value = dequote(value).to_owned()
     if last_cookie_item is Some((name, item)) {
-      let new_item = lexmatch key with longest {
-        "(?i:path)" => { ..item, path: Some(value) }
-        "(?i:domain)" => { ..item, domain: Some(value) }
-        "(?i:max-age)" =>
-          {
-            ..item,
-            max_age: try @string.parse_int(value) catch {
-              _ => None
-            } noraise {
-              x => Some(x)
-            },
-          }
-        "(?i:secure)" => { ..item, secure: Some(true) }
-        "(?i:httponly)" => { ..item, http_only: Some(true) }
-        "(?i:samesite)" => {
-          let same_site = lexmatch value with longest {
-            "(?i:lax)" => Some(Lax)
-            "(?i:strict)" => Some(Strict)
-            "(?i:none)" => Some(SameSiteNone)
+      if key =~ re"^(?i:path)$" {
+        let new_item = { ..item, path: Some(value) }
+        res.set(name, new_item)
+        last_cookie_item = Some((name, new_item))
+        return
+      } else if key =~ re"^(?i:domain)$" {
+        let new_item = { ..item, domain: Some(value) }
+        res.set(name, new_item)
+        last_cookie_item = Some((name, new_item))
+        return
+      } else if key =~ re"^(?i:max-age)$" {
+        let new_item = {
+          ..item,
+          max_age: try @string.parse_int(value) catch {
             _ => None
-          }
-          { ..item, same_site, }
+          } noraise {
+            x => Some(x)
+          },
         }
-        _ => item
-      }
-      if !physical_equal(new_item, item) {
+        res.set(name, new_item)
+        last_cookie_item = Some((name, new_item))
+        return
+      } else if key =~ re"^(?i:secure)$" {
+        let new_item = { ..item, secure: Some(true) }
+        res.set(name, new_item)
+        last_cookie_item = Some((name, new_item))
+        return
+      } else if key =~ re"^(?i:httponly)$" {
+        let new_item = { ..item, http_only: Some(true) }
+        res.set(name, new_item)
+        last_cookie_item = Some((name, new_item))
+        return
+      } else if key =~ re"^(?i:samesite)$" {
+        let same_site = if value =~ re"^(?i:lax)$" {
+          Some(Lax)
+        } else if value =~ re"^(?i:strict)$" {
+          Some(Strict)
+        } else if value =~ re"^(?i:none)$" {
+          Some(SameSiteNone)
+        } else {
+          None
+        }
+        let new_item = { ..item, same_site, }
         res.set(name, new_item)
         last_cookie_item = Some((name, new_item))
         return
@@ -111,27 +128,28 @@ pub fn parse_cookie(cookie : StringView) -> Map[String, CookieItem] {
   for curr = cookie {
     // TODO: more spec compliance
     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes
-    lexmatch curr with longest {
-      ("[ \t]+", rest) => continue rest
-      (
-        ("[^ \t=;]([ \t]*[^ \t=;])*" as key)
-        "[ \t]*"
-        "="
-        "[ \t]*"
-        ("[^ \t;]([ \t]*[^ \t;])*" as value)
-        "[ \t]*"
-        ";?",
-        rest
-      ) => {
-        on_key_value(key, value)
-        continue rest
-      }
-      (("[^ \t=;]([ \t]*[^ \t=;])*" as key) "[ \t]*" "(=[ \t]*)?" ";?", rest) => {
-        on_key_value(key, "")
-        continue rest
-      }
-      "" => break
-      _ => break
+    if curr =~ (re"^[ \t]+", after=rest) {
+      continue rest
+    } else if curr =~ (
+        re"^" +
+        (re"[^ \t=;]([ \t]*[^ \t=;])*" as key) +
+        re"[ \t]*=[ \t]*" +
+        (re"[^ \t;]([ \t]*[^ \t;])*" as value) +
+        re"[ \t]*;?",
+        after=rest,
+      ) {
+      on_key_value(key, value)
+      continue rest
+    } else if curr =~ (
+        re"^" +
+        (re"[^ \t=;]([ \t]*[^ \t=;])*" as key) +
+        re"[ \t]*(=[ \t]*)?;?",
+        after=rest,
+      ) {
+      on_key_value(key, "")
+      continue rest
+    } else {
+      break
     }
   }
   res

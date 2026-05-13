@@ -18,6 +18,7 @@ fn async_run(f : async () -> Unit noraise) -> Unit = "%async.run"
 pub type Promise
 
 ///|
+#owned(on_ok, on_err)
 extern "js" fn Promise::wait_ffi(
   self : Promise,
   on_ok : (Value) -> Unit,
@@ -44,6 +45,7 @@ pub fn[T] Promise::unsafe_new(op : async () -> T) -> Promise {
 }
 
 ///|
+#owned(op)
 extern "js" fn Promise::new_ffi(op : async () -> Value) -> Promise =
   #| (op) => new Promise((k, ke) => op(k, ke))
 
@@ -59,6 +61,7 @@ pub fn[T, E : Error] spawn_detach(op : async () -> T raise E) -> Unit {
 ///|
 /// # Note
 /// The return type is guaranteed to be a `Promise` of an `Array`, but we omit that detail for simplicity.
+#borrow(promises)
 pub extern "js" fn Promise::all(promises : Array[Promise]) -> Promise = "(ps) => Promise.all(ps)"
 
 ///|

@@ -15,10 +15,12 @@ pub fn Object::to_value(self : Object) -> Value {
 }
 
 ///|
+#borrow(value)
 pub extern "js" fn Object::from_value(value : Value) -> Optional[Object] =
   #| (value) => (value) instanceof Object ? value : undefined
 
 ///|
+#borrow(self, obj)
 pub extern "js" fn Object::extend_object(self : Object, obj : Object) -> Object =
   #| (self, obj) => ({ ...self, ...obj })
 

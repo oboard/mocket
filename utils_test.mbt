@@ -22,7 +22,7 @@ test "url_decode_utf8" {
 
 ///|
 test "form_encode" {
-  let map = Map::new()
+  let map = Map([])
   map.set("key", "value")
   map.set("foo", "bar")
   let encoded = form_encode(map)

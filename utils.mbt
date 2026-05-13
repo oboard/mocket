@@ -51,7 +51,7 @@ pub fn url_decode(bytes : BytesView) -> String {
 
 ///|
 pub fn parse_form_data(bytes : BytesView) -> Map[String, String] {
-  let res = Map::new()
+  let res = Map([])
   if bytes.length() == 0 {
     return res
   }
@@ -59,7 +59,7 @@ pub fn parse_form_data(bytes : BytesView) -> Map[String, String] {
   // Split by '&'
   let mut start = 0
   let len = bytes.length()
-  for i = 0; i < len; i = i + 1 {
+  for i in 0..<len {
     if bytes[i] == b'&' {
       let part = bytes[start:i]
       parse_kv(part, res)
@@ -76,7 +76,7 @@ pub fn parse_form_data(bytes : BytesView) -> Map[String, String] {
 fn parse_kv(part : BytesView, map : Map[String, String]) -> Unit {
   let len = part.length()
   let mut eq_idx = -1
-  for i = 0; i < len; i = i + 1 {
+  for i in 0..<len {
     if part[i] == b'=' {
       eq_idx = i
       break
@@ -115,7 +115,7 @@ fn is_unreserved(b : Byte) -> Bool {
 pub fn url_encode(s : String) -> String {
   let bytes = @utf8.encode(s)
   let buf = StringBuilder::new()
-  for i = 0; i < bytes.length(); i = i + 1 {
+  for i in 0..<bytes.length() {
     let b = bytes[i]
     if is_unreserved(b) {
       match b.to_int().to_char() {
@@ -167,9 +167,9 @@ fn find_boundary(
   if start_index + boundary_len > len {
     return -1
   }
-  for i = start_index; i <= len - boundary_len; i = i + 1 {
+  for i in start_index..<=(len - boundary_len) {
     let mut match_found = true
-    for j = 0; j < boundary_len; j = j + 1 {
+    for j in 0..<boundary_len {
       if bytes[i + j] != boundary[j] {
         match_found = false
         break
@@ -187,7 +187,7 @@ pub fn parse_multipart(
   bytes : BytesView,
   boundary : String,
 ) -> Map[String, MultipartFormValue] {
-  let res = Map::new()
+  let res = Map([])
   let boundary_bytes = @utf8.encode("--" + boundary)
   let boundary_len = boundary_bytes.length()
   let len = bytes.length()
@@ -244,7 +244,7 @@ fn parse_multipart_part(
   // Find double CRLF separating headers from body
   let len = part.length()
   let mut body_start = -1
-  for i = 0; i < len - 3; i = i + 1 {
+  for i in 0..<(len - 3) {
     if part[i] == b'\r' &&
       part[i + 1] == b'\n' &&
       part[i + 2] == b'\r' &&
@@ -271,7 +271,7 @@ fn parse_multipart_part(
       if key == "content-disposition" {
         // form-data; name="field"; filename="file.txt"
         let directives = val.split(";").to_array()
-        for i = 0; i < directives.length(); i = i + 1 {
+        for i in 0..<directives.length() {
           let directive = directives[i].trim()
           if directive.has_prefix("name=") {
             let d_str = directive.to_owned()

@@ -7,21 +7,26 @@ pub type HttpRequestInternal
 pub type HttpResponseInternal
 
 ///|
+#borrow(self)
 pub extern "js" fn HttpResponseInternal::url(
   self : HttpResponseInternal,
 ) -> String = "(s) => s.url"
 
 ///|
+#borrow(self)
 pub extern "js" fn HttpRequestInternal::url(
   self : HttpRequestInternal,
 ) -> String = "(s) => s.url"
 
 ///|
+#borrow(self)
 pub extern "js" fn HttpRequestInternal::req_method(
   self : HttpRequestInternal,
 ) -> String = "(s) => s.method"
 
 ///|
+#borrow(self, event)
+#owned(handler)
 extern "js" fn HttpRequestInternal::on(
   self : HttpRequestInternal,
   event : String,
@@ -29,6 +34,7 @@ extern "js" fn HttpRequestInternal::on(
 ) -> Unit = "(s, event, handler) => s.on(event, handler)"
 
 ///|
+#borrow(self)
 extern "js" fn HttpRequestInternal::headers(
   self : HttpRequestInternal,
 ) -> @js.Object = "(s) => s.headers"
@@ -39,6 +45,7 @@ extern "js" fn HttpRequestInternal::headers(
 // ) -> Int = "(s) => s.statusCode"
 
 ///|
+#borrow(obj, key, value)
 extern "js" fn set_js_property(
   obj : @js.Value,
   key : String,
@@ -46,15 +53,18 @@ extern "js" fn set_js_property(
 ) -> Unit = "(obj, key, value) => obj[key] = value"
 
 ///|
+#borrow(arr)
 extern "js" fn array_to_js(arr : Array[String]) -> @js.Value = "(arr) => arr"
 
 ///|
+#borrow(self, data)
 pub extern "js" fn HttpResponseInternal::end(
   self : HttpResponseInternal,
   data : @js.Value,
 ) -> Unit = "(s, data) => s.end(data)"
 
 ///|
+#borrow(self, headers)
 extern "js" fn HttpResponseInternal::write_head(
   self : HttpResponseInternal,
   statusCode : Int,
@@ -65,12 +75,15 @@ extern "js" fn HttpResponseInternal::write_head(
 type NodeServerInternal
 
 ///|
+#owned(handler)
 #module("node:http")
 extern "js" fn create_server(
   handler : (HttpRequestInternal, HttpResponseInternal, () -> Unit) -> Unit,
 ) -> NodeServerInternal = "createServer"
 
 ///|
+#borrow(server, address)
+#owned(accept_key)
 pub extern "js" fn start_server(
   server : NodeServerInternal,
   address : String,
@@ -377,10 +390,10 @@ fn websocket_accept_key(key : String) -> String {
 
 ///|
 /// 全局 handler 映射：port -> WebSocketHandler
-let ws_handler_map : Map[Int, WebSocketHandler] = Map::new()
+let ws_handler_map : Map[Int, WebSocketHandler] = Map([])
 
 ///|
-let ws_mocket_map : Map[Int, Mocket] = Map::new()
+let ws_mocket_map : Map[Int, Mocket] = Map([])
 
 ///|
 extern "js" fn _init_bindings_map() -> @js.Value = "() => { if (!globalThis.ws_port_bindings) globalThis.ws_port_bindings = new Map(); return globalThis.ws_port_bindings; }"
@@ -447,6 +460,7 @@ pub fn __ws_emit_js_port(
 
 ///|
 /// 导出 MoonBit 函数到 JS 全局
+#owned(cb)
 pub extern "js" fn __ws_emit_js_export(
   cb : (String, Int, String, Bytes) -> Unit,
 ) -> Unit = "(cb) => { globalThis.__ws_emit_port = (type, port, id, payload) => { try { cb(type, port, id, payload); } catch (_) {} }; }"
@@ -499,6 +513,7 @@ pub fn __ws_get_members_js(channel : String) -> Array[String] {
 }
 
 ///|
+#owned(sub, unsub, get_members)
 pub extern "js" fn __ws_state_js_export(
   sub : (String, String) -> Unit,
   unsub : (String, String) -> Unit,
@@ -517,27 +532,34 @@ pub fn __get_port_by_connection_js(id : String) -> Int {
 }
 
 ///|
+#owned(cb)
 pub extern "js" fn __get_port_by_connection_js_export(
   cb : (String) -> Int,
 ) -> Unit = "(cb) => { globalThis.__get_port_by_connection = (id) => { try { return cb(id); } catch (_) { return 0 } } }"
 
 ///|
 /// 四个 FFI 包装，供 WebSocketPeer 调用
+#borrow(id, msg)
 pub extern "js" fn ws_send(id : String, msg : String) -> Unit = "(id, msg) => { const port = globalThis.__get_port_by_connection(id); const bindings = globalThis.ws_port_bindings && globalThis.ws_port_bindings.get(port); if (bindings && bindings.send) bindings.send(id, msg); }"
 
 ///|
+#borrow(id, msg)
 pub extern "js" fn ws_send_bytes(id : String, msg : Bytes) -> Unit = "(id, msg) => { const port = globalThis.__get_port_by_connection(id); const bindings = globalThis.ws_port_bindings && globalThis.ws_port_bindings.get(port); if (bindings && bindings.sendBytes) bindings.sendBytes(id, msg); }"
 
 ///|
+#borrow(id)
 pub extern "js" fn ws_pong(id : String) -> Unit = "(id) => { const port = globalThis.__get_port_by_connection(id); const bindings = globalThis.ws_port_bindings && globalThis.ws_port_bindings.get(port); if (bindings && bindings.pong) bindings.pong(id); }"
 
 ///|
+#borrow(id, channel)
 pub extern "js" fn ws_subscribe(id : String, channel : String) -> Unit = "(id, ch) => { if (globalThis.__ws_subscribe_js) globalThis.__ws_subscribe_js(id, ch); }"
 
 ///|
+#borrow(id, channel)
 pub extern "js" fn ws_unsubscribe(id : String, channel : String) -> Unit = "(id, ch) => { if (globalThis.__ws_unsubscribe_js) globalThis.__ws_unsubscribe_js(id, ch); }"
 
 ///|
+#borrow(channel, msg)
 pub extern "js" fn ws_publish(channel : String, msg : String) -> Unit = "(ch, msg) => { const ids = globalThis.__ws_get_members_js ? globalThis.__ws_get_members_js(ch) : []; const bindings = globalThis.ws_port_bindings && globalThis.ws_port_bindings.values().next().value; if (bindings && bindings.send) { for (const id of ids) { bindings.send(id, msg); } } }"
 
 ///|

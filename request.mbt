@@ -67,15 +67,15 @@ test "read_body" {
   let req = HttpRequest::{
     http_method: "POST",
     url: "/",
-    headers: Map::new(),
+    headers: Map([]),
     raw_body: b"{\"Hello\":\"World!\"}",
   }
   let text : String = req.body()
   let json : Json = req.body()
-  inspect(
+  debug_inspect(
     text,
     content=(
-      #|{"Hello":"World!"}
+      #|"{\"Hello\":\"World!\"}"
     ),
   )
   json_inspect(json, content={ "Hello": "World!" })

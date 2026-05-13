@@ -4,6 +4,7 @@ pub suberror Error_ {
 }
 
 ///|
+#borrow(self)
 extern "js" fn Error_::cause_ffi(self : Value) -> Value = "(self) => self.cause"
 
 ///|
@@ -25,6 +26,7 @@ pub impl Show for Error_ with output(self, logger) {
 }
 
 ///|
+#borrow(op, on_ok, on_error)
 extern "js" fn Error_::wrap_ffi(
   op : () -> Value,
   on_ok : (Value) -> Unit,

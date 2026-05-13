@@ -15,41 +15,35 @@ fn parse_content_type(s : StringView) -> ContentType? {
     }
   }
 
-  let params = Map::new()
-  let (media_type, subtype, rest) = lexmatch s with longest {
-    (
-      "[ \t]*"
-      ("[^ \t/;=]+" as media_type)
-      "[ \t]*"
-      "/"
-      "[ \t]*"
-      ("[^ \t/;=]+" as subtype)
-      "[ \t]*",
-      rest
-    ) => (media_type, subtype, rest)
-    _ => return None
+  let params = Map([])
+  guard s =~ (
+    re"^[ \t]*" +
+    (re"[^ \t/;=]+" as media_type) +
+    re"[ \t]*/[ \t]*" +
+    (re"[^ \t/;=]+" as subtype) +
+    re"[ \t]*",
+    after=rest,
+  ) else {
+    return None
   }
 
   for curr = rest {
-    lexmatch curr with longest {
-      ("[ \t]+", rest) => continue rest
-      (
-        ";"
-        "[ \t]*"
-        ("[^ \t=;]+" as key)
-        "[ \t]*"
-        "="
-        "[ \t]*"
-        ("(\"[^\"]*\"|[^ \t;]*)" as value)
-        "[ \t]*",
-        rest
-      ) => {
-        params.set(key, dequote(value))
-        continue rest
-      }
-      (";" "[ \t]*", rest) => continue rest
-      "" => break
-      _ => break
+    if curr =~ (re"^[ \t]+", after=rest) {
+      continue rest
+    } else if curr =~ (
+        re"^;[ \t]*" +
+        (re"[^ \t=;]+" as key) +
+        re"[ \t]*=[ \t]*" +
+        (re"(\"[^\"]*\"|[^ \t;]*)" as value) +
+        re"[ \t]*",
+        after=rest,
+      ) {
+      params.set(key, dequote(value))
+      continue rest
+    } else if curr =~ (re"^;[ \t]*", after=rest) {
+      continue rest
+    } else {
+      break
     }
   }
 
@@ -86,10 +80,10 @@ test "parse_content_type_invalid" {
 
 ///|
 test "parse_form_data" {
-  inspect(
+  debug_inspect(
     parse_form_data(b"name=John+Doe&age=30"),
     content=(
-      #|{"name": "John Doe", "age": "30"}
+      #|{ "name": "John Doe", "age": "30" }
     ),
   )
 }

@@ -9,6 +9,7 @@ pub fn[T] Value::cast_from(value : T) -> Value = "%identity"
 pub fn[T] Value::cast(self : Value) -> T = "%identity"
 
 ///|
+#borrow(self)
 pub extern "js" fn Value::to_string(self : Value) -> String = "(self) => self.toString()"
 
 ///|
@@ -157,6 +158,7 @@ pub fn Value::from_json_string(str : String) -> Value raise {
 }
 
 ///|
+#borrow(str)
 extern "js" fn Value::from_json_string_ffi(str : String) -> Value = "JSON.parse"
 
 ///|
@@ -170,34 +172,42 @@ pub fn Value::to_json(self : Value) -> Json raise {
 }
 
 ///|
+#borrow(self)
 extern "js" fn Value::to_json_string_ffi(self : Value) -> Value =
   #| (self) => JSON.stringify(self)
 
 ///|
+#borrow(self)
 pub extern "js" fn Value::is_bool(self : Value) -> Bool =
   #| (value) => Object.is(typeof value, 'boolean')
 
 ///|
+#borrow(self)
 pub extern "js" fn Value::is_null(self : Value) -> Bool =
   #| (n) => Object.is(n, null)
 
 ///|
+#borrow(self)
 pub extern "js" fn Value::is_undefined(self : Value) -> Bool =
   #| (n) => Object.is(n, undefined)
 
 ///|
+#borrow(self)
 pub extern "js" fn Value::is_number(self : Value) -> Bool =
   #| (n) => Object.is(typeof n, "number")
 
 ///|
+#borrow(self)
 pub extern "js" fn Value::is_string(self : Value) -> Bool =
   #| (n) => Object.is(typeof n, "string")
 
 ///|
+#borrow(self)
 pub extern "js" fn Value::is_object(self : Value) -> Bool =
   #| (n) => Object.is(typeof n, "object")
 
 ///|
+#borrow(self)
 pub extern "js" fn Value::is_symbol(self : Value) -> Bool =
   #| (n) => Object.is(typeof n, "symbol")
 
@@ -206,14 +216,17 @@ extern "js" fn get_globalThis() -> Value =
   #| () => globalThis
 
 ///|
+#borrow(self, key)
 extern "js" fn Value::get_ffi(self : Value, key : Value) -> Value =
   #| (obj, key) => obj[key]
 
 ///|
+#borrow(self, key, value)
 extern "js" fn Value::set_ffi(self : Value, key : Value, value : Value) =
   #| (obj, key, value) => { obj[key] = value }
 
 ///|
+#borrow(self, key, args)
 extern "js" fn Value::apply_ffi(
   self : Value,
   key : Value,
@@ -222,14 +235,17 @@ extern "js" fn Value::apply_ffi(
   #| (self, key, args) => self[key](...args)
 
 ///|
+#borrow(self, args)
 extern "js" fn Value::apply_self_ffi(self : Value, args : Value) -> Value =
   #| (self, args) => self(...args)
 
 ///|
+#borrow(self, key, args)
 extern "js" fn Value::new_ffi(self : Value, key : Value, args : Value) -> Value =
   #| (self, key, args) => new self[key](...args)
 
 ///|
+#borrow(self, args)
 extern "js" fn Value::new_self_ffi(self : Value, args : Value) -> Value =
   #| (self, args) => new self(...args)
 
@@ -243,6 +259,7 @@ extern "js" fn Value::undefined() -> Value =
 
 ///|
 /// @param self The constructor function that accepts this as the first argument
+#borrow(self, parent_constructor)
 pub extern "js" fn Value::extends(
   self : Value,
   parent_constructor : Value,

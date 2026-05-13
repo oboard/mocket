@@ -23,6 +23,7 @@ pub fn Symbol::make_with_number(num : Double) -> Symbol {
 }
 
 ///|
+#borrow(value)
 extern "js" fn Symbol::make_ffi(value : Value) -> Value =
   #| (value) => Symbol(value)
 

@@ -76,7 +76,7 @@ test "Value::to_json_string" {
 
 ///|
 test "Value::to_json" {
-  assert_eq(json_val().to_json(), json)
+  json_inspect(json_val().to_json(), content=json)
 }
 
 ///|

@@ -1,4 +1,5 @@
 ///|
+#borrow(path)
 extern "js" fn require_ffi(path : String) -> Value = "(path) => require(path)"
 
 ///|
