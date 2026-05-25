@@ -304,7 +304,7 @@ pub type WebSocketHandler = (WebSocketEvent) -> Unit
 
 // Traits
 pub(open) trait BodyReader {
-  from_request(HttpRequest) -> Self raise
+  fn from_request(HttpRequest) -> Self raise
 }
 pub impl BodyReader for String
 pub impl BodyReader for FixedArray[Byte]
@@ -313,8 +313,8 @@ pub impl BodyReader for Array[Byte]
 pub impl BodyReader for Json
 
 pub(open) trait Responder {
-  options(Self, HttpResponse) -> Unit
-  output(Self, @buffer.Buffer) -> Unit
+  fn options(Self, HttpResponse) -> Unit
+  fn output(Self, @buffer.Buffer) -> Unit
 }
 pub impl Responder for String
 pub impl Responder for Bytes
@@ -323,11 +323,11 @@ pub impl Responder for &ToJson
 pub impl Responder for StringView
 
 pub(open) trait ServeStaticProvider {
-  get_meta(Self, String) -> StaticAssetMeta?
-  get_contents(Self, String) -> &Responder
-  get_type(Self, String) -> String?
-  get_encodings(Self) -> Map[String, String]
-  get_index_names(Self) -> Array[String]
-  get_fallthrough(Self) -> Bool
+  fn get_meta(Self, String) -> StaticAssetMeta?
+  fn get_contents(Self, String) -> &Responder
+  fn get_type(Self, String) -> String?
+  fn get_encodings(Self) -> Map[String, String]
+  fn get_index_names(Self) -> Array[String]
+  fn get_fallthrough(Self) -> Bool
 }
 

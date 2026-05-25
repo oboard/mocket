@@ -17,7 +17,7 @@ pub async fn dispatch_http(
   }
   let responder = mocket.execute_middlewares(event, handler)
   responder.options(event.res)
-  let buf = @buffer.new()
+  let buf = Buffer()
   responder.output(buf)
   event.res.raw_body = buf.to_bytes()
   event.res

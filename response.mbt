@@ -36,7 +36,7 @@ pub fn HttpResponse::body(
   self : HttpResponse,
   body : &Responder,
 ) -> HttpResponse {
-  let buf = @buffer.new()
+  let buf = Buffer()
   body.output(buf)
   self.raw_body = buf.to_bytes()
   self

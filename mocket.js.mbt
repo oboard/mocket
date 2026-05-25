@@ -34,6 +34,16 @@ extern "js" fn HttpRequestInternal::on(
 ) -> Unit = "(s, event, handler) => s.on(event, handler)"
 
 ///|
+#borrow(data)
+extern "js" fn node_body_chunk_to_bytes(data : @js.Value) -> Bytes =
+  #| (data) => {
+  #|   if (data instanceof Uint8Array) {
+  #|     return new Uint8Array(data);
+  #|   }
+  #|   return new TextEncoder().encode(String(data));
+  #| }
+
+///|
 #borrow(self)
 extern "js" fn HttpRequestInternal::headers(
   self : HttpRequestInternal,
@@ -329,10 +339,12 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
     async_run(() => {
       // 如果是 post，先等待 data 事件
       if event.req.http_method == "POST" {
-        let buffer = @buffer.new()
+        let buffer = Buffer()
         (try? suspend(fn(res, _) {
-          req.on("data", data => buffer.write_string(data.to_string()))
-          req.on("end", _ => res(buffer.to_string()))
+          req.on("data", data => {
+            buffer.write_bytes(node_body_chunk_to_bytes(data))
+          })
+          req.on("end", _ => res(()))
         }))
         |> ignore
         event.req.raw_body = buffer.to_bytes()
@@ -358,7 +370,7 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
           headers_obj
         },
       )
-      let buf = @buffer.new()
+      let buf = Buffer()
       responder.output(buf)
       event.res.raw_body = buf.to_bytes()
       res.end(@js.Value::cast_from(event.res.raw_body))
@@ -446,14 +458,14 @@ pub fn __ws_emit_js_port(
   }
   let peer = WebSocketPeer::{ connection_id, subscribed_channels: [] }
   match event_type {
-    "open" => handler(WebSocketEvent::Open(peer))
+    "open" => handler(Open(peer))
     "message" => {
       let msg = @utf8.decode(payload) catch { _ => "" }
-      handler(WebSocketEvent::Message(peer, Text(msg)))
+      handler(Message(peer, Text(msg)))
     }
-    "binary" => handler(WebSocketEvent::Message(peer, Binary(payload)))
-    "ping" => handler(WebSocketEvent::Message(peer, Ping))
-    "close" => handler(WebSocketEvent::Close(peer))
+    "binary" => handler(Message(peer, Binary(payload)))
+    "ping" => handler(Message(peer, Ping))
+    "close" => handler(Close(peer))
     _ => ()
   }
 }

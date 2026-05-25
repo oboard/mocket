@@ -1,3 +1,7 @@
 import {
   "oboard/mocket",
 }
+
+// Suppress warning 20 from MoonBit's generated native test driver.
+
+warnings = "-20"

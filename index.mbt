@@ -53,7 +53,7 @@ pub(all) enum SameSiteOption {
 } derive(Eq)
 
 ///|
-pub impl Show for SameSiteOption with output(self, logger) -> Unit {
+pub impl Show for SameSiteOption with fn output(self, logger) -> Unit {
   match self {
     Lax => logger.write_string("Lax")
     Strict => logger.write_string("Strict")
@@ -62,7 +62,7 @@ pub impl Show for SameSiteOption with output(self, logger) -> Unit {
 }
 
 ///|
-pub impl ToJson for SameSiteOption with to_json(self : SameSiteOption) -> Json {
+pub impl ToJson for SameSiteOption with fn to_json(self : SameSiteOption) -> Json {
   match self {
     Lax => "lax"
     Strict => "strict"
@@ -83,7 +83,7 @@ pub(all) struct CookieItem {
 } derive(Eq)
 
 ///|
-pub impl Show for CookieItem with output(self, logger) -> Unit {
+pub impl Show for CookieItem with fn output(self, logger) -> Unit {
   logger.write_string(self.name)
   logger.write_char('=')
   logger.write_string(self.value)
@@ -112,8 +112,8 @@ pub impl Show for CookieItem with output(self, logger) -> Unit {
 }
 
 ///|
-pub impl Show for CookieItem with to_string(self : CookieItem) -> String {
-  let buf = @buffer.new()
+pub impl Show for CookieItem with fn to_string(self : CookieItem) -> String {
+  let buf = StringBuilder::new()
   self.output(buf)
   buf.to_string()
 }
