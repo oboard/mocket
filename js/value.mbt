@@ -13,7 +13,7 @@ pub fn[T] Value::cast(self : Value) -> T = "%identity"
 pub extern "js" fn Value::to_string(self : Value) -> String = "(self) => self.toString()"
 
 ///|
-pub impl Show for Value with output(self, logger) {
+pub impl Show for Value with fn output(self, logger) {
   logger.write_string(self.to_string())
 }
 
@@ -128,7 +128,7 @@ pub fn Value::from_json(json : Json) -> Value raise {
 }
 
 ///|
-pub impl @json.FromJson for Value with from_json(json : Json, path) {
+pub impl @json.FromJson for Value with fn from_json(json : Json, path) {
   match json {
     String(s) => Value::cast_from(s)
     Number(n, ..) => Value::cast_from(n)

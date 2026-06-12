@@ -23,17 +23,17 @@ pub fn StaticAssetMeta::new(
 ///|
 pub(open) trait ServeStaticProvider {
   // This function should resolve asset meta
-  get_meta(Self, id : String) -> StaticAssetMeta?
+  fn get_meta(Self, id : String) -> StaticAssetMeta?
   // This function should resolve asset content
-  get_contents(Self, id : String) -> &Responder
+  fn get_contents(Self, id : String) -> &Responder
   // Custom MIME type resolver function
-  get_type(Self, ext : String) -> String?
+  fn get_type(Self, ext : String) -> String?
   // Encodings map
-  get_encodings(Self) -> Map[String, String]
+  fn get_encodings(Self) -> Map[String, String]
   // Index names
-  get_index_names(Self) -> Array[String]
+  fn get_index_names(Self) -> Array[String]
   // Fallthrough
-  get_fallthrough(Self) -> Bool
+  fn get_fallthrough(Self) -> Bool
 }
 
 ///|

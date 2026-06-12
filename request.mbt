@@ -8,7 +8,7 @@ pub(all) struct HttpRequest {
 
 ///|
 pub(open) trait BodyReader {
-  from_request(req : HttpRequest) -> Self raise
+  fn from_request(req : HttpRequest) -> Self raise
 }
 
 ///|
@@ -22,7 +22,7 @@ pub fn[T : FromJson] HttpRequest::json(self : HttpRequest) -> T raise {
 }
 
 ///|
-pub impl BodyReader for String with from_request(req : HttpRequest) -> String raise {
+pub impl BodyReader for String with fn from_request(req : HttpRequest) -> String raise {
   let bytes = req.raw_body
   let arr = bytes.to_array()
   if arr.length() > 0 {
@@ -39,24 +39,24 @@ pub impl BodyReader for String with from_request(req : HttpRequest) -> String ra
 }
 
 ///|
-pub impl BodyReader for Json with from_request(req : HttpRequest) -> Json raise {
+pub impl BodyReader for Json with fn from_request(req : HttpRequest) -> Json raise {
   @json.parse(@utf8.decode(req.raw_body))
 }
 
 ///|
-pub impl BodyReader for Bytes with from_request(req : HttpRequest) -> Bytes raise {
+pub impl BodyReader for Bytes with fn from_request(req : HttpRequest) -> Bytes raise {
   req.raw_body
 }
 
 ///|
-pub impl BodyReader for FixedArray[Byte] with from_request(req : HttpRequest) -> FixedArray[
+pub impl BodyReader for FixedArray[Byte] with fn from_request(req : HttpRequest) -> FixedArray[
   Byte,
 ] raise {
   req.raw_body.to_fixedarray()
 }
 
 ///|
-pub impl BodyReader for Array[Byte] with from_request(req : HttpRequest) -> Array[
+pub impl BodyReader for Array[Byte] with fn from_request(req : HttpRequest) -> Array[
   Byte,
 ] raise {
   req.raw_body.to_array()

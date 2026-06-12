@@ -5,7 +5,7 @@ using @mocket {type HttpResponse}
 struct Csv(String)
 
 ///|
-impl @mocket.BodyReader for Csv with from_request(req) -> Csv {
+impl @mocket.BodyReader for Csv with fn from_request(req) -> Csv {
   let text : String = req.body()
   Csv(text)
 }

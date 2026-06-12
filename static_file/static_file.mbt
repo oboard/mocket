@@ -14,7 +14,7 @@ pub fn new(path : String) -> StaticFileProvider {
 }
 
 ///|
-pub impl ServeStaticProvider for StaticFileProvider with get_meta(
+pub impl ServeStaticProvider for StaticFileProvider with fn get_meta(
   self,
   id : String,
 ) -> @mocket.StaticAssetMeta? {
@@ -22,7 +22,7 @@ pub impl ServeStaticProvider for StaticFileProvider with get_meta(
 }
 
 ///|
-pub impl ServeStaticProvider for StaticFileProvider with get_contents(
+pub impl ServeStaticProvider for StaticFileProvider with fn get_contents(
   self,
   id : String,
 ) -> &Responder {
@@ -35,12 +35,15 @@ pub impl ServeStaticProvider for StaticFileProvider with get_contents(
 }
 
 ///|
-pub impl ServeStaticProvider for StaticFileProvider with get_type(_, _ : String) -> String? {
+pub impl ServeStaticProvider for StaticFileProvider with fn get_type(
+  _,
+  _ : String,
+) -> String? {
   None
 }
 
 ///|
-pub impl ServeStaticProvider for StaticFileProvider with get_encodings(_) -> Map[
+pub impl ServeStaticProvider for StaticFileProvider with fn get_encodings(_) -> Map[
   String,
   String,
 ] {
@@ -48,7 +51,7 @@ pub impl ServeStaticProvider for StaticFileProvider with get_encodings(_) -> Map
 }
 
 ///|
-pub impl ServeStaticProvider for StaticFileProvider with get_index_names(_) -> Array[
+pub impl ServeStaticProvider for StaticFileProvider with fn get_index_names(_) -> Array[
   String,
 ] {
   [
@@ -58,6 +61,6 @@ pub impl ServeStaticProvider for StaticFileProvider with get_index_names(_) -> A
 }
 
 ///|
-pub impl ServeStaticProvider for StaticFileProvider with get_fallthrough(_) -> Bool {
+pub impl ServeStaticProvider for StaticFileProvider with fn get_fallthrough(_) -> Bool {
   false
 }

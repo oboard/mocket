@@ -4,8 +4,8 @@
 /// This trait abstracts a function that ensures the cast is valid and returns `null` if the cast fails.
 /// It is useful for safely handling dynamic types in MoonBit.
 pub(open) trait Cast {
-  into(Value) -> Self?
-  from(Self) -> Value
+  fn into(Value) -> Self?
+  fn from(Self) -> Value
 }
 
 // NOTE: Do we need a default implementation for the `from` method in `Cast` trait?
@@ -46,47 +46,47 @@ extern "js" fn checked_cast_array_ffi(value : Value) -> Nullable[Array[Value]] =
   #| (x) => Array.isArray(x) ? x : null
 
 ///|
-pub impl Cast for String with into(value) {
+pub impl Cast for String with fn into(value) {
   checked_cast_string_ffi(value).to_option()
 }
 
 ///|
-pub impl Cast for String with from(value) {
+pub impl Cast for String with fn from(value) {
   Value::cast_from(value)
 }
 
 ///|
-pub impl Cast for Int with into(value) {
+pub impl Cast for Int with fn into(value) {
   checked_cast_int_ffi(value).to_option()
 }
 
 ///|
-pub impl Cast for Int with from(value) {
+pub impl Cast for Int with fn from(value) {
   Value::cast_from(value)
 }
 
 ///|
-pub impl Cast for Double with into(value) {
+pub impl Cast for Double with fn into(value) {
   checked_cast_double_ffi(value).to_option()
 }
 
 ///|
-pub impl Cast for Double with from(value) {
+pub impl Cast for Double with fn from(value) {
   Value::cast_from(value)
 }
 
 ///|
-pub impl Cast for Bool with into(value) {
+pub impl Cast for Bool with fn into(value) {
   checked_cast_bool_ffi(value).to_option()
 }
 
 ///|
-pub impl Cast for Bool with from(value) {
+pub impl Cast for Bool with fn from(value) {
   Value::cast_from(value)
 }
 
 ///|
-pub impl[A : Cast] Cast for Array[A] with into(value) {
+pub impl[A : Cast] Cast for Array[A] with fn into(value) {
   checked_cast_array_ffi(value)
   .to_option()
   .bind(fn(arr) {
@@ -100,6 +100,6 @@ pub impl[A : Cast] Cast for Array[A] with into(value) {
 }
 
 ///|
-pub impl[A : Cast] Cast for Array[A] with from(value) {
+pub impl[A : Cast] Cast for Array[A] with fn from(value) {
   Value::cast_from(value)
 }
