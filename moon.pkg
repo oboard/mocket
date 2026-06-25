@@ -12,6 +12,7 @@ import {
   "moonbitlang/core/bench",
   "moonbitlang/core/json",
   "moonbitlang/core/strconv",
+  "moonbitlang/core/env",
   "moonbitlang/core/string",
   "moonbitlang/core/buffer",
   "moonbitlang/core/encoding/utf8",

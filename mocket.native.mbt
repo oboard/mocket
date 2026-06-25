@@ -144,7 +144,7 @@ fn find_ws_route(
 
 ///|
 fn next_ws_connection_id(port : Int) -> String {
-  "native-\{port}-\{@async.now()}"
+  "native-\{port}-\{@env.now()}"
 }
 
 ///|
