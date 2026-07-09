@@ -8,6 +8,25 @@ type WsBinarySender = (Bytes) -> Unit
 type WsPongSender = () -> Unit
 
 ///|
+priv enum OutboundFrame {
+  OutboundText(String)
+  OutboundBinary(Bytes)
+  OutboundPong
+}
+
+///|
+priv struct WebSocketOutboundQueue {
+  mut frames : Array[OutboundFrame]
+  mut draining : Bool
+  mut closed : Bool
+}
+
+///|
+fn WebSocketOutboundQueue::new() -> WebSocketOutboundQueue {
+  { frames: [], draining: false, closed: false }
+}
+
+///|
 let ws_text_senders : Map[String, WsTextSender] = {}
 
 ///|
@@ -265,6 +284,76 @@ pub fn ws_publish(channel : String, msg : String) -> Unit {
 }
 
 ///|
+fn WebSocketOutboundQueue::close(self : WebSocketOutboundQueue) -> Unit {
+  self.closed = true
+  self.frames.clear()
+}
+
+///|
+fn WebSocketOutboundQueue::enqueue(
+  self : WebSocketOutboundQueue,
+  ws : @websocket.Conn,
+  frame : OutboundFrame,
+) -> Unit {
+  if self.closed {
+    return
+  }
+  self.frames.push(frame)
+  if !self.draining {
+    self.draining = true
+    async_run(async fn() noraise { self.drain(ws) })
+  }
+}
+
+///|
+async fn WebSocketOutboundQueue::drain(
+  self : WebSocketOutboundQueue,
+  ws : @websocket.Conn,
+) -> Unit noraise {
+  for ;; {
+    if self.closed {
+      self.frames.clear()
+      self.draining = false
+      return
+    }
+    if self.frames.length() == 0 {
+      self.draining = false
+      return
+    }
+    let frame = self.frames[0]
+    ignore(self.frames.remove(0))
+    try {
+      match frame {
+        OutboundText(msg) => ws.send_text(msg)
+        OutboundBinary(msg) => ws.send_binary(msg)
+        OutboundPong => ws.ping()
+      }
+    } catch {
+      _ => {
+        self.close()
+        self.draining = false
+        return
+      }
+    }
+  }
+}
+
+///|
+fn register_native_ws_connection(
+  connection_id : String,
+  ws : @websocket.Conn,
+) -> WebSocketOutboundQueue {
+  let outbound = WebSocketOutboundQueue::new()
+  register_ws_connection(
+    connection_id,
+    msg => outbound.enqueue(ws, OutboundText(msg)),
+    msg => outbound.enqueue(ws, OutboundBinary(msg)),
+    () => outbound.enqueue(ws, OutboundPong),
+  )
+  outbound
+}
+
+///|
 async fn send_native_response(
   request : @http.Request,
   conn : @http.ServerConnection,
@@ -319,17 +408,9 @@ async fn handle_websocket_request(
       let ws = @websocket.from_http_server(request, conn)
       defer ws.close()
       let connection_id = next_ws_connection_id(port)
+      let outbound = register_native_ws_connection(connection_id, ws)
+      defer outbound.close()
       let peer = WebSocketPeer::{ connection_id, subscribed_channels: [] }
-      register_ws_connection(
-        connection_id,
-        msg => {
-          async_run(async fn() noraise { ws.send_text(msg) catch { _ => () } })
-        },
-        msg => {
-          async_run(async fn() noraise { ws.send_binary(msg) catch { _ => () } })
-        },
-        () => async_run(async fn() noraise { ws.ping() catch { _ => () } }),
-      )
       handler(Open(peer))
       try {
         for ;; {
@@ -346,6 +427,7 @@ async fn handle_websocket_request(
         @websocket.ConnectionClosed(_, _) => ()
         _ => ()
       }
+      outbound.close()
       handler(Close(peer))
       unregister_ws_connection(connection_id)
     }
