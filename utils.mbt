@@ -101,6 +101,22 @@ fn parse_kv(part : BytesView, map : Map[String, String]) -> Unit {
 }
 
 ///|
+pub fn escape_html(s : String) -> String {
+  let buf = StringBuilder::new()
+  for c in s {
+    match c {
+      '&' => buf.write_string("&amp;")
+      '<' => buf.write_string("&lt;")
+      '>' => buf.write_string("&gt;")
+      '"' => buf.write_string("&quot;")
+      '\'' => buf.write_string("&#x27;")
+      _ => buf.write_char(c)
+    }
+  }
+  buf.to_string()
+}
+
+///|
 fn is_unreserved(b : Byte) -> Bool {
   (b >= b'A' && b <= b'Z') ||
   (b >= b'a' && b <= b'z') ||

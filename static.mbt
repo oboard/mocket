@@ -55,7 +55,17 @@ pub fn Mocket::static_assets(
       event.res.headers.set("Allow", "GET, HEAD")
       return HttpResponse::new(MethodNotAllowed)
     }
-    let original_id = event.req.url[path.length():].to_owned()
+    let raw_id = event.req.url[path.length():].to_owned()
+    let segments : Array[String] = []
+    for seg in raw_id.split("/") {
+      let s = seg.to_owned()
+      if s == ".." || s == "." || s == "" {
+        continue
+      } else {
+        segments.push(s)
+      }
+    }
+    let original_id = segments.join("/")
 
     // Parse Accept-Encoding
     // Headers are Map[StringView, StringView]
