@@ -3,6 +3,7 @@ import {
   "oboard/mocket/uri",
   "moonbitlang/x/fs",
   "moonbitlang/x/crypto",
+  "moonbitlang/x/path/posix",
   "moonbitlang/x/codec/base64",
   "moonbitlang/async",
   "moonbitlang/async/http",

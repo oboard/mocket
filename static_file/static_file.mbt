@@ -16,18 +16,18 @@ pub fn new(path : String) -> StaticFileProvider {
 ///|
 pub impl ServeStaticProvider for StaticFileProvider with fn get_meta(
   self,
-  id : String,
+  id : StringView,
 ) -> @mocket.StaticAssetMeta? {
-  Some(@mocket.StaticAssetMeta::new(path=self.path + "/" + id))
+  Some(@mocket.StaticAssetMeta::new(path="\{self.path}/\{id}"))
 }
 
 ///|
 pub impl ServeStaticProvider for StaticFileProvider with fn get_contents(
   self,
-  id : String,
+  id : StringView,
 ) -> &Responder {
   let res : &Responder = @mocket.HttpResponse::new(OK).body(
-    @fs.read_file_to_bytes(self.path + "/" + id),
+    @fs.read_file_to_bytes("\{self.path}/\{id}"),
   ) catch {
     _ => @mocket.HttpResponse::new(NotFound).body("Not Found")
   }

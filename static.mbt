@@ -23,9 +23,9 @@ pub fn StaticAssetMeta::new(
 ///|
 pub(open) trait ServeStaticProvider {
   // This function should resolve asset meta
-  fn get_meta(Self, id : String) -> StaticAssetMeta?
+  fn get_meta(Self, id : StringView) -> StaticAssetMeta?
   // This function should resolve asset content
-  fn get_contents(Self, id : String) -> &Responder
+  fn get_contents(Self, id : StringView) -> &Responder
   // Custom MIME type resolver function
   fn get_type(Self, ext : String) -> String?
   // Encodings map
@@ -34,6 +34,26 @@ pub(open) trait ServeStaticProvider {
   fn get_index_names(Self) -> Array[String]
   // Fallthrough
   fn get_fallthrough(Self) -> Bool
+}
+
+///|
+test "normalize_path" {
+  inspect(@posix.Path::normalize("/foo/bar"), content="/foo/bar")
+  inspect(@posix.Path::normalize("/foo/../bar"), content="/bar")
+  inspect(@posix.Path::normalize("/foo/./bar"), content="/foo/bar")
+  inspect(@posix.Path::normalize("/foo/../../bar"), content="/bar")
+  inspect(@posix.Path::normalize("/foo/./../bar"), content="/bar")
+  inspect(@posix.Path::normalize("/foo/.././bar"), content="/bar")
+  inspect(@posix.Path::normalize("/foo/./.././bar"), content="/bar")
+  inspect(@posix.Path::normalize("/foo/.././../bar"), content="/bar")
+  inspect(@posix.Path::normalize("/foo/./.././../bar"), content="/bar")
+  inspect(@posix.Path::normalize("/../../bar"), content="/bar")
+  inspect(@posix.Path::normalize("/.."), content="/")
+  inspect(@posix.Path::normalize("/foo/bar/.."), content="/foo")
+  inspect(@posix.Path::normalize("/foo/bar/../."), content="/foo")
+  inspect(@posix.Path::normalize("/"), content="/")
+  inspect(@posix.Path::normalize("foo/bar"), content="foo/bar")
+  inspect(@posix.Path::normalize("/foo//bar"), content="/foo/bar")
 }
 
 ///|
@@ -55,18 +75,9 @@ pub fn Mocket::static_assets(
       event.res.headers.set("Allow", "GET, HEAD")
       return HttpResponse::new(MethodNotAllowed)
     }
-    let raw_id = event.req.url[path.length():].to_owned()
-    let segments : Array[String] = []
-    for seg in raw_id.split("/") {
-      let s = seg.to_owned()
-      if s == ".." || s == "." || s == "" {
-        continue
-      } else {
-        segments.push(s)
-      }
-    }
-    let original_id = segments.join("/")
 
+    let raw_id = event.req.url[path.length():]
+    let original_id = @posix.Path::normalize(raw_id.to_owned()).to_string()
     // Parse Accept-Encoding
     // Headers are Map[StringView, StringView]
     let accept_encoding = event.req.headers.get("Accept-Encoding").unwrap_or("")
