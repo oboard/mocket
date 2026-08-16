@@ -124,7 +124,7 @@ fn new_dynamic_route_trie_node() -> DynamicRouteTrieNode {
 fn copy_route_params(
   params : Map[String, StringView],
 ) -> Map[String, StringView] {
-  let copied : Map[String, StringView] = {}
+  let copied : Map[String, StringView] = Map([])
   params.iter().each(item => copied.set(item.0, item.1))
   copied
 }

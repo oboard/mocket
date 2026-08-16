@@ -134,7 +134,7 @@ pub fn Mocket::on(
     match self.static_routes.get(event) {
       Some(http_methodroutes) => http_methodroutes.set(path, handler)
       None => {
-        let new_routes : Map[String, HttpHandler] = {}
+        let new_routes : Map[String, HttpHandler] = Map([])
         new_routes.set(path, handler)
         self.static_routes.set(event, new_routes)
       }

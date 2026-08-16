@@ -27,22 +27,22 @@ fn WebSocketOutboundQueue::new() -> WebSocketOutboundQueue {
 }
 
 ///|
-let ws_text_senders : Map[String, WsTextSender] = {}
+let ws_text_senders : Map[String, WsTextSender] = Map([])
 
 ///|
-let ws_binary_senders : Map[String, WsBinarySender] = {}
+let ws_binary_senders : Map[String, WsBinarySender] = Map([])
 
 ///|
-let ws_pong_senders : Map[String, WsPongSender] = {}
+let ws_pong_senders : Map[String, WsPongSender] = Map([])
 
 ///|
-let ws_client_channels : Map[String, Array[String]] = {}
+let ws_client_channels : Map[String, Array[String]] = Map([])
 
 ///|
-let ws_channel_clients : Map[String, Map[String, Unit]] = {}
+let ws_channel_clients : Map[String, Map[String, Unit]] = Map([])
 
 ///|
-let native_ws_handler_map : Map[Int, Mocket] = {}
+let native_ws_handler_map : Map[Int, Mocket] = Map([])
 
 ///|
 fn request_method_to_string(meth : @http.RequestMethod) -> String {
@@ -63,7 +63,7 @@ fn request_method_to_string(meth : @http.RequestMethod) -> String {
 fn string_headers_to_views(
   headers : Map[String, String],
 ) -> Map[StringView, StringView] {
-  let out : Map[StringView, StringView] = {}
+  let out : Map[StringView, StringView] = Map([])
   headers.each((key, value) => out.set(key, value))
   out
 }
@@ -72,7 +72,7 @@ fn string_headers_to_views(
 fn view_headers_to_strings(
   headers : Map[StringView, StringView],
 ) -> Map[String, String] {
-  let out : Map[String, String] = {}
+  let out : Map[String, String] = Map([])
   headers.each((key, value) => out.set(key.to_owned(), value.to_owned()))
   out
 }
@@ -243,7 +243,7 @@ pub fn ws_subscribe(id : String, channel : String) -> Unit {
   let channel_clients = match ws_channel_clients.get(channel) {
     Some(clients) => clients
     None => {
-      let clients : Map[String, Unit] = {}
+      let clients : Map[String, Unit] = Map([])
       ws_channel_clients.set(channel, clients)
       clients
     }

@@ -99,10 +99,10 @@ extern "c" fn ws_msg_body_len() -> Int = "ws_msg_body_len"
 extern "c" fn ws_msg_copy(dst : Bytes, max_len : Int) -> Int = "ws_msg_copy"
 
 ///|
-let server_map : Map[Int, @mocket.Mocket] = {}
+let server_map : Map[Int, @mocket.Mocket] = Map([])
 
 ///|
-let ws_handler_map : Map[Int, @mocket.WebSocketHandler] = {}
+let ws_handler_map : Map[Int, @mocket.WebSocketHandler] = Map([])
 
 ///|
 fn[T : Show] to_cbytes(s : T) -> Bytes {
@@ -116,7 +116,7 @@ fn from_cbytes(bytes : Bytes) -> String {
 
 ///|
 fn parse_headers(headers_text : String) -> Map[StringView, StringView] {
-  let headers : Map[StringView, StringView] = {}
+  let headers : Map[StringView, StringView] = Map([])
   headers_text
   .split("\n")
   .each(line => {

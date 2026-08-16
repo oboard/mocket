@@ -42,7 +42,7 @@ pub impl Responder for Json with fn options(_, res) -> Unit {
 
 ///|
 pub impl Responder for Json with fn output(self, buf) -> Unit {
-  buf.write_bytes(@utf8.encode(self.to_json().stringify()))
+  buf.write_bytes(@utf8.encode(@json.to_json(self).stringify()))
 }
 
 ///|
