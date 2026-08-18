@@ -443,7 +443,7 @@ async fn read_ws_limited(reader : &@io.Reader, max_size : Int) -> Bytes? {
   let chunk_size = 8192
   let chunk = FixedArray::make(chunk_size, b'\x00')
   for total = 0 {
-    let n = reader.read(chunk) catch { _ => break }
+    let n = reader.read(chunk) catch { _ => return None }
     if n <= 0 {
       break
     }

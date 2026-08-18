@@ -461,6 +461,13 @@ pub fn __ws_emit_js_port(
     }
     _ => ()
   }
+  let max = mocket.max_body_size
+  if max > 0 && payload.length() > max {
+    match event_type {
+      "message" | "binary" => return
+      _ => ()
+    }
+  }
   let peer = WebSocketPeer::{ connection_id, subscribed_channels: [] }
   dispatch_ws_event(handler, peer, event_type, payload)
 }
