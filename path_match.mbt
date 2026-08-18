@@ -566,6 +566,23 @@ test "** with trailing segments" {
 }
 
 ///|
+test "** mid-pattern preserves registration order" {
+  let app = new()
+  let noop : HttpHandler = fn(_) noraise { text("") }
+  app.get("/admin/**/settings", noop)
+  app.get("/admin/:id/settings", noop)
+  let result = app.find_route("GET", "/admin/x/settings")
+  // first-registered ** route should win; its params use "_" not "id"
+  match result {
+    Some((_, params)) => {
+      @test.assert_eq(params.get("_"), Some("x"))
+      @test.assert_eq(params.get("id"), None)
+    }
+    None => @test.fail("expected a match")
+  }
+}
+
+///|
 test "性能对比场景" {
   // 静态路径应该快速返回
   let result = match_path("/health", "/health")
