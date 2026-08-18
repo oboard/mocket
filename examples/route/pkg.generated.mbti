@@ -15,4 +15,3 @@ pub fn not_found_middleware() -> async (@mocket.MocketEvent, async () -> &@mocke
 // Type aliases
 
 // Traits
-
