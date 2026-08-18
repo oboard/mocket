@@ -13,6 +13,12 @@ pub fn cookie_to_string(Array[CookieItem]) -> String
 
 pub async fn dispatch_http(Mocket, String, String, Map[StringView, StringView], Bytes) -> HttpResponse noraise
 
+pub fn dispatch_ws_event((WebSocketEvent) -> Unit, WebSocketPeer, String, Bytes) -> Unit
+
+pub fn encode_multipart(Map[String, MultipartFormValue], String) -> String
+
+pub fn escape_html(String) -> String
+
 pub async fn execute_middlewares(Array[(String, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise)], MocketEvent, async (MocketEvent) -> &Responder noraise) -> &Responder noraise
 
 pub fn form_encode(Map[String, String]) -> String
@@ -323,11 +329,10 @@ pub impl Responder for &ToJson
 pub impl Responder for StringView
 
 pub(open) trait ServeStaticProvider {
-  fn get_meta(Self, String) -> StaticAssetMeta?
-  fn get_contents(Self, String) -> &Responder
+  fn get_meta(Self, StringView) -> StaticAssetMeta?
+  fn get_contents(Self, StringView) -> &Responder
   fn get_type(Self, String) -> String?
   fn get_encodings(Self) -> Map[String, String]
   fn get_index_names(Self) -> Array[String]
   fn get_fallthrough(Self) -> Bool
 }
-

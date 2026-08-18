@@ -43,4 +43,3 @@ pub fn Uri::parse(BytesView) -> Self raise ParseError
 // Type aliases
 
 // Traits
-

@@ -78,3 +78,32 @@ pub(all) enum WebSocketAggregatedMessage {
 ///|
 // WebSocket 路由的事件处理器类型（不返回 HttpBody）
 pub type WebSocketHandler = (WebSocketEvent) -> Unit
+
+///|
+#cfg(target="js")
+fn websocket_accept_key(key : String) -> String {
+  let guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+  (key + guid)
+  |> @utf8.encode
+  |> @crypto.sha1
+  |> Bytes::from_array
+  |> @base64.encode
+}
+
+///|
+/// 将 WS 事件类型字符串和 payload 转换为 WebSocketEvent 并调用 handler
+pub fn dispatch_ws_event(
+  handler : WebSocketHandler,
+  peer : WebSocketPeer,
+  event_type : String,
+  payload : Bytes,
+) -> Unit {
+  match event_type {
+    "open" => handler(Open(peer))
+    "message" => handler(Message(peer, Text(@utf8.decode_lossy(payload))))
+    "binary" => handler(Message(peer, Binary(payload)))
+    "ping" => handler(Message(peer, Ping))
+    "close" => handler(Close(peer))
+    _ => ()
+  }
+}

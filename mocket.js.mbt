@@ -296,20 +296,19 @@ pub extern "js" fn start_server(
   #|}
 
 ///|
-fn listen_port(address : String) -> Int {
-  match address.rev_split_once(":") {
-    Some((_, port_text)) => @string.parse_int(port_text) catch { _ => 0 }
-    None => @string.parse_int(address) catch { _ => 0 }
-  }
-}
-
-///|
 pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
   let port = listen_port(address)
   let server = create_server(fn(req, res, _) {
     // 优化：简化 headers 转换逻辑
-    let string_headers : Map[StringView, StringView] = {}
-    guard (try? req.headers().to_value().to_json()) is Ok(Object(headers)) else {
+    let string_headers : Map[StringView, StringView] = Map([])
+    let json_val = req.headers().to_value().to_json() catch {
+        _ => {
+          res.write_head(400, @js.Object::new().to_value())
+          res.end(@js.Value::cast_from("Invalid headers"))
+          return
+        }
+      }
+    guard json_val is Object(headers) else {
       res.write_head(400, @js.Object::new().to_value())
       res.end(@js.Value::cast_from("Invalid headers"))
       return
@@ -372,9 +371,9 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
       res.write_head(
         event.res.status_code.to_int(),
         {
-          let headers_obj = (try? @js.Value::from_json(
-            event.res.headers.to_json(),
-          )).or(@js.Object::new().to_value())
+          let headers_obj = @js.Value::from_json(event.res.headers.to_json()) catch {
+            _ => @js.Object::new().to_value()
+          }
           if !event.res.cookies.is_empty() {
             let cookies = event.res.cookies
               .values()
@@ -403,16 +402,6 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
 ///|
 pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
   listen_ffi(mocket, "0.0.0.0:\{port}")
-}
-
-///|
-fn websocket_accept_key(key : String) -> String {
-  let guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-  (key + guid)
-  |> @utf8.encode
-  |> @crypto.sha1
-  |> Bytes::from_array
-  |> @base64.encode
 }
 
 ///|
@@ -503,7 +492,7 @@ pub fn __ws_subscribe_js(connection_id : String, channel : String) -> Unit {
   match mocket.ws_channels.get(channel) {
     Some(set) => set.set(connection_id, ())
     None => {
-      let set : Map[String, Unit] = {}
+      let set : Map[String, Unit] = Map([])
       set.set(connection_id, ())
       mocket.ws_channels.set(channel, set)
     }
@@ -588,29 +577,3 @@ pub extern "js" fn ws_unsubscribe(id : String, channel : String) -> Unit = "(id,
 ///|
 #borrow(channel, msg)
 pub extern "js" fn ws_publish(channel : String, msg : String) -> Unit = "(ch, msg) => { const ids = globalThis.__ws_get_members_js ? globalThis.__ws_get_members_js(ch) : []; const bindings = globalThis.ws_port_bindings && globalThis.ws_port_bindings.values().next().value; if (bindings && bindings.send) { for (const id of ids) { bindings.send(id, msg); } } }"
-
-///|
-pub fn encode_multipart(
-  m : Map[String, MultipartFormValue],
-  boundary : String,
-) -> String {
-  let sb = StringBuilder::new()
-  m.each(fn(name, v) {
-    sb.write_string("--" + boundary + "\r\n")
-    sb.write_string("Content-Disposition: form-data; name=\"" + name + "\"")
-    match v.filename {
-      Some(fnm) => sb.write_string("; filename=\"" + fnm + "\"")
-      None => ()
-    }
-    sb.write_string("\r\n")
-    match v.content_type {
-      Some(ct) => sb.write_string("Content-Type: " + ct + "\r\n")
-      None => ()
-    }
-    sb.write_string("\r\n")
-    sb.write_string(@utf8.decode(v.data) catch { _ => "" })
-    sb.write_string("\r\n")
-  })
-  sb.write_string("--" + boundary + "--\r\n")
-  sb.to_string()
-}

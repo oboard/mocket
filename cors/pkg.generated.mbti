@@ -21,4 +21,3 @@ pub fn is_preflight_request(@mocket.MocketEvent) -> Bool
 // Type aliases
 
 // Traits
-
