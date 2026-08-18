@@ -105,6 +105,9 @@ let server_map : Map[Int, @mocket.Mocket] = Map([])
 let ws_handler_map : Map[Int, @mocket.WebSocketHandler] = Map([])
 
 ///|
+let ws_max_body_size : Ref[Int] = Ref(1048576)
+
+///|
 fn[T : Show] to_cbytes(s : T) -> Bytes {
   @utf8.encode(s.to_string())
 }
@@ -158,6 +161,7 @@ fn first_ws_handler() -> @mocket.WebSocketHandler {
 
 ///|
 fn register_ws_handlers(mocket : @mocket.Mocket, port : Int) -> Unit {
+  ws_max_body_size.val = mocket.max_body_size
   let mut done = false
   mocket.ws_static_routes.each(fn(_, handler) {
     if !done {
@@ -266,6 +270,10 @@ pub fn __ws_emit(
     "message" => handler(Message(peer, Text(from_cbytes(payload))))
     "binary" => {
       let len = ws_msg_body_len()
+      let max = ws_max_body_size.val
+      if max > 0 && len > max {
+        return
+      }
       let arr = Array::make(len, b'\x00')
       let buf = Bytes::from_array(arr)
       let copied = ws_msg_copy(buf, buf.length())

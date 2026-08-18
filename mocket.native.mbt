@@ -455,10 +455,14 @@ async fn handle_websocket_request(
           let msg = ws.recv()
           match msg.kind {
             Text => {
-              let text = msg.read_all().text() catch { _ => "" }
+              let data = read_body_limited(msg, mocket.max_body_size)
+              let text = @utf8.decode_lossy(data)
               handler(Message(peer, Text(text)))
             }
-            Binary => handler(Message(peer, Binary(msg.read_all().binary())))
+            Binary => {
+              let data = read_body_limited(msg, mocket.max_body_size)
+              handler(Message(peer, Binary(data)))
+            }
           }
         }
       } catch {
