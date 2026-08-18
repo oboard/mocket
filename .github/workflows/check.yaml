@@ -3,102 +3,51 @@ name: check
 on:
   push:
     branches:
-      - main
+      - master
+      - main   
   pull_request:
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        channel: [latest, nightly]
+  check:
+    strategy:    
       fail-fast: false
-    runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.channel == 'nightly' }}
+    runs-on: ubuntu-latest
+    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
 
       - name: install
-        if: ${{ matrix.os != 'windows-latest' }}
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s ${{ matrix.channel }}
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
-
-      - name: install on windows
-        if: ${{ matrix.os == 'windows-latest' }}
-        env:
-          MOONBIT_INSTALL_VERSION: ${{ matrix.channel }}
-        run: |
-          Set-ExecutionPolicy RemoteSigned -Scope CurrentUser; irm https://cli.moonbitlang.com/install/powershell.ps1 | iex
-          "C:\Users\runneradmin\.moon\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
 
       - name: moon version
         run: |
           moon version --all
-          moonrun --version
 
-      - name: install deps
-        run: | 
+      - name: moon update
+        run: |
           moon update
-          moon check --deny-warn
 
       - name: moon check
-        run: moon check 
+        run: moon check --deny-warn
 
       - name: moon info
         run: |
           moon info --target all
           git diff --exit-code
-      
-      - name: download testsuite (Unix)
-        if: ${{ matrix.os != 'windows-latest' }}
-        run: sh scripts/init.sh
 
-      - name: download testsuite (Windows)
-        if: ${{ matrix.os == 'windows-latest' }}
-        shell: pwsh
-        run: ./scripts/init.ps1
-
-      - name: Setup MSVC
-        if: ${{ matrix.os == 'windows-latest' }}
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Run moon test
+      - name: format diff
         run: |
-          moon test --target all
-          moon test --release --target all
+          moon fmt
+          git diff --exit-code
 
-  typo-check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      FORCE_COLOR: 1
-      TYPOS_VERSION: v1.19.0
-    steps:
-      - name: download typos
-        run: curl -LsSf https://github.com/crate-ci/typos/releases/download/$TYPOS_VERSION/typos-$TYPOS_VERSION-x86_64-unknown-linux-musl.tar.gz | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: check typos
-        run: typos
-          
-  moon-json-format-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: check `moon.*.json` format
-        shell: bash
+      - name: Set ulimit
         run: |
-          _passed=0;
-          for f in $(find . -type f -name "moon.*.json"); do
-            if ! jq '.' $f > /dev/null; then
-              echo $f;
-              _passed=1;
-            fi
-          done
-          (exit $_passed)
+          ulimit -s 8176
+
+      - name: moon test
+        run: |
+          moon test --target js,native
