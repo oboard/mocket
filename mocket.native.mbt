@@ -537,12 +537,5 @@ pub fn __ws_emit(
       }
     [] => fn(_) {  }
   }
-  match @utf8.decode_lossy(event_type) {
-    "open" => handler(Open(peer))
-    "message" => handler(Message(peer, Text(@utf8.decode_lossy(payload))))
-    "binary" => handler(Message(peer, Binary(payload)))
-    "ping" => handler(Message(peer, Ping))
-    "close" => handler(Close(peer))
-    _ => ()
-  }
+  dispatch_ws_event(handler, peer, @utf8.decode_lossy(event_type), payload)
 }

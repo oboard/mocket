@@ -341,7 +341,7 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
         let buffer = Buffer()
         let mut total_size = 0
         let mut exceeded = false
-        (try? suspend(fn(res, _) {
+        suspend(fn(res, _) {
           req.on("data", data => {
             if !exceeded {
               let chunk = node_body_chunk_to_bytes(data)
@@ -354,8 +354,9 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
             }
           })
           req.on("end", _ => res(()))
-        }))
-        |> ignore
+        }) catch {
+          _ => ()
+        }
         if exceeded {
           res.write_head(413, @js.Object::new().to_value())
           res.end(@js.Value::cast_from("Request body too large"))
@@ -461,17 +462,7 @@ pub fn __ws_emit_js_port(
     _ => ()
   }
   let peer = WebSocketPeer::{ connection_id, subscribed_channels: [] }
-  match event_type {
-    "open" => handler(Open(peer))
-    "message" => {
-      let msg = @utf8.decode(payload) catch { _ => "" }
-      handler(Message(peer, Text(msg)))
-    }
-    "binary" => handler(Message(peer, Binary(payload)))
-    "ping" => handler(Message(peer, Ping))
-    "close" => handler(Close(peer))
-    _ => ()
-  }
+  dispatch_ws_event(handler, peer, event_type, payload)
 }
 
 ///|
