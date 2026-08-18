@@ -29,7 +29,7 @@ pub fn html(&Show) -> &Responder
 
 pub async fn listen_ffi(Mocket, String) -> Unit noraise
 
-pub fn new(base_path? : String) -> Mocket
+pub fn new(base_path? : String, max_body_size? : Int) -> Mocket
 
 pub fn parse_cookie(StringView) -> Map[String, CookieItem]
 
@@ -126,6 +126,7 @@ pub(all) struct Mocket {
   ws_clients : Map[String, Unit]
   ws_channels : Map[String, Map[String, Unit]]
   ws_client_port : Map[String, Int]
+  max_body_size : Int
   // private fields
 }
 pub fn Mocket::acl(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit

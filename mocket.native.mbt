@@ -384,7 +384,7 @@ async fn handle_http_request(
   let raw_body = if request_has_body(request) {
     let content_length = request.headers
       .get("content-length")
-      .map(s => try { @string.parse_int(s.trim()) } catch { _ => 0 })
+      .map(s => @string.parse_int(s.trim()) catch { _ => 0 })
       .unwrap_or(0)
     if mocket.max_body_size > 0 && content_length > mocket.max_body_size {
       let err_response = HttpResponse::new(
@@ -417,7 +417,7 @@ async fn read_body_limited(reader : &@io.Reader, max_size : Int) -> Bytes {
   let chunk_size = 8192
   let chunk = FixedArray::make(chunk_size, b'\x00')
   for total = 0 {
-    let n = try { reader.read(chunk) } catch { _ => break }
+    let n = reader.read(chunk) catch { _ => break }
     if n <= 0 {
       break
     }
