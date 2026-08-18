@@ -34,7 +34,17 @@ fn match_path_segments(
   // 路径结束但模板还有
   if path_idx >= path_parts.length() {
     let template_part = template_parts[template_idx]
-    return if template_part == "**" { Some(params) } else { None }
+    if template_part == "**" {
+      params.set("_", "")
+      return match_path_segments(
+        template_parts,
+        path_parts,
+        template_idx + 1,
+        path_idx,
+        params,
+      )
+    }
+    return None
   }
 
   // 都有内容，继续匹配
@@ -381,10 +391,10 @@ fn Mocket::insert_dynamic_route(
 fn DynamicRouteTrieNode::find_path(
   self : DynamicRouteTrieNode,
   path : String,
-) -> (HttpHandler, Map[String, StringView])? {
+) -> (HttpHandler, Map[String, StringView], Int)? {
   let path_parts = path.split("/").collect()
   match self.find(path_parts, 0, {}) {
-    Some(found) => Some((found.handler, found.params))
+    Some(found) => Some((found.handler, found.params, found.order))
     None => None
   }
 }
@@ -416,29 +426,31 @@ fn Mocket::find_route(
     None => ignore(())
   }
 
-  // 然后尝试动态路由 trie
-  if self.dynamic_route_tries.get(http_method) is Some(trie) {
-    if trie.find_path(path) is Some(found) {
-      return Some(found)
-    }
-  }
-
-  // 最后检查通配符方法的动态路由 trie
-  if self.dynamic_route_tries.get("*") is Some(trie) {
-    if trie.find_path(path) is Some(found) {
-      return Some(found)
-    }
-  }
-
-  // 线性回退：处理 trie 无法表达的模板（如 /**/suffix）
+  // 动态路由：按方法优先级（method-specific 优先于 wildcard），
+  // 每组内取 trie 和线性中 order 最小的匹配
   for meth in [http_method, "*"] {
+    let mut best_order = -1
+    let mut best_result : (HttpHandler, Map[String, StringView])? = None
+    if self.dynamic_route_tries.get(meth) is Some(trie) {
+      if trie.find_path(path) is Some((handler, params, order)) {
+        best_order = order
+        best_result = Some((handler, params))
+      }
+    }
     if self.dynamic_routes.get(meth) is Some(routes) {
-      for route in routes {
-        let (template, handler) = route
+      for i = 0; i < routes.length(); i = i + 1 {
+        if best_order >= 0 && i >= best_order {
+          break
+        }
+        let (template, handler) = routes[i]
         if match_path(template, path) is Some(params) {
-          return Some((handler, params))
+          best_order = i
+          best_result = Some((handler, params))
         }
       }
+    }
+    if best_result is Some(_) {
+      return best_result
     }
   }
   None
@@ -533,6 +545,24 @@ test "边界情况" {
   // 路径比模板短（非通配符）
   let result5 = match_path("/api/users", "/api")
   @test.assert_eq(result5, None)
+}
+
+///|
+test "** with trailing segments" {
+  // ** mid-pattern must check suffix
+  @test.assert_eq(
+    match_path("/admin/**/settings", "/admin/x/settings"),
+    Some({ "_": "x" }),
+  )
+  @test.assert_eq(
+    match_path("/admin/**/settings", "/admin/x/y/settings"),
+    Some({ "_": "x/y" }),
+  )
+  // path exhausted before suffix — must NOT match
+  @test.assert_eq(match_path("/admin/**/settings", "/admin"), None)
+  @test.assert_eq(match_path("/admin/**/settings", "/admin/x"), None)
+  // ** at end still works when path is exhausted
+  @test.assert_eq(match_path("/files/**", "/files"), Some({ "_": "" }))
 }
 
 ///|
