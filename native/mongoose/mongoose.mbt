@@ -267,7 +267,13 @@ pub fn __ws_emit(
       )
       handler(Open(peer))
     }
-    "message" => handler(Message(peer, Text(from_cbytes(payload))))
+    "message" => {
+      let max = ws_max_body_size.val
+      if max > 0 && payload.length() > max {
+        return
+      }
+      handler(Message(peer, Text(from_cbytes(payload))))
+    }
     "binary" => {
       let len = ws_msg_body_len()
       let max = ws_max_body_size.val
