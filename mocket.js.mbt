@@ -340,13 +340,28 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
       // 如果是 post，先等待 data 事件
       if event.req.http_method == "POST" {
         let buffer = Buffer()
+        let mut total_size = 0
+        let mut exceeded = false
         (try? suspend(fn(res, _) {
           req.on("data", data => {
-            buffer.write_bytes(node_body_chunk_to_bytes(data))
+            if !exceeded {
+              let chunk = node_body_chunk_to_bytes(data)
+              total_size = total_size + chunk.length()
+              if mocket.max_body_size > 0 && total_size > mocket.max_body_size {
+                exceeded = true
+              } else {
+                buffer.write_bytes(chunk)
+              }
+            }
           })
           req.on("end", _ => res(()))
         }))
         |> ignore
+        if exceeded {
+          res.write_head(413, @js.Object::new().to_value())
+          res.end(@js.Value::cast_from("Request body too large"))
+          return
+        }
         event.req.raw_body = buffer.to_bytes()
       }
 

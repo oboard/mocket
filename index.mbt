@@ -23,10 +23,11 @@ pub(all) struct Mocket {
   ws_clients : Map[String, Unit]
   ws_channels : Map[String, Map[String, Unit]]
   ws_client_port : Map[String, Int]
+  max_body_size : Int
 }
 
 ///|
-pub fn new(base_path? : String = "") -> Mocket {
+pub fn new(base_path? : String = "", max_body_size? : Int = 1048576) -> Mocket {
   {
     base_path,
     mappings: {},
@@ -40,6 +41,7 @@ pub fn new(base_path? : String = "") -> Mocket {
     ws_clients: {},
     ws_channels: {},
     ws_client_port: {},
+    max_body_size,
   }
 }
 
