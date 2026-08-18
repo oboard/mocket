@@ -308,8 +308,15 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
   let port = listen_port(address)
   let server = create_server(fn(req, res, _) {
     // 优化：简化 headers 转换逻辑
-    let string_headers : Map[StringView, StringView] = {}
-    guard (try? req.headers().to_value().to_json()) is Ok(Object(headers)) else {
+    let string_headers : Map[StringView, StringView] = Map([])
+    let json_val = req.headers().to_value().to_json() catch {
+        _ => {
+          res.write_head(400, @js.Object::new().to_value())
+          res.end(@js.Value::cast_from("Invalid headers"))
+          return
+        }
+      }
+    guard json_val is Object(headers) else {
       res.write_head(400, @js.Object::new().to_value())
       res.end(@js.Value::cast_from("Invalid headers"))
       return
@@ -340,13 +347,14 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
       // 如果是 post，先等待 data 事件
       if event.req.http_method == "POST" {
         let buffer = Buffer()
-        (try? suspend(fn(res, _) {
+        suspend(fn(res, _) {
           req.on("data", data => {
             buffer.write_bytes(node_body_chunk_to_bytes(data))
           })
           req.on("end", _ => res(()))
-        }))
-        |> ignore
+        }) catch {
+          _ => ()
+        }
         event.req.raw_body = buffer.to_bytes()
       }
 
@@ -357,9 +365,9 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
       res.write_head(
         event.res.status_code.to_int(),
         {
-          let headers_obj = (try? @js.Value::from_json(
-            event.res.headers.to_json(),
-          )).or(@js.Object::new().to_value())
+          let headers_obj = @js.Value::from_json(event.res.headers.to_json()) catch {
+            _ => @js.Object::new().to_value()
+          }
           if !event.res.cookies.is_empty() {
             let cookies = event.res.cookies
               .values()
@@ -488,7 +496,7 @@ pub fn __ws_subscribe_js(connection_id : String, channel : String) -> Unit {
   match mocket.ws_channels.get(channel) {
     Some(set) => set.set(connection_id, ())
     None => {
-      let set : Map[String, Unit] = {}
+      let set : Map[String, Unit] = Map([])
       set.set(connection_id, ())
       mocket.ws_channels.set(channel, set)
     }

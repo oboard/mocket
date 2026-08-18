@@ -5,7 +5,7 @@ fn op1() -> String? noraise {
 
 ///|
 fn op2() -> String? noraise {
-  guard op1() is Some(prefix)
+  guard op1() is Some(prefix) else { return None }
   Some(prefix + ", World")
 }
 
