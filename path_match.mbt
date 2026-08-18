@@ -63,15 +63,29 @@ fn match_path_segments(
       params,
     )
   } else if template_part == "**" {
-    // 多级通配符 - 贪婪匹配剩余所有
-    let remaining_path = []
-    let mut i = path_idx
-    while i < path_parts.length() {
-      remaining_path.push(path_parts[i])
-      i = i + 1
+    for consumed = path_idx
+        consumed <= path_parts.length()
+        consumed = consumed + 1 {
+      let remaining : Array[StringView] = []
+      for j = path_idx; j < consumed; j = j + 1 {
+        remaining.push(path_parts[j])
+      }
+      let trial : Map[String, StringView] = Map([])
+      params.each(fn(k, v) { trial.set(k, v) })
+      trial.set("_", remaining.join("/"))
+      match
+        match_path_segments(
+          template_parts,
+          path_parts,
+          template_idx + 1,
+          consumed,
+          trial,
+        ) {
+        Some(result) => return Some(result)
+        None => continue
+      }
     }
-    params.set("_", remaining_path.join("/"))
-    Some(params)
+    None
   } else if template_part == path_part {
     // 静态段匹配
     match_path_segments(
@@ -351,7 +365,16 @@ fn Mocket::insert_dynamic_route(
       trie
     }
   }
-  trie.insert(path, handler, order)
+  let parts = path.split("/").to_array()
+  let mut deep_wild_mid = false
+  for i = 0; i < parts.length(); i = i + 1 {
+    if parts[i] == "**" && i + 1 < parts.length() {
+      deep_wild_mid = true
+    }
+  }
+  if !deep_wild_mid {
+    trie.insert(path, handler, order)
+  }
 }
 
 ///|
@@ -404,6 +427,18 @@ fn Mocket::find_route(
   if self.dynamic_route_tries.get("*") is Some(trie) {
     if trie.find_path(path) is Some(found) {
       return Some(found)
+    }
+  }
+
+  // 线性回退：处理 trie 无法表达的模板（如 /**/suffix）
+  for meth in [http_method, "*"] {
+    if self.dynamic_routes.get(meth) is Some(routes) {
+      for route in routes {
+        let (template, handler) = route
+        if match_path(template, path) is Some(params) {
+          return Some((handler, params))
+        }
+      }
     }
   }
   None
