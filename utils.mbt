@@ -308,3 +308,29 @@ fn parse_multipart_part(
     res.set(name, { filename, content_type, data: body_bytes })
   }
 }
+
+///|
+pub fn encode_multipart(
+  m : Map[String, MultipartFormValue],
+  boundary : String,
+) -> String {
+  let sb = StringBuilder::new()
+  m.each(fn(name, v) {
+    sb.write_string("--" + boundary + "\r\n")
+    sb.write_string("Content-Disposition: form-data; name=\"" + name + "\"")
+    match v.filename {
+      Some(fnm) => sb.write_string("; filename=\"" + fnm + "\"")
+      None => ()
+    }
+    sb.write_string("\r\n")
+    match v.content_type {
+      Some(ct) => sb.write_string("Content-Type: " + ct + "\r\n")
+      None => ()
+    }
+    sb.write_string("\r\n")
+    sb.write_string(@utf8.decode(v.data) catch { _ => "" })
+    sb.write_string("\r\n")
+  })
+  sb.write_string("--" + boundary + "--\r\n")
+  sb.to_string()
+}

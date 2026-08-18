@@ -296,14 +296,6 @@ pub extern "js" fn start_server(
   #|}
 
 ///|
-fn listen_port(address : String) -> Int {
-  match address.rev_split_once(":") {
-    Some((_, port_text)) => @string.parse_int(port_text) catch { _ => 0 }
-    None => @string.parse_int(address) catch { _ => 0 }
-  }
-}
-
-///|
 pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
   let port = listen_port(address)
   let server = create_server(fn(req, res, _) {
@@ -396,16 +388,6 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
 ///|
 pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
   listen_ffi(mocket, "0.0.0.0:\{port}")
-}
-
-///|
-fn websocket_accept_key(key : String) -> String {
-  let guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-  (key + guid)
-  |> @utf8.encode
-  |> @crypto.sha1
-  |> Bytes::from_array
-  |> @base64.encode
 }
 
 ///|
@@ -581,29 +563,3 @@ pub extern "js" fn ws_unsubscribe(id : String, channel : String) -> Unit = "(id,
 ///|
 #borrow(channel, msg)
 pub extern "js" fn ws_publish(channel : String, msg : String) -> Unit = "(ch, msg) => { const ids = globalThis.__ws_get_members_js ? globalThis.__ws_get_members_js(ch) : []; const bindings = globalThis.ws_port_bindings && globalThis.ws_port_bindings.values().next().value; if (bindings && bindings.send) { for (const id of ids) { bindings.send(id, msg); } } }"
-
-///|
-pub fn encode_multipart(
-  m : Map[String, MultipartFormValue],
-  boundary : String,
-) -> String {
-  let sb = StringBuilder::new()
-  m.each(fn(name, v) {
-    sb.write_string("--" + boundary + "\r\n")
-    sb.write_string("Content-Disposition: form-data; name=\"" + name + "\"")
-    match v.filename {
-      Some(fnm) => sb.write_string("; filename=\"" + fnm + "\"")
-      None => ()
-    }
-    sb.write_string("\r\n")
-    match v.content_type {
-      Some(ct) => sb.write_string("Content-Type: " + ct + "\r\n")
-      None => ()
-    }
-    sb.write_string("\r\n")
-    sb.write_string(@utf8.decode(v.data) catch { _ => "" })
-    sb.write_string("\r\n")
-  })
-  sb.write_string("--" + boundary + "--\r\n")
-  sb.to_string()
-}
