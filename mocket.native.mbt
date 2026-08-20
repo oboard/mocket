@@ -61,25 +61,25 @@ fn request_method_to_string(meth : @http.RequestMethod) -> String {
 
 ///|
 fn string_headers_to_views(
-  headers : Map[String, String],
+  headers : Map[@http.CaseInsensitiveString, String],
 ) -> Map[StringView, StringView] {
   let out : Map[StringView, StringView] = Map([])
-  headers.each((key, value) => out.set(key, value))
+  headers.each((key, value) => out.set(Show::to_string(key), value))
   out
 }
 
 ///|
 fn view_headers_to_strings(
   headers : Map[StringView, StringView],
-) -> Map[String, String] {
-  let out : Map[String, String] = Map([])
+) -> Map[@http.CaseInsensitiveString, String] {
+  let out : Map[@http.CaseInsensitiveString, String] = Map([])
   headers.each((key, value) => out.set(key.to_owned(), value.to_owned()))
   out
 }
 
 ///|
 fn header_contains_token(
-  headers : Map[String, String],
+  headers : Map[@http.CaseInsensitiveString, String],
   header_name : String,
   token : String,
 ) -> Bool {
@@ -87,7 +87,7 @@ fn header_contains_token(
   let header_name = header_name.to_lower()
   for pair in headers {
     let (key, value) = pair
-    if key.to_lower() == header_name {
+    if Show::to_string(key).to_lower() == header_name {
       for part in value.split(",") {
         if part.trim().to_lower() == token {
           return true
@@ -100,7 +100,7 @@ fn header_contains_token(
 
 ///|
 fn header_equals(
-  headers : Map[String, String],
+  headers : Map[@http.CaseInsensitiveString, String],
   header_name : String,
   expected : String,
 ) -> Bool {
@@ -108,7 +108,7 @@ fn header_equals(
   let expected = expected.to_lower()
   for pair in headers {
     let (key, value) = pair
-    if key.to_lower() == header_name {
+    if Show::to_string(key).to_lower() == header_name {
       return value.trim().to_lower() == expected
     }
   }
@@ -363,7 +363,7 @@ async fn send_native_response(
   if !response.cookies.is_empty() {
     let cookies = response.cookies
       .values()
-      .map(cookie => cookie.to_string())
+      .map(cookie => Show::to_string(cookie))
       .to_array()
     headers.set("Set-Cookie", cookies.join("\r\nSet-Cookie: "))
   }

@@ -77,7 +77,7 @@ pub fn Mocket::static_assets(
     }
 
     let raw_id = event.req.url[path.length():]
-    let original_id = @posix.Path::normalize(raw_id.to_owned()).to_string()
+    let original_id = Show::to_string(@posix.Path::normalize(raw_id.to_owned()))
     // Parse Accept-Encoding
     // Headers are Map[StringView, StringView]
     let accept_encoding = event.req.headers.get("Accept-Encoding").unwrap_or("")

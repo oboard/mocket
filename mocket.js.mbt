@@ -296,6 +296,14 @@ pub extern "js" fn start_server(
   #|}
 
 ///|
+fn listen_port(address : String) -> Int {
+  match address.rev_split_once(":") {
+    Some((_, port_text)) => @string.parse_int(port_text) catch { _ => 0 }
+    None => @string.parse_int(address) catch { _ => 0 }
+  }
+}
+
+///|
 pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
   let port = listen_port(address)
   let server = create_server(fn(req, res, _) {
@@ -378,7 +386,7 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
           if !event.res.cookies.is_empty() {
             let cookies = event.res.cookies
               .values()
-              .map(fn(c) { c.to_string() })
+              .map(fn(c) { Show::to_string(c) })
               .to_array()
             set_js_property(headers_obj, "Set-Cookie", array_to_js(cookies))
           }

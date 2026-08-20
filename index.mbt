@@ -109,14 +109,14 @@ pub impl Show for CookieItem with fn output(self, logger) -> Unit {
   }
   if self.same_site is Some(same_site) {
     logger.write_string("; SameSite=")
-    logger.write_string(same_site.to_string())
+    logger.write_string(Show::to_string(same_site))
   }
 }
 
 ///|
 pub impl Show for CookieItem with fn to_string(self : CookieItem) -> String {
   let buf = StringBuilder::new()
-  self.output(buf)
+  Show::output(self, buf)
   buf.to_string()
 }
 

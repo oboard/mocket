@@ -1,10 +1,10 @@
 name = "oboard/mocket"
 
-version = "0.7.9"
+version = "0.8.0"
 
 import {
-  "moonbitlang/async@0.20.1",
-  "moonbitlang/x@0.4.46",
+  "moonbitlang/async@0.21.0",
+  "moonbitlang/x@0.5.1",
 }
 
 readme = "README.md"
