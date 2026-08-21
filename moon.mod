@@ -5,6 +5,7 @@ version = "0.8.0"
 import {
   "moonbitlang/async@0.21.0",
   "moonbitlang/x@0.5.1",
+  "oboard/mimetype@0.2.0",
 }
 
 readme = "README.md"

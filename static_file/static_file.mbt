@@ -71,42 +71,32 @@ pub impl ServeStaticProvider for StaticFileProvider with fn get_type(
 }
 
 ///|
-/// A small built-in MIME table covering common web assets.
+/// Shared MIME database from `oboard/mimetype`.
+let mime_db : @lib.MimeType = @lib.MimeType::new()
+
+///|
+/// Resolve the MIME type for a file extension (without the dot) using the
+/// `oboard/mimetype` database, appending `charset=utf-8` for textual types.
 pub fn mime_type_of(ext : String) -> String? {
-  match ext.to_lower() {
-    "html" | "htm" | "xhtml" => Some("text/html; charset=utf-8")
-    "css" => Some("text/css; charset=utf-8")
-    "js" | "mjs" | "cjs" => Some("text/javascript; charset=utf-8")
-    "json" | "map" => Some("application/json")
-    "txt" => Some("text/plain; charset=utf-8")
-    "md" => Some("text/markdown; charset=utf-8")
-    "xml" => Some("application/xml")
-    "csv" => Some("text/csv; charset=utf-8")
-    "pdf" => Some("application/pdf")
-    "wasm" => Some("application/wasm")
-    "png" => Some("image/png")
-    "jpg" | "jpeg" => Some("image/jpeg")
-    "gif" => Some("image/gif")
-    "webp" => Some("image/webp")
-    "avif" => Some("image/avif")
-    "svg" => Some("image/svg+xml")
-    "ico" => Some("image/x-icon")
-    "bmp" => Some("image/bmp")
-    "tif" | "tiff" => Some("image/tiff")
-    "mp3" => Some("audio/mpeg")
-    "wav" => Some("audio/wav")
-    "ogg" => Some("audio/ogg")
-    "mp4" | "m4v" => Some("video/mp4")
-    "webm" => Some("video/webm")
-    "woff" => Some("font/woff")
-    "woff2" => Some("font/woff2")
-    "ttf" => Some("font/ttf")
-    "otf" => Some("font/otf")
-    "gz" => Some("application/gzip")
-    "zip" => Some("application/zip")
-    "tar" => Some("application/x-tar")
-    _ => None
+  match mime_db.get_type(ext.to_lower()) {
+    Some(mime) =>
+      if mime.has_prefix("text/") {
+        Some("\{mime}; charset=utf-8")
+      } else {
+        Some(mime)
+      }
+    None => None
   }
+}
+
+///|
+test "mime_type_of" {
+  inspect(mime_type_of("html"), content="Some(text/html; charset=utf-8)")
+  inspect(mime_type_of("TXT"), content="Some(text/plain; charset=utf-8)")
+  inspect(mime_type_of("md"), content="Some(text/markdown; charset=utf-8)")
+  inspect(mime_type_of("png"), content="Some(image/png)")
+  inspect(mime_type_of("wasm"), content="Some(application/wasm)")
+  inspect(mime_type_of("definitely-not-a-type"), content="None")
 }
 
 ///|

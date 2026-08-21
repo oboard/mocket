@@ -1,5 +1,6 @@
 import {
   "oboard/mocket",
+  "oboard/mimetype/lib",
   "moonbitlang/x/fs",
   "oboard/mocket/static_file/internal/nativefs",
 }
