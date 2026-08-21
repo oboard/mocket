@@ -2,8 +2,11 @@
 async fn main {
   let app = @mocket.new()
   app.use_middleware(logger_middleware())
-  // Register global middleware
-  app.static_assets("/", @static_file.new("./"))
+  // Register global middleware.
+  // The mount is "/", so every URL enters the static middleware; with
+  // fallthrough enabled, requests that match no asset (like the explicit
+  // route below) continue to the router instead of getting a 404.
+  app.static_assets("/", @static_file.new("./", fallthrough=true))
 
   // Text Response
   app.get("/", _event => "⚡️ Tadaa!")

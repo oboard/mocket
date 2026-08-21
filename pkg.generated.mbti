@@ -336,8 +336,8 @@ pub impl Responder for &ToJson
 pub impl Responder for StringView
 
 pub(open) trait ServeStaticProvider {
-  fn get_meta(Self, StringView) -> StaticAssetMeta?
-  fn get_contents(Self, StringView) -> &Responder
+  async fn get_meta(Self, StringView) -> StaticAssetMeta?
+  async fn get_contents(Self, StringView) -> &Responder
   fn get_type(Self, String) -> String?
   fn get_encodings(Self) -> Map[String, String]
   fn get_index_names(Self) -> Array[String]

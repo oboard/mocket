@@ -1,10 +1,28 @@
 import {
   "oboard/mocket",
+  "oboard/mimetype/lib",
   "moonbitlang/x/fs",
+  "oboard/mocket/static_file/internal/nativefs",
 }
 
-// Suppress warning 20 from MoonBit's generated native test driver.
+import {
+  "moonbitlang/async",
+  "moonbitlang/async/http",
+  "moonbitlang/core/env",
+} for "test"
 
-warnings = "-20"
+// Suppress warning 20 from MoonBit's generated native test driver, and
+// warning 29 for the fs imports that are each used by only one target's
+// provider implementation.
+
+warnings = "-20-29"
 
 supported_targets = "+js+native"
+
+options(
+  targets: {
+    "provider_native.mbt": [ "native" ],
+    "provider_js.mbt": [ "js" ],
+    "static_file_metadata_test.mbt": [ "native" ],
+  },
+)

@@ -1,0 +1,12 @@
+import {
+  "moonbitlang/async/fs",
+  "moonbitlang/async/os_error",
+}
+
+// The imports are only used by the native-only implementation file.
+
+warnings = "-29"
+
+options(
+  targets: { "nativefs_native.mbt": [ "native" ] },
+)

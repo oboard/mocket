@@ -1,0 +1,19 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/mocket/static_file/internal/nativefs"
+
+// Values
+pub async fn read_file_or_none(String) -> Bytes?
+
+pub async fn stat_regular_file(String) -> FileStat?
+
+// Errors
+
+// Types and methods
+pub(all) struct FileStat {
+  size : Int64
+  mtime : Int64
+}
+
+// Type aliases
+
+// Traits
