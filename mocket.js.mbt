@@ -368,16 +368,24 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
         _ =>
           HttpResponse::new(InternalServerError).body("Internal Server Error")
       }
+      let safe_headers : Map[@http.CaseInsensitiveString, String] = Map([])
+      response.headers.each(fn(k, v) {
+        if @header.is_valid_header_name(Show::to_string(k)) {
+          safe_headers[k] = @header.sanitize_header_value(v.to_owned())
+        }
+      })
       res.write_head(
         response.status_code.to_int(),
         {
-          let mut headers_obj = @js.Value::from_json(response.headers.to_json()) catch {
+          let mut headers_obj = @js.Value::from_json(safe_headers.to_json()) catch {
             _ => @js.Object::new().to_value()
           }
           if !response.cookies.is_empty() {
             let cookies = response.cookies
               .values()
-              .map(fn(cookie) { Show::to_string(cookie) })
+              .map(fn(cookie) {
+                @header.sanitize_header_value(Show::to_string(cookie))
+              })
               .to_array()
             set_js_property(headers_obj, "Set-Cookie", array_to_js(cookies))
           }

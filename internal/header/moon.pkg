@@ -1,0 +1,7 @@
+import {
+  "moonbitlang/core/test",
+}
+
+warnings = "-15-29"
+
+supported_targets = "+js+native"
