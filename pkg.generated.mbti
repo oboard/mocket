@@ -2,6 +2,7 @@
 package "oboard/mocket"
 
 import {
+  "moonbitlang/async/http",
   "moonbitlang/core/buffer",
   "moonbitlang/core/json",
 }
@@ -11,7 +12,7 @@ pub fn __ws_emit(Bytes, Bytes, Bytes) -> Unit
 
 pub fn cookie_to_string(Array[CookieItem]) -> String
 
-pub async fn dispatch_http(Mocket, String, String, Map[StringView, StringView], Bytes) -> HttpResponse
+pub async fn dispatch_http(Mocket, String, String, Map[@http.CaseInsensitiveString, StringView], Bytes) -> HttpResponse
 
 pub fn dispatch_ws_event((WebSocketEvent) -> Unit, WebSocketPeer, String, Bytes) -> Unit
 
@@ -91,7 +92,8 @@ pub impl Responder for Html
 pub(all) struct HttpRequest {
   http_method : String
   url : String
-  headers : Map[StringView, StringView]
+  query : String
+  headers : Map[@http.CaseInsensitiveString, StringView]
   mut raw_body : Bytes
 }
 pub fn[T : BodyReader] HttpRequest::body(Self) -> T raise
@@ -101,14 +103,14 @@ pub impl Responder for HttpRequest
 
 pub(all) struct HttpResponse {
   mut status_code : StatusCode
-  headers : Map[StringView, StringView]
+  headers : Map[@http.CaseInsensitiveString, StringView]
   cookies : Map[String, CookieItem]
   mut raw_body : Bytes
 }
 pub fn HttpResponse::body(Self, &Responder) -> Self
 pub fn HttpResponse::delete_cookie(Self, String) -> Unit
 pub fn HttpResponse::json(Self, &ToJson) -> Self
-pub fn HttpResponse::new(StatusCode, headers? : Map[StringView, StringView], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
+pub fn HttpResponse::new(StatusCode, headers? : Map[@http.CaseInsensitiveString, StringView], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
 pub fn[T : BodyReader] HttpResponse::read_body(Self) -> T raise
 pub fn HttpResponse::set_cookie(Self, String, String, max_age? : Int, path? : String, domain? : String, secure? : Bool, http_only? : Bool, same_site? : SameSiteOption) -> Unit
 pub fn HttpResponse::to_responder(Self) -> &Responder
