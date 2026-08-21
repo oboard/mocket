@@ -29,9 +29,10 @@ fn request_has_body(
     "POST" | "PUT" | "PATCH" => true
     _ =>
       headers.get("transfer-encoding") is Some(_) ||
-      headers.get("content-length")
-        .map(value => value.to_owned().trim() != "0")
-        .unwrap_or(false)
+      headers
+      .get("content-length")
+      .map(value => value.to_owned().trim() != "0")
+      .unwrap_or(false)
   }
 }
 

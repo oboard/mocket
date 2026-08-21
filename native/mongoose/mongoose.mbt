@@ -118,7 +118,9 @@ fn from_cbytes(bytes : Bytes) -> String {
 }
 
 ///|
-fn parse_headers(headers_text : String) -> Map[@http.CaseInsensitiveString, StringView] {
+fn parse_headers(
+  headers_text : String,
+) -> Map[@http.CaseInsensitiveString, StringView] {
   let headers : Map[@http.CaseInsensitiveString, StringView] = Map([])
   headers_text
   .split("\n")

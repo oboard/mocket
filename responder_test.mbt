@@ -75,9 +75,7 @@ async test "custom status html body infers html content type" {
 ///|
 async test "json response infers json content type" {
   let app = new()
-  app.get("/created", _ => {
-    HttpResponse::new(Created).json({ "ok": true })
-  })
+  app.get("/created", _ => HttpResponse::new(Created).json({ "ok": true }))
   let response = dispatch_http(app, "GET", "/created", {}, b"")
   inspect(response.status_code.to_int(), content="201")
   @test.assert_eq(
@@ -92,16 +90,14 @@ async test "json response infers json content type" {
 async test "explicit content type wins over inferred body type" {
   let app = new()
   app.get("/custom-body", _ => {
-    HttpResponse::new(
-      OK,
-      headers={ "Content-Type": "application/vnd.custom" },
-    ).body("plain text")
+    HttpResponse::new(OK, headers={ "Content-Type": "application/vnd.custom" }).body(
+      "plain text",
+    )
   })
   app.get("/custom-json", _ => {
-    HttpResponse::new(
-      OK,
-      headers={ "Content-Type": "application/vnd.custom+json" },
-    ).json({ "ok": true })
+    HttpResponse::new(OK, headers={
+      "Content-Type": "application/vnd.custom+json",
+    }).json({ "ok": true })
   })
 
   let body_response = dispatch_http(app, "GET", "/custom-body", {}, b"")

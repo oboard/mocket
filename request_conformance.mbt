@@ -5,7 +5,6 @@
 /// backend (native, C/mongoose, JS) now funnels through, so the guarantees
 /// below hold identically on the `+js` and `+native` targets (the workspace
 /// runs the tests on both).
-
 async test "query string does not break path routing" {
   let app = new()
   app.get("/hello", _ => "hello")

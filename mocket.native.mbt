@@ -354,6 +354,7 @@ async fn send_native_response(
 }
 
 ///|
+
 ///|
 async fn handle_http_request(
   mocket : Mocket,
@@ -362,7 +363,10 @@ async fn handle_http_request(
   conn : @http.ServerConnection,
 ) -> Unit {
   let headers = string_headers_to_views(request.headers)
-  let raw_body = if request_has_body(request_method_to_string(request.meth), headers) {
+  let raw_body = if request_has_body(
+      request_method_to_string(request.meth),
+      headers,
+    ) {
     let content_length = request.headers
       .get("content-length")
       .map(s => @string.parse_int(s.trim()) catch { _ => 0 })

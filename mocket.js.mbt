@@ -362,8 +362,11 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
       }
 
       // 交给统一的 dispatch_http：路由、查询拆分、中间件与错误处理全部一致。
-      let response = dispatch_http(mocket, http_method, url, string_headers, raw) catch {
-        _ => HttpResponse::new(InternalServerError).body("Internal Server Error")
+      let response = dispatch_http(
+        mocket, http_method, url, string_headers, raw,
+      ) catch {
+        _ =>
+          HttpResponse::new(InternalServerError).body("Internal Server Error")
       }
       res.write_head(
         response.status_code.to_int(),
