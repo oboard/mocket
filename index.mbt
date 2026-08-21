@@ -24,6 +24,7 @@ pub(all) struct Mocket {
   ws_channels : Map[String, Map[String, Unit]]
   ws_client_port : Map[String, Int]
   max_body_size : Int
+  mut error_handler : ErrorHandler
 }
 
 ///|
@@ -42,6 +43,7 @@ pub fn new(base_path? : String = "", max_body_size? : Int = 1048576) -> Mocket {
     ws_channels: {},
     ws_client_port: {},
     max_body_size,
+    error_handler: default_error_handler,
   }
 }
 

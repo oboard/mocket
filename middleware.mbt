@@ -1,9 +1,9 @@
 ///|
-pub type MiddlewareNext = async () -> &Responder noraise
+pub type MiddlewareNext = async () -> &Responder
 
 ///|
 // 中间件类型：接受 HttpEvent 和 next 函数，返回 HttpBody
-pub type Middleware = async (MocketEvent, MiddlewareNext) -> &Responder noraise
+pub type Middleware = async (MocketEvent, MiddlewareNext) -> &Responder
 
 ///|
 priv struct MiddlewareTrieEntry {
@@ -126,7 +126,7 @@ async fn Mocket::execute_middlewares(
   self : Mocket,
   event : MocketEvent,
   final_handler : HttpHandler,
-) -> &Responder noraise {
+) -> &Responder {
   if self.middlewares.is_empty() {
     return final_handler(event)
   }
@@ -141,7 +141,7 @@ pub async fn execute_middlewares(
   middlewares : Array[(String, Middleware)],
   event : MocketEvent,
   final_handler : HttpHandler,
-) -> &Responder noraise {
+) -> &Responder {
   if middlewares.is_empty() {
     return final_handler(event)
   }
@@ -168,14 +168,14 @@ async fn execute_middleware_chain(
   index : Int,
   event : MocketEvent,
   final_handler : HttpHandler,
-) -> &Responder noraise {
+) -> &Responder {
   if index >= middlewares.length() {
     // 所有中间件都执行完毕，调用最终处理器
     final_handler(event)
   } else {
     // 执行当前中间件
     let current_middleware = middlewares[index]
-    let next = async fn() noraise {
+    let next = async fn() {
       execute_middleware_chain(middlewares, index + 1, event, final_handler)
     }
     current_middleware(event, next)

@@ -11,7 +11,7 @@ pub fn __ws_emit(Bytes, Bytes, Bytes) -> Unit
 
 pub fn cookie_to_string(Array[CookieItem]) -> String
 
-pub async fn dispatch_http(Mocket, String, String, Map[StringView, StringView], Bytes) -> HttpResponse noraise
+pub async fn dispatch_http(Mocket, String, String, Map[StringView, StringView], Bytes) -> HttpResponse
 
 pub fn dispatch_ws_event((WebSocketEvent) -> Unit, WebSocketPeer, String, Bytes) -> Unit
 
@@ -19,11 +19,11 @@ pub fn encode_multipart(Map[String, MultipartFormValue], String) -> String
 
 pub fn escape_html(String) -> String
 
-pub async fn execute_middlewares(Array[(String, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise)], MocketEvent, async (MocketEvent) -> &Responder noraise) -> &Responder noraise
+pub async fn execute_middlewares(Array[(String, async (MocketEvent, async () -> &Responder) -> &Responder)], MocketEvent, async (MocketEvent) -> &Responder) -> &Responder
 
 pub fn form_encode(Map[String, String]) -> String
 
-pub fn handle_not_found() -> async (MocketEvent) -> &Responder noraise
+pub fn handle_not_found() -> async (MocketEvent) -> &Responder
 
 pub fn html(&Show) -> &Responder
 
@@ -117,65 +117,67 @@ pub impl Responder for HttpResponse
 #alias(T)
 pub(all) struct Mocket {
   base_path : String
-  mappings : Map[(String, String), async (MocketEvent) -> &Responder noraise]
-  middlewares : Array[(String, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise)]
-  static_routes : Map[String, Map[String, async (MocketEvent) -> &Responder noraise]]
-  dynamic_routes : Map[String, Array[(String, async (MocketEvent) -> &Responder noraise)]]
+  mappings : Map[(String, String), async (MocketEvent) -> &Responder]
+  middlewares : Array[(String, async (MocketEvent, async () -> &Responder) -> &Responder)]
+  static_routes : Map[String, Map[String, async (MocketEvent) -> &Responder]]
+  dynamic_routes : Map[String, Array[(String, async (MocketEvent) -> &Responder)]]
   ws_static_routes : Map[String, (WebSocketEvent) -> Unit]
   ws_dynamic_routes : Array[(String, (WebSocketEvent) -> Unit)]
   ws_clients : Map[String, Unit]
   ws_channels : Map[String, Map[String, Unit]]
   ws_client_port : Map[String, Int]
   max_body_size : Int
+  mut error_handler : (MocketEvent, Error) -> &Responder
   // private fields
 }
-pub fn Mocket::acl(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::all(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::bind(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::checkin(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::checkout(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::connect(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::copy(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::delete(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::get(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::acl(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::all(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::bind(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::checkin(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::checkout(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::connect(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::copy(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::delete(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::get(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn Mocket::group(Self, String, (Self) -> Unit) -> Unit
-pub fn Mocket::head(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::label(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::link(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::head(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::label(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::link(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub async fn Mocket::listen(Self, String) -> Unit noraise
-pub fn Mocket::lock(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::merge(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::mkactivity(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::mkcalendar(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::mkcol(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::mkredirectref(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::mkworkspace(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::move_(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::on(Self, String, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::options(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::orderpatch(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::patch(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::post(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::pri(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::propfind(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::proppatch(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::put(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::query(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::rebind(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::report(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::search(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::lock(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::merge(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::mkactivity(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::mkcalendar(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::mkcol(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::mkredirectref(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::mkworkspace(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::move_(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::on(Self, String, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::on_error(Self, (MocketEvent, Error) -> &Responder) -> Unit
+pub fn Mocket::options(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::orderpatch(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::patch(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::post(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::pri(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::propfind(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::proppatch(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::put(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::query(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::rebind(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::report(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::search(Self, String, async (MocketEvent) -> &Responder) -> Unit
 #deprecated
 pub async fn Mocket::serve(Self, port~ : Int) -> Unit noraise
 pub fn Mocket::static_assets(Self, String, &ServeStaticProvider) -> Unit
-pub fn Mocket::trace(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::unbind(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::uncheckout(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::unlink(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::unlock(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::update(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::updateredirectref(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
-pub fn Mocket::use_middleware(Self, async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise, base_path? : String) -> Unit
-pub fn Mocket::version_control(Self, String, async (MocketEvent) -> &Responder noraise) -> Unit
+pub fn Mocket::trace(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::unbind(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::uncheckout(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::unlink(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::unlock(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::update(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::updateredirectref(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn Mocket::use_middleware(Self, async (MocketEvent, async () -> &Responder) -> &Responder, base_path? : String) -> Unit
+pub fn Mocket::version_control(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn Mocket::ws(Self, String, (WebSocketEvent) -> Unit) -> Unit
 
 pub(all) struct MocketEvent {
@@ -301,11 +303,13 @@ pub fn WebSocketPeer::to_string(Self) -> String
 pub fn WebSocketPeer::unsubscribe(Self, String) -> Unit
 
 // Type aliases
-pub type HttpHandler = async (MocketEvent) -> &Responder noraise
+pub type ErrorHandler = (MocketEvent, Error) -> &Responder
 
-pub type Middleware = async (MocketEvent, async () -> &Responder noraise) -> &Responder noraise
+pub type HttpHandler = async (MocketEvent) -> &Responder
 
-pub type MiddlewareNext = async () -> &Responder noraise
+pub type Middleware = async (MocketEvent, async () -> &Responder) -> &Responder
+
+pub type MiddlewareNext = async () -> &Responder
 
 pub type WebSocketHandler = (WebSocketEvent) -> Unit
 

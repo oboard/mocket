@@ -5,7 +5,7 @@ pub async fn dispatch_http(
   url : String,
   headers : Map[StringView, StringView],
   raw_body : Bytes,
-) -> HttpResponse noraise {
+) -> HttpResponse {
   let (params, handler) = match mocket.find_route(http_method, url) {
     Some((h, p)) => (p, h)
     _ => ({}, handle_not_found())
@@ -15,7 +15,14 @@ pub async fn dispatch_http(
     res: HttpResponse::new(OK),
     params,
   }
-  let responder = mocket.execute_middlewares(event, handler)
+  let responder = mocket.execute_middlewares(event, handler) catch {
+    err => {
+      if @async.is_cancellation_error(err) {
+        raise err
+      }
+      mocket.handle_request_error(event, err)
+    }
+  }
   responder.options(event.res)
   let buf = Buffer()
   responder.output(buf)
