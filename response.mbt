@@ -32,10 +32,25 @@ pub fn HttpResponse::new(
 }
 
 ///|
+/// Sets the response body from any `Responder`.
+///
+/// The body responder's default `Content-Type` is carried into this
+/// response only when no explicit `"Content-Type"` header was set on this
+/// response. Explicit response headers always take precedence.
+///
+/// Only the default `Content-Type` is inferred. The responder's status,
+/// other headers, cookies, and any other responder effects are not merged,
+/// so `self.status_code` is preserved.
 pub fn HttpResponse::body(
   self : HttpResponse,
   body : &Responder,
 ) -> HttpResponse {
+  let probe = HttpResponse::new(OK)
+  body.options(probe)
+  if probe.headers.get("Content-Type") is Some(content_type) &&
+    !self.headers.contains("Content-Type") {
+    self.headers["Content-Type"] = content_type
+  }
   let buf = Buffer()
   body.output(buf)
   self.raw_body = buf.to_bytes()
@@ -43,6 +58,12 @@ pub fn HttpResponse::body(
 }
 
 ///|
+/// Sets a JSON response body.
+///
+/// Infers `Content-Type: application/json; charset=utf-8` under the same
+/// rule as `HttpResponse::body`: an explicit `"Content-Type"` header already
+/// present on this response takes precedence, and `self.status_code` is
+/// preserved.
 pub fn HttpResponse::json(self : HttpResponse, obj : &ToJson) -> HttpResponse {
   self.body(obj.to_json())
 }
