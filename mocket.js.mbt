@@ -307,8 +307,8 @@ fn listen_port(address : String) -> Int {
 pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
   let port = listen_port(address)
   let server = create_server(fn(req, res, _) {
-    // 优化：简化 headers 转换逻辑
-    let string_headers : Map[StringView, StringView] = Map([])
+    // 构造大小写不敏感的头部映射表（HTTP 字段名不区分大小写）
+    let string_headers : Map[@http.CaseInsensitiveString, StringView] = Map([])
     let json_val = req.headers().to_value().to_json() catch {
         _ => {
           res.write_head(400, @js.Object::new().to_value())
@@ -322,34 +322,22 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
       return
     }
 
-    // 批量转换 headers，减少单个处理的开销
     headers.each(fn(key, value) {
       if value is String(v) {
         string_headers.set(key, v.to_string_view())
       }
     })
-    let (params, handler) = match
-      mocket.find_route(req.req_method(), req.url()) {
-      Some((h, p)) => (p, h)
-      _ => ({}, handle_not_found())
-    }
-    let event = {
-      req: {
-        http_method: req.req_method(),
-        url: req.url(),
-        headers: string_headers,
-        raw_body: b"",
-      },
-      res: HttpResponse::new(OK),
-      params,
-    }
+
+    let http_method = req.req_method()
+    let url = req.url()
+    let should_read_body = request_has_body(http_method, string_headers)
     async_run(() => {
-      // 如果是 post，先等待 data 事件
-      if event.req.http_method == "POST" {
+      let mut raw = b""
+      if should_read_body {
         let buffer = Buffer()
         let mut total_size = 0
         let mut exceeded = false
-        suspend(fn(res, _) {
+        suspend(fn(done, _) {
           req.on("data", data => {
             if !exceeded {
               let chunk = node_body_chunk_to_bytes(data)
@@ -361,7 +349,7 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
               }
             }
           })
-          req.on("end", _ => res(()))
+          req.on("end", _ => done(()))
         }) catch {
           _ => ()
         }
@@ -370,35 +358,30 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
           res.end(@js.Value::cast_from("Request body too large"))
           return
         }
-        event.req.raw_body = buffer.to_bytes()
+        raw = buffer.to_bytes()
       }
 
-      // 执行中间件链和处理器
-      let responder = mocket.execute_middlewares(event, handler) catch {
-        err => mocket.handle_request_error(event, err)
+      // 交给统一的 dispatch_http：路由、查询拆分、中间件与错误处理全部一致。
+      let response = dispatch_http(mocket, http_method, url, string_headers, raw) catch {
+        _ => HttpResponse::new(InternalServerError).body("Internal Server Error")
       }
-      // let boundary = "----------------moonbit-" + port.to_string()
-      responder.options(event.res)
       res.write_head(
-        event.res.status_code.to_int(),
+        response.status_code.to_int(),
         {
-          let headers_obj = @js.Value::from_json(event.res.headers.to_json()) catch {
+          let mut headers_obj = @js.Value::from_json(response.headers.to_json()) catch {
             _ => @js.Object::new().to_value()
           }
-          if !event.res.cookies.is_empty() {
-            let cookies = event.res.cookies
+          if !response.cookies.is_empty() {
+            let cookies = response.cookies
               .values()
-              .map(fn(c) { Show::to_string(c) })
+              .map(fn(cookie) { Show::to_string(cookie) })
               .to_array()
             set_js_property(headers_obj, "Set-Cookie", array_to_js(cookies))
           }
           headers_obj
         },
       )
-      let buf = Buffer()
-      responder.output(buf)
-      event.res.raw_body = buf.to_bytes()
-      res.end(@js.Value::cast_from(event.res.raw_body))
+      res.end(@js.Value::cast_from(response.raw_body))
     })
   })
   start_server(server, address, websocket_accept_key)

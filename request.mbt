@@ -1,8 +1,14 @@
 ///|
 pub(all) struct HttpRequest {
   http_method : String
+  /// The request-target path, without query string or fragment.
+  /// Routing matches against this value.
   url : String
-  headers : Map[StringView, StringView]
+  /// The raw query string without the leading `?`; empty when absent.
+  /// Fragments (`#...`) are stripped.
+  query : String
+  /// Case-insensitive request headers (HTTP field names are case-insensitive).
+  headers : Map[@http.CaseInsensitiveString, StringView]
   mut raw_body : Bytes
 }
 
@@ -67,6 +73,7 @@ test "read_body" {
   let req = HttpRequest::{
     http_method: "POST",
     url: "/",
+    query: "",
     headers: Map([]),
     raw_body: b"{\"Hello\":\"World!\"}",
   }

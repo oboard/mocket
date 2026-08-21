@@ -118,8 +118,8 @@ fn from_cbytes(bytes : Bytes) -> String {
 }
 
 ///|
-fn parse_headers(headers_text : String) -> Map[StringView, StringView] {
-  let headers : Map[StringView, StringView] = Map([])
+fn parse_headers(headers_text : String) -> Map[@http.CaseInsensitiveString, StringView] {
+  let headers : Map[@http.CaseInsensitiveString, StringView] = Map([])
   headers_text
   .split("\n")
   .each(line => {
@@ -129,7 +129,7 @@ fn parse_headers(headers_text : String) -> Map[StringView, StringView] {
         let key = line[:idx].trim()
         let value = line[idx + 1:].trim()
         if key != "" {
-          headers.set(key, value)
+          headers.set(key.to_owned(), value)
         }
       }
     }

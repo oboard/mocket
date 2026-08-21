@@ -62,18 +62,18 @@ fn request_method_to_string(meth : @http.RequestMethod) -> String {
 ///|
 fn string_headers_to_views(
   headers : Map[@http.CaseInsensitiveString, String],
-) -> Map[StringView, StringView] {
-  let out : Map[StringView, StringView] = Map([])
-  headers.each((key, value) => out.set(Show::to_string(key), value))
+) -> Map[@http.CaseInsensitiveString, StringView] {
+  let out : Map[@http.CaseInsensitiveString, StringView] = Map([])
+  headers.each((key, value) => out.set(key, value))
   out
 }
 
 ///|
 fn view_headers_to_strings(
-  headers : Map[StringView, StringView],
+  headers : Map[@http.CaseInsensitiveString, StringView],
 ) -> Map[@http.CaseInsensitiveString, String] {
   let out : Map[@http.CaseInsensitiveString, String] = Map([])
-  headers.each((key, value) => out.set(key.to_owned(), value.to_owned()))
+  headers.each((key, value) => out.set(key, value.to_owned()))
   out
 }
 
@@ -119,27 +119,6 @@ fn header_equals(
 fn is_websocket_upgrade(request : @http.Request) -> Bool {
   header_contains_token(request.headers, "connection", "upgrade") &&
   header_equals(request.headers, "upgrade", "websocket")
-}
-
-///|
-fn request_has_body(request : @http.Request) -> Bool {
-  match request.meth {
-    Post | Put | Patch => true
-    _ =>
-      request.headers.get("transfer-encoding") is Some(_) ||
-      request.headers
-      .get("content-length")
-      .map(value => value.trim() != "0")
-      .unwrap_or(false)
-  }
-}
-
-///|
-fn request_route_path(path : String) -> String {
-  match path.find("?") {
-    Some(query_start) => path[:query_start].to_owned()
-    None => path
-  }
 }
 
 ///|
@@ -375,13 +354,15 @@ async fn send_native_response(
 }
 
 ///|
+///|
 async fn handle_http_request(
   mocket : Mocket,
   request : @http.Request,
   body_reader : &@io.Reader,
   conn : @http.ServerConnection,
 ) -> Unit {
-  let raw_body = if request_has_body(request) {
+  let headers = string_headers_to_views(request.headers)
+  let raw_body = if request_has_body(request_method_to_string(request.meth), headers) {
     let content_length = request.headers
       .get("content-length")
       .map(s => @string.parse_int(s.trim()) catch { _ => 0 })
@@ -398,11 +379,12 @@ async fn handle_http_request(
   } else {
     b""
   }
+  // `dispatch_http` normalizes `request.path` into a path + query internally.
   let response = dispatch_http(
     mocket,
     request_method_to_string(request.meth),
-    request_route_path(request.path),
-    string_headers_to_views(request.headers),
+    request.path,
+    headers,
     raw_body,
   ) catch {
     err => {
