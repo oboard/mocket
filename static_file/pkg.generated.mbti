@@ -6,13 +6,19 @@ import {
 }
 
 // Values
-pub fn new(String) -> StaticFileProvider
+pub let default_index_names : Array[String]
+
+pub fn mime_type_of(String) -> String?
+
+pub fn new(String, fallthrough? : Bool, index_names? : Array[String]) -> StaticFileProvider
 
 // Errors
 
 // Types and methods
 pub struct StaticFileProvider {
   path : String
+  fallthrough : Bool
+  index_names : Array[String]
 }
 pub impl @mocket.ServeStaticProvider for StaticFileProvider
 
