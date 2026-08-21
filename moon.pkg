@@ -22,6 +22,8 @@ import {
 
 warnings = "-15-29"
 
+supported_targets = "+js+native"
+
 options(
   expose: [
     "__ws_emit_js",
