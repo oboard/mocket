@@ -62,7 +62,7 @@ pub fn Mocket::static_assets(
   path : String,
   provider : &ServeStaticProvider,
 ) -> Unit {
-  self.use_middleware(async fn(event, next) noraise {
+  self.use_middleware(async fn(event, next) {
     if !(match_path(path, event.req.url) is None) {
       return next()
     }

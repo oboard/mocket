@@ -1,6 +1,6 @@
 ///|
 #warnings("-unused_async")
-async fn benchmark_route_handler(_event : MocketEvent) -> &Responder noraise {
+async fn benchmark_route_handler(_event : MocketEvent) -> &Responder {
   "ok"
 }
 
@@ -8,7 +8,7 @@ async fn benchmark_route_handler(_event : MocketEvent) -> &Responder noraise {
 async fn benchmark_middleware(
   _event : MocketEvent,
   next : MiddlewareNext,
-) -> &Responder noraise {
+) -> &Responder {
   next()
 }
 

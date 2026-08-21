@@ -374,7 +374,9 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
       }
 
       // 执行中间件链和处理器
-      let responder = mocket.execute_middlewares(event, handler)
+      let responder = mocket.execute_middlewares(event, handler) catch {
+        err => mocket.handle_request_error(event, err)
+      }
       // let boundary = "----------------moonbit-" + port.to_string()
       responder.options(event.res)
       res.write_head(

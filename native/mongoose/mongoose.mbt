@@ -184,7 +184,12 @@ fn handle_request(
   async_run(async fn() noraise {
     let response = @mocket.dispatch_http(
       mocket, http_method, url, headers, raw_body,
-    )
+    ) catch {
+      _ =>
+        @mocket.HttpResponse::new(@mocket.InternalServerError).body(
+          "Internal Server Error",
+        )
+    }
     res.status(response.status_code.to_int())
     response.headers.each((key, value) => {
       res.set_header(to_cbytes(key), to_cbytes(value))
