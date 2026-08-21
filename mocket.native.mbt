@@ -478,6 +478,14 @@ async fn handle_websocket_request(
 }
 
 ///|
+/// Listen and serve on `address`.
+///
+/// The native listener enables `SO_REUSEADDR` (`reuse_addr=true`) so that a
+/// process can immediately rebind a port that a previous process left in
+/// `TIME_WAIT`. On macOS/BSD this has the side effect that a bind to a specific
+/// address may "steal" the specific interface from an existing wildcard bind
+/// (`0.0.0.0`), and a wildcard bind can bind to the remaining interfaces if a
+/// specific-interface bind already exists.
 pub async fn listen_ffi(mocket : Mocket, address : String) -> Unit noraise {
   let address = normalize_listen_address(address)
   let addr = @socket.Addr::parse(address) catch {
@@ -488,7 +496,7 @@ pub async fn listen_ffi(mocket : Mocket, address : String) -> Unit noraise {
   }
   let port = addr.port()
   register_ws_handler(mocket, port)
-  let server = @http.Server(addr) catch {
+  let server = @http.Server(addr, reuse_addr=true) catch {
     err => {
       println("mocket: failed to listen on \{address}: \{err}")
       return
