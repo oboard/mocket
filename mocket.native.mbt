@@ -435,6 +435,32 @@ async fn read_body_limited(reader : &@io.Reader, max_size : Int) -> Bytes {
 }
 
 ///|
+async fn read_ws_limited(reader : &@io.Reader, max_size : Int) -> Bytes? {
+  if max_size <= 0 {
+    return Some(reader.read_all().binary())
+  }
+  let buf = Buffer()
+  let chunk_size = 8192
+  let chunk = FixedArray::make(chunk_size, b'\x00')
+  for total = 0 {
+    let n = reader.read(chunk) catch { _ => return None }
+    if n <= 0 {
+      break
+    }
+    if total + n > max_size {
+      return None
+    }
+    let arr : Array[Byte] = []
+    for i = 0; i < n; i = i + 1 {
+      arr.push(chunk[i])
+    }
+    buf.write_bytes(Bytes::from_array(arr))
+    continue total + n
+  }
+  Some(buf.to_bytes())
+}
+
+///|
 async fn handle_websocket_request(
   port : Int,
   mocket : Mocket,
@@ -454,11 +480,17 @@ async fn handle_websocket_request(
         for ;; {
           let msg = ws.recv()
           match msg.kind {
-            Text => {
-              let text = msg.read_all().text() catch { _ => "" }
-              handler(Message(peer, Text(text)))
-            }
-            Binary => handler(Message(peer, Binary(msg.read_all().binary())))
+            Text =>
+              match read_ws_limited(msg, mocket.max_body_size) {
+                Some(data) =>
+                  handler(Message(peer, Text(@utf8.decode_lossy(data))))
+                None => ()
+              }
+            Binary =>
+              match read_ws_limited(msg, mocket.max_body_size) {
+                Some(data) => handler(Message(peer, Binary(data)))
+                None => ()
+              }
           }
         }
       } catch {
