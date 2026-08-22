@@ -1,5 +1,6 @@
 import {
   "oboard/mocket",
+  "oboard/mocket/internal/header",
   "moonbitlang/async/http",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/string",

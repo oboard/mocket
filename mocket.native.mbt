@@ -338,19 +338,48 @@ async fn send_native_response(
   conn : @http.ServerConnection,
   response : HttpResponse,
 ) -> Unit {
-  let headers = view_headers_to_strings(response.headers)
-  if !response.cookies.is_empty() {
-    let cookies = response.cookies
-      .values()
-      .map(cookie => Show::to_string(cookie))
-      .to_array()
-    headers.set("Set-Cookie", cookies.join("\r\nSet-Cookie: "))
-  }
-  conn.send_response(response.status_code.to_int(), "OK", extra_headers=headers)
+  let raw_headers = view_headers_to_strings(response.headers)
+  let headers : Map[@http.CaseInsensitiveString, String] = Map([])
+  raw_headers.each(fn(key, value) {
+    if @header.is_valid_header_name(Show::to_string(key)) {
+      headers[key] = @header.sanitize_header_value(value)
+    }
+  })
+  let cookies = response.cookies
+    .values()
+    .map(cookie_item_to_http_cookie)
+    .to_array()
+  conn.send_response(
+    response.status_code.to_int(),
+    "OK",
+    extra_headers=headers,
+    cookies~,
+  )
   if request.meth != Head && !response.raw_body.is_empty() {
     conn.write(response.raw_body)
   }
   conn.end_response()
+}
+
+///|
+fn cookie_item_to_http_cookie(item : CookieItem) -> @http.Cookie {
+  let extensions : Array[String] = []
+  match item.same_site {
+    Some(Lax) => extensions.push("SameSite=Lax")
+    Some(Strict) => extensions.push("SameSite=Strict")
+    Some(SameSiteNone) => extensions.push("SameSite=None")
+    None => ()
+  }
+  @http.Cookie(
+    @header.sanitize_header_value(item.name),
+    @header.sanitize_header_value(item.value),
+    path?=item.path.map(@header.sanitize_header_value),
+    domain?=item.domain.map(@header.sanitize_header_value),
+    max_age?=item.max_age.map(fn(a) { a.to_int64() }),
+    secure=item.secure.unwrap_or(false),
+    http_only=item.http_only.unwrap_or(false),
+    extensions~,
+  )
 }
 
 ///|

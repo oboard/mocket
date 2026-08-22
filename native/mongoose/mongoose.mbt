@@ -198,12 +198,21 @@ fn handle_request(
     }
     res.status(response.status_code.to_int())
     response.headers.each((key, value) => {
-      res.set_header(to_cbytes(key), to_cbytes(value))
+      let key_str = Show::to_string(key)
+      if @header.is_valid_header_name(key_str) {
+        res.set_header(
+          to_cbytes(key),
+          to_cbytes(@header.sanitize_header_value(value.to_owned())),
+        )
+      }
     })
     response.cookies
     .values()
     .each(cookie => {
-      res.set_header(to_cbytes("Set-Cookie"), to_cbytes(cookie.to_string()))
+      res.set_header(
+        to_cbytes("Set-Cookie"),
+        to_cbytes(@header.sanitize_header_value(Show::to_string(cookie))),
+      )
     })
     res.end_bytes(response.raw_body, response.raw_body.length())
   })
