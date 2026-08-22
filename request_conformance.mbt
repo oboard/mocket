@@ -52,6 +52,23 @@ async test "route with no query string yields an empty query" {
 }
 
 ///|
+async test "query parameters are URL-decoded and exposed via HttpRequest::query" {
+  let app = new()
+  let captured : Array[String] = []
+  app.get("/search", event => {
+    let q = event.req.query()
+    captured.push(q.get("q").unwrap_or(""))
+    captured.push(q.get("page").unwrap_or(""))
+    captured.push(q.get("tag").unwrap_or(""))
+    "ok"
+  })
+  ignore(
+    dispatch_http(app, "GET", "/search?q=moon&page=2&tag=hello+world", {}, b""),
+  )
+  @test.assert_eq(captured, ["moon", "2", "hello world"])
+}
+
+///|
 async test "PUT and PATCH bodies are delivered to the handler" {
   let app = new()
   let captured : Array[String] = []

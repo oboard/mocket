@@ -139,7 +139,6 @@ pub fn Mocket::static_assets(
       ),
     )
     // Parse Accept-Encoding
-    // Headers are Map[StringView, StringView]
     let accept_encoding = event.req.headers.get("Accept-Encoding").unwrap_or("")
     let encodings = provider.get_encodings()
     let matched_encodings = []
