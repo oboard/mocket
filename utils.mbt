@@ -73,6 +73,30 @@ pub fn parse_form_data(bytes : BytesView) -> Map[String, String] {
 }
 
 ///|
+// 解析 URL 查询字符串（不含 `?`）成键值对，键值会做 URL 解码。
+// 与 parse_form_data 共享相同的 `&`/`=` 分割逻辑。
+pub fn parse_query(query_string : StringView) -> Map[String, String] {
+  let res = Map([])
+  if query_string.length() == 0 {
+    return res
+  }
+  // Split by '&'
+  let mut start = 0
+  let len = query_string.length()
+  for i in 0..<len {
+    if query_string[i] == '&' {
+      let part = query_string[start:i]
+      parse_kv(@utf8.encode(part)[:], res)
+      start = i + 1
+    }
+  }
+  if start < len {
+    parse_kv(@utf8.encode(query_string[start:len])[:], res)
+  }
+  res
+}
+
+///|
 fn parse_kv(part : BytesView, map : Map[String, String]) -> Unit {
   let len = part.length()
   let mut eq_idx = -1

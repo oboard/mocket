@@ -28,6 +28,13 @@ pub fn[T : FromJson] HttpRequest::json(self : HttpRequest) -> T raise {
 }
 
 ///|
+// 返回 URL 解码后的查询参数键值对。例如 `GET /search?q=moon&page=2`
+// 得到 `{ "q": "moon", "page": "2" }`。
+pub fn HttpRequest::query(self : HttpRequest) -> Map[String, String] {
+  parse_query(self.query)
+}
+
+///|
 pub impl BodyReader for String with fn from_request(req : HttpRequest) -> String raise {
   let bytes = req.raw_body
   let arr = bytes.to_array()
@@ -86,4 +93,27 @@ test "read_body" {
     ),
   )
   json_inspect(json, content={ "Hello": "World!" })
+}
+
+///|
+test "query_parsing" {
+  let req = HttpRequest::{
+    http_method: "GET",
+    url: "/search",
+    query: "q=moon&page=2&tag=hello+world",
+    headers: Map([]),
+    raw_body: b"",
+  }
+  let map = req.query()
+  @test.assert_eq(map.get("q").unwrap_or(""), "moon")
+  @test.assert_eq(map.get("page").unwrap_or(""), "2")
+  @test.assert_eq(map.get("tag").unwrap_or(""), "hello world")
+  let empty = HttpRequest::{
+    http_method: "GET",
+    url: "/plain",
+    query: "",
+    headers: Map([]),
+    raw_body: b"",
+  }
+  @test.assert_eq(empty.query().length(), 0)
 }

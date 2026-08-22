@@ -8,3 +8,4 @@ __pycache__/
 benchmarks/results/
 benchmarks/nitro/.nitro/
 benchmarks/nitro/.output/
+.claude/

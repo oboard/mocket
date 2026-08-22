@@ -34,7 +34,7 @@ async fn main {
   })
 
   // Async Response
-  ..get("/async_data", fn(_event) noraise {
+  ..get("/async_data", _event => {
     ({ "name": "John Doe", "age": 30, "city": "New York" } : Json)
   })
 

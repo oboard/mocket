@@ -28,9 +28,8 @@ pub fn HttpRequest::get_cookie(
   self : HttpRequest,
   name : String,
 ) -> CookieItem? {
+  // 请求头现在大小写不敏感，`Cookie` 一次查找即可。
   if self.headers.get("Cookie") is Some(cookie) {
-    parse_cookie(cookie).get(name)
-  } else if self.headers.get("cookie") is Some(cookie) {
     parse_cookie(cookie).get(name)
   } else {
     None
