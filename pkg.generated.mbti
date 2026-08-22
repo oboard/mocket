@@ -38,6 +38,8 @@ pub fn parse_form_data(BytesView) -> Map[String, String]
 
 pub fn parse_multipart(BytesView, String) -> Map[String, MultipartFormValue]
 
+pub fn parse_query(StringView) -> Map[String, String]
+
 pub fn register_ws_connection(String, (String) -> Unit, (Bytes) -> Unit, () -> Unit) -> Unit
 
 pub fn register_ws_handler(Mocket, Int) -> Unit
@@ -99,6 +101,7 @@ pub(all) struct HttpRequest {
 pub fn[T : BodyReader] HttpRequest::body(Self) -> T raise
 pub fn HttpRequest::get_cookie(Self, String) -> CookieItem?
 pub fn[T : @json.FromJson] HttpRequest::json(Self) -> T raise
+pub fn HttpRequest::query(Self) -> Map[String, String]
 pub impl Responder for HttpRequest
 
 pub(all) struct HttpResponse {
