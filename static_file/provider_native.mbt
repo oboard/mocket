@@ -14,7 +14,7 @@ pub impl ServeStaticProvider for StaticFileProvider with fn get_meta(
   let stat = @nativefs.stat_regular_file(full)
   match stat {
     None => None
-    Some({ size, mtime }) => {
+    Some({ size, mtime, }) => {
       let asset_type = match file_extension(id.to_owned()) {
         Some(ext) => self.get_type(ext)
         None => None

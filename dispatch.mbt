@@ -50,7 +50,7 @@ pub async fn dispatch_http(
     _ => ({}, handle_not_found())
   }
   let event = {
-    req: { http_method, url: path, query, raw_body, headers },
+    req: { http_method, url: path, query, raw_body, headers, },
     res: HttpResponse::new(OK),
     params,
   }

@@ -17,7 +17,7 @@ pub fn StaticAssetMeta::new(
   size? : Int64,
   encoding? : String,
 ) -> Self {
-  { asset_type, etag, mtime, path, size, encoding }
+  { asset_type, etag, mtime, path, size, encoding, }
 }
 
 ///|

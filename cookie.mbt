@@ -63,12 +63,12 @@ pub fn parse_cookie(cookie : StringView) -> Map[String, CookieItem] {
     let value = dequote(value).to_owned()
     if last_cookie_item is Some((name, item)) {
       if key =~ re"^(?i:path)$" {
-        let new_item = { ..item, path: Some(value) }
+        let new_item = { ..item, path: Some(value), }
         res.set(name, new_item)
         last_cookie_item = Some((name, new_item))
         return
       } else if key =~ re"^(?i:domain)$" {
-        let new_item = { ..item, domain: Some(value) }
+        let new_item = { ..item, domain: Some(value), }
         res.set(name, new_item)
         last_cookie_item = Some((name, new_item))
         return
@@ -85,12 +85,12 @@ pub fn parse_cookie(cookie : StringView) -> Map[String, CookieItem] {
         last_cookie_item = Some((name, new_item))
         return
       } else if key =~ re"^(?i:secure)$" {
-        let new_item = { ..item, secure: Some(true) }
+        let new_item = { ..item, secure: Some(true), }
         res.set(name, new_item)
         last_cookie_item = Some((name, new_item))
         return
       } else if key =~ re"^(?i:httponly)$" {
-        let new_item = { ..item, http_only: Some(true) }
+        let new_item = { ..item, http_only: Some(true), }
         res.set(name, new_item)
         last_cookie_item = Some((name, new_item))
         return

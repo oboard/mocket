@@ -26,7 +26,7 @@ pub async fn stat_regular_file(path : String) -> FileStat? {
   let size = file.size()
   let (mtime, _) = file.mtime()
   file.close()
-  Some({ size, mtime })
+  Some({ size, mtime, })
 }
 
 ///|

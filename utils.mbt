@@ -329,7 +329,7 @@ fn parse_multipart_part(
     }
   }
   if name != "" {
-    res.set(name, { filename, content_type, data: body_bytes })
+    res.set(name, { filename, content_type, data: body_bytes, })
   }
 }
 
