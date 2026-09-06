@@ -51,7 +51,7 @@ fn noop_middleware() -> @mocket_lib.Middleware {
 fn benchmark_port() -> Int {
   match @env.get_env_var("PORT") {
     Some(port_text) => {
-      let port : Int = @strconv.from_str(port_text) catch { _ => 3000 }
+      let port : Int = @string.from_str(port_text) catch { _ => 3000 }
       port
     }
     None => 3000

@@ -2,7 +2,7 @@ import {
   "moonbitlang/async",
   "moonbitlang/core/env",
   "moonbitlang/core/json",
-  "moonbitlang/core/strconv",
+  "moonbitlang/core/string",
   "oboard/mocket" @mocket_lib,
 }
 

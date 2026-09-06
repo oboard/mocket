@@ -1,7 +1,7 @@
 import {
   "moonbitlang/async",
   "moonbitlang/core/env",
-  "moonbitlang/core/strconv",
+  "moonbitlang/core/string",
   "oboard/mocket",
   "oboard/mocket/cors",
 }
