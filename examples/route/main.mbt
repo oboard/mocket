@@ -76,7 +76,7 @@ async fn main {
 fn example_port() -> Int {
   match @env.get_env_var("MOCKET_PORT") {
     Some(port_text) => {
-      let port : Int = @strconv.from_str(port_text) catch { _ => 4000 }
+      let port : Int = @string.from_str(port_text) catch { _ => 4000 }
       port
     }
     None => 4000
