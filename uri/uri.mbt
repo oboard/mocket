@@ -313,7 +313,7 @@ fn parse_port(source : BytesView, authority : Authority) -> BytesView {
 
 ///|
 fn parse_authority(source : BytesView, uri : Uri) -> BytesView raise ParseError {
-  let authority = Authority::{ userinfo: None, host: RegName(b""), port: None }
+  let authority = Authority::{ userinfo: None, host: RegName(b""), port: None, }
   uri.authority = Some(authority)
 
   // Try to parse userinfo first
@@ -545,7 +545,7 @@ test "RFC 3986 URI Reference Parsing" {
   @test.assert_eq(uri.scheme, Some(b"http"))
   assert_true(
     uri.authority ==
-    Some({ userinfo: None, host: RegName(b"example.com"), port: None }),
+    Some({ userinfo: None, host: RegName(b"example.com"), port: None, }),
   )
   @test.assert_eq(uri.path, [b"path", b"to", b"resource"])
   @test.assert_eq(uri.query, Some(b"query=parameter"))
@@ -590,7 +590,11 @@ test "RFC 3986 IPv6 Literal" {
   @test.assert_eq(uri.scheme, Some(b"http"))
   assert_true(
     uri.authority ==
-    Some({ userinfo: None, host: IPv6Address(b"2001:db8::1"), port: Some(8080) }),
+    Some({
+      userinfo: None,
+      host: IPv6Address(b"2001:db8::1"),
+      port: Some(8080),
+    }),
   )
   @test.assert_eq(uri.path, [])
 }
@@ -740,7 +744,7 @@ test "RFC 3986 Absolute URI Parsing" {
   @test.assert_eq(uri.scheme, Some(b"http"))
   assert_true(
     uri.authority ==
-    Some({ userinfo: None, host: RegName(b"example.com"), port: None }),
+    Some({ userinfo: None, host: RegName(b"example.com"), port: None, }),
   )
   @test.assert_eq(uri.path, [b"path", b"to", b"resource"])
   @test.assert_eq(uri.query, Some(b"query=parameter"))

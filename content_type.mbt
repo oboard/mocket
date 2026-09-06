@@ -47,7 +47,7 @@ fn parse_content_type(s : StringView) -> ContentType? {
     }
   }
 
-  Some({ media_type, subtype, params })
+  Some({ media_type, subtype, params, })
 }
 
 ///|

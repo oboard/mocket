@@ -472,7 +472,7 @@ pub fn __ws_emit_js_port(
       _ => ()
     }
   }
-  let peer = WebSocketPeer::{ connection_id, subscribed_channels: [] }
+  let peer = WebSocketPeer::{ connection_id, subscribed_channels: [], }
   dispatch_ws_event(handler, peer, event_type, payload)
 }
 

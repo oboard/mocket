@@ -15,7 +15,13 @@ fn MemProvider::new(
   fallthrough? : Bool = false,
   index_names? : Array[String] = ["index.html"],
 ) -> MemProvider {
-  { files, mime: { "txt": "text/plain" }, fallthrough, index_names, probed: [] }
+  {
+    files,
+    mime: { "txt": "text/plain" },
+    fallthrough,
+    index_names,
+    probed: [],
+  }
 }
 
 ///|

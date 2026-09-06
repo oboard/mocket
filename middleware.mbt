@@ -19,7 +19,7 @@ priv struct MiddlewareTrieNode {
 
 ///|
 fn new_middleware_trie_node() -> MiddlewareTrieNode {
-  { middlewares: [], children: {} }
+  { middlewares: [], children: {}, }
 }
 
 ///|
@@ -53,7 +53,7 @@ fn MiddlewareTrieNode::insert_middleware(
       }
     }
   }
-  node.middlewares.push({ order, middleware })
+  node.middlewares.push({ order, middleware, })
 }
 
 ///|

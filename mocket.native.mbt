@@ -23,7 +23,7 @@ priv struct WebSocketOutboundQueue {
 
 ///|
 fn WebSocketOutboundQueue::new() -> WebSocketOutboundQueue {
-  { frames: [], draining: false, closed: false }
+  { frames: [], draining: false, closed: false, }
 }
 
 ///|
@@ -496,7 +496,7 @@ async fn handle_websocket_request(
       let connection_id = next_ws_connection_id(port)
       let outbound = register_native_ws_connection(connection_id, ws)
       defer outbound.close()
-      let peer = WebSocketPeer::{ connection_id, subscribed_channels: [] }
+      let peer = WebSocketPeer::{ connection_id, subscribed_channels: [], }
       handler(Open(peer))
       try {
         for ;; {

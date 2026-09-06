@@ -141,7 +141,7 @@ priv struct DynamicRouteMatch {
 
 ///|
 fn new_dynamic_route_trie_node() -> DynamicRouteTrieNode {
-  { handler_entry: None, children: {}, edges: [] }
+  { handler_entry: None, children: {}, edges: [], }
 }
 
 ///|
@@ -249,7 +249,7 @@ fn DynamicRouteTrieNode::insert(
   while i < parts.length() {
     let part = parts[i]
     if part == "**" {
-      node.edges.push(DeepWildcard({ order, handler }))
+      node.edges.push(DeepWildcard({ order, handler, }))
       return
     } else if part == "*" {
       node = match node.wildcard_child() {
@@ -285,7 +285,7 @@ fn DynamicRouteTrieNode::insert(
     i = i + 1
   }
   match node.handler_entry {
-    None => node.handler_entry = Some({ order, handler })
+    None => node.handler_entry = Some({ order, handler, })
     Some(_) => ignore(())
   }
 }
@@ -300,7 +300,7 @@ fn DynamicRouteTrieNode::find(
   let mut found = if path_idx >= path_parts.length() {
     match self.handler_entry {
       Some(entry) =>
-        Some({ order: entry.order, handler: entry.handler, params })
+        Some({ order: entry.order, handler: entry.handler, params, })
       None => None
     }
   } else {
@@ -340,7 +340,11 @@ fn DynamicRouteTrieNode::find(
             dynamic_route_remaining_path(path_parts, path_idx),
           )
         }
-        Some({ order: entry.order, handler: entry.handler, params: next_params })
+        Some({
+          order: entry.order,
+          handler: entry.handler,
+          params: next_params,
+        })
       }
     }
     found = better_dynamic_route_match(found, candidate)
