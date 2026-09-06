@@ -117,7 +117,7 @@ pub impl Show for CookieItem with fn output(self, logger) -> Unit {
 
 ///|
 pub impl Show for CookieItem with fn to_string(self : CookieItem) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   Show::output(self, buf)
   buf.to_string()
 }
