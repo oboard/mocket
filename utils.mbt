@@ -126,7 +126,7 @@ fn parse_kv(part : BytesView, map : Map[String, String]) -> Unit {
 
 ///|
 pub fn escape_html(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s {
     match c {
       '&' => buf.write_string("&amp;")
@@ -154,7 +154,7 @@ fn is_unreserved(b : Byte) -> Bool {
 ///|
 pub fn url_encode(s : String) -> String {
   let bytes = @utf8.encode(s)
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i in 0..<bytes.length() {
     let b = bytes[i]
     if is_unreserved(b) {
@@ -182,7 +182,7 @@ pub fn url_encode(s : String) -> String {
 
 ///|
 pub fn form_encode(map : Map[String, String]) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut first = true
   map.each(fn(k, v) {
     if !first {
@@ -338,7 +338,7 @@ pub fn encode_multipart(
   m : Map[String, MultipartFormValue],
   boundary : String,
 ) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   m.each(fn(name, v) {
     sb.write_string("--" + boundary + "\r\n")
     sb.write_string("Content-Disposition: form-data; name=\"" + name + "\"")

@@ -38,7 +38,7 @@ pub fn sanitize_header_value(s : String) -> String {
   if !s.contains("\r") && !s.contains("\n") {
     return s
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s {
     match c {
       '\r' | '\n' => ()
