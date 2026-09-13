@@ -1,11 +1,14 @@
 import {
   "moonbitlang/core/json",
-  "moonbitlang/core/test",
 }
+
+import {
+  "moonbitlang/core/test",
+} for "test"
 
 // Suppress warning 20 from MoonBit's generated native test driver.
 
-warnings = "-20"
+warnings = "-20-29"
 
 options(
   targets: {

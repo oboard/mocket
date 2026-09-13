@@ -511,7 +511,7 @@ fn parse_query_no_fragment_then_done(
 
 ///|
 fn remove_dot_segments(path : Array[BytesView]) -> Array[BytesView] {
-  let output = Array::new()
+  let output = Array()
   for segment in path {
     if segment == b"." {
       continue // Remove single dot segments

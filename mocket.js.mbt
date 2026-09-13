@@ -64,7 +64,7 @@ extern "js" fn set_js_property(
 
 ///|
 #borrow(arr)
-extern "js" fn array_to_js(arr : Array[String]) -> @js.Value = "(arr) => arr"
+extern "js" fn array_to_js(arr : FixedArray[String]) -> @js.Value = "(arr) => arr"
 
 ///|
 #borrow(self, data)
@@ -387,7 +387,7 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
                 @header.sanitize_header_value(Show::to_string(cookie))
               })
               .to_array()
-            set_js_property(headers_obj, "Set-Cookie", array_to_js(cookies))
+            set_js_property(headers_obj, "Set-Cookie", array_to_js(cookies.to_fixedarray()))
           }
           headers_obj
         },
