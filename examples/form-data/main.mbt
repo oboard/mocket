@@ -21,16 +21,18 @@ async fn main {
 
   // A minimal browser form for trying the upload endpoint.
   app.get("/", _ => {
-    (
-      #|<!doctype html>
-      #|<html>
-      #|  <body>
-      #|    <form action="/upload" method="post" enctype="multipart/form-data">
-      #|      <label>File <input type="file" name="file" required></label>
-      #|      <button type="submit">Upload</button>
-      #|    </form>
-      #|  </body>
-      #|</html>
+    @mocket.html(
+      (
+        #|<!doctype html>
+        #|<html>
+        #|  <body>
+        #|    <form action="/upload" method="post" enctype="multipart/form-data">
+        #|      <label>File <input type="file" name="file" required></label>
+        #|      <button type="submit">Upload</button>
+        #|    </form>
+        #|  </body>
+        #|</html>
+      ),
     )
   })
 
