@@ -390,7 +390,7 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
             set_js_property(
               headers_obj,
               "Set-Cookie",
-              array_to_js(cookies.to_fixedarray()),
+              array_to_js(FixedArray::from_array(cookies)),
             )
           }
           headers_obj
