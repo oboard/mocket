@@ -51,7 +51,7 @@ pub async fn dispatch_http(
   }
   let event = {
     req: { http_method, url: path, query, raw_body, headers, },
-    res: HttpResponse::new(OK),
+    res: HttpResponse(OK),
     params,
   }
   let responder = mocket.execute_middlewares(event, handler) catch {

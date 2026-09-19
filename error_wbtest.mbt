@@ -19,7 +19,7 @@ async test "dispatch uses custom error handler" {
   let log : Array[String] = []
   app.on_error((event, err) => {
     log.push("\{event.req.http_method} \{event.req.url}: \{err}")
-    HttpResponse::new(Custom(599)).body("custom")
+    HttpResponse(Custom(599)).body("custom")
   })
   app.post("/custom", _ => raise TestRequestError("custom"))
 

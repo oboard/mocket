@@ -401,7 +401,7 @@ async fn handle_http_request(
       .map(s => @string.parse_int(s.trim()) catch { _ => 0 })
       .unwrap_or(0)
     if mocket.max_body_size > 0 && content_length > mocket.max_body_size {
-      let err_response = HttpResponse::new(
+      let err_response = HttpResponse(
         RequestEntityTooLarge,
         raw_body=b"Request body too large",
       )
@@ -420,7 +420,7 @@ async fn handle_http_request(
     headers,
     raw_body,
   ) catch {
-    err => HttpResponse::new(InternalServerError).body(err.to_string())
+    err => HttpResponse(InternalServerError).body(err.to_string())
   }
   send_native_response(request, conn, response)
 }
@@ -519,7 +519,7 @@ async fn handle_websocket_request(
       unregister_ws_connection(connection_id)
     }
     None => {
-      let response = HttpResponse::new(NotFound, raw_body=b"Not Found")
+      let response = HttpResponse(NotFound, raw_body=b"Not Found")
       response.headers.set("Content-Type", "text/plain; charset=utf-8")
       send_native_response(request, conn, response)
     }

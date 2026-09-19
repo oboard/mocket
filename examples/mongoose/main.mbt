@@ -6,7 +6,7 @@ fn main {
   ..get("/", _ => "Hello from Mongoose")
   ..get("/json", _ => ({ "backend": "mongoose", "status": "ok" } : Json))
   .post("/echo", event => {
-    let body : Bytes = event.req.body() catch { _ => b"" }
+    let body : Bytes = event.body() catch { _ => b"" }
     body
   })
 

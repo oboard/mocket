@@ -44,7 +44,7 @@ async test "direct html responder sets html content type" {
 async test "custom status body infers text content type" {
   let app = new()
   app.get("/bad-request", _ => {
-    HttpResponse::new(BadRequest).body("Invalid JSON")
+    HttpResponse(BadRequest).body("Invalid JSON")
   })
   let response = dispatch_http(app, "GET", "/bad-request", {}, b"")
   inspect(response.status_code.to_int(), content="400")
@@ -60,7 +60,7 @@ async test "custom status body infers text content type" {
 async test "custom status html body infers html content type" {
   let app = new()
   app.get("/not-found", _ => {
-    HttpResponse::new(NotFound).body(html("<h1>404</h1>"))
+    HttpResponse(NotFound).body(html("<h1>404</h1>"))
   })
   let response = dispatch_http(app, "GET", "/not-found", {}, b"")
   inspect(response.status_code.to_int(), content="404")
@@ -75,7 +75,7 @@ async test "custom status html body infers html content type" {
 ///|
 async test "json response infers json content type" {
   let app = new()
-  app.get("/created", _ => HttpResponse::new(Created).json({ "ok": true }))
+  app.get("/created", _ => HttpResponse(Created).json({ "ok": true }))
   let response = dispatch_http(app, "GET", "/created", {}, b"")
   inspect(response.status_code.to_int(), content="201")
   @test.assert_eq(
@@ -90,12 +90,12 @@ async test "json response infers json content type" {
 async test "explicit content type wins over inferred body type" {
   let app = new()
   app.get("/custom-body", _ => {
-    HttpResponse::new(OK, headers={ "Content-Type": "application/vnd.custom" }).body(
+    HttpResponse(OK, headers={ "Content-Type": "application/vnd.custom" }).body(
       "plain text",
     )
   })
   app.get("/custom-json", _ => {
-    HttpResponse::new(OK, headers={
+    HttpResponse(OK, headers={
       "Content-Type": "application/vnd.custom+json",
     }).json({ "ok": true })
   })

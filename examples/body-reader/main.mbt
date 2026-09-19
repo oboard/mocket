@@ -17,7 +17,7 @@ async fn main {
   // Text Response
   app.post("/", event => {
     let csv : Csv = event.req.body() catch { _ => Csv("") }
-    HttpResponse::new(OK).body(csv.0)
+    HttpResponse(OK).body(csv.0)
   })
 
   // Print Server URL

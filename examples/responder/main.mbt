@@ -25,17 +25,17 @@ async fn main {
     try {
       let payload : Json = event.req.json()
       guard payload is Object(obj) else {
-        return HttpResponse::new(BadRequest).body("Invalid JSON")
+        return HttpResponse(BadRequest).body("Invalid JSON")
       }
       guard obj.get("name") is Some(String(name)) else {
-        return HttpResponse::new(BadRequest).body("Invalid JSON")
+        return HttpResponse(BadRequest).body("Invalid JSON")
       }
       guard obj.get("age") is Some(Number(age, ..)) else {
-        return HttpResponse::new(BadRequest).body("Invalid JSON")
+        return HttpResponse(BadRequest).body("Invalid JSON")
       }
       "Hello, \{name}. You are \{age.to_int()} years old."
     } catch {
-      _ => return HttpResponse::new(BadRequest).body("Invalid JSON")
+      _ => return HttpResponse(BadRequest).body("Invalid JSON")
     }
   })
 
@@ -44,7 +44,7 @@ async fn main {
 
   // 404 Page
   .get("/404", _ => {
-    HttpResponse::new(NotFound).body(
+    HttpResponse(NotFound).body(
       @mocket.html(
         (
           #|<html>

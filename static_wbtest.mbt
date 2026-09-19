@@ -47,8 +47,8 @@ impl ServeStaticProvider for MemProvider with fn get_contents(self, id) {
   match self.files.get(id.to_owned()) {
     // raw_body: keep the Content-Type resolved by the middleware intact
     Some(content) =>
-      HttpResponse::new(OK, raw_body=@utf8.encode(content)).to_responder()
-    None => HttpResponse::new(NotFound).body("Not Found").to_responder()
+      HttpResponse(OK, raw_body=@utf8.encode(content)).to_responder()
+    None => HttpResponse(NotFound).body("Not Found").to_responder()
   }
 }
 

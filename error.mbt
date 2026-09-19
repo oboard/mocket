@@ -8,6 +8,15 @@ pub suberror NetworkError
 pub suberror ExecError
 
 ///|
+/// Errors raised while decoding a `multipart/form-data` request body.
+pub suberror FormDataError {
+  MissingContentType
+  InvalidContentType(String)
+  UnsupportedContentType(String)
+  MissingBoundary
+}
+
+///|
 // 请求错误处理器：接收事件和未捕获的错误，返回一个响应。
 // 用于记录日志、返回自定义错误响应等。
 pub type ErrorHandler = (MocketEvent, Error) -> &Responder
@@ -15,7 +24,7 @@ pub type ErrorHandler = (MocketEvent, Error) -> &Responder
 ///|
 // 默认错误处理器：返回 500 Internal Server Error 并附带错误信息。
 fn default_error_handler(_event : MocketEvent, err : Error) -> &Responder {
-  HttpResponse::new(InternalServerError).body(err.to_string())
+  HttpResponse(InternalServerError).body(err.to_string())
 }
 
 ///|

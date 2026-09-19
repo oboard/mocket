@@ -192,7 +192,7 @@ fn handle_request(
       mocket, http_method, url, headers, raw_body,
     ) catch {
       _ =>
-        @mocket.HttpResponse::new(@mocket.InternalServerError).body(
+        @mocket.HttpResponse(@mocket.InternalServerError).body(
           "Internal Server Error",
         )
     }

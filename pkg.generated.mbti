@@ -71,6 +71,13 @@ pub fn ws_unsubscribe(String, String) -> Unit
 // Errors
 pub suberror ExecError
 
+pub suberror FormDataError {
+  MissingContentType
+  InvalidContentType(String)
+  UnsupportedContentType(String)
+  MissingBoundary
+}
+
 pub suberror IOError
 
 pub suberror NetworkError
@@ -87,6 +94,13 @@ pub(all) struct CookieItem {
   same_site : SameSiteOption?
 } derive(Eq)
 pub impl Show for CookieItem
+
+pub(all) struct FormData {
+  fields : Map[String, MultipartFormValue]
+}
+pub fn FormData::fields(Self) -> Map[String, MultipartFormValue]
+pub fn FormData::get(Self, String) -> MultipartFormValue?
+pub impl BodyReader for FormData
 
 type Html
 pub impl Responder for Html
@@ -113,7 +127,7 @@ pub(all) struct HttpResponse {
 pub fn HttpResponse::body(Self, &Responder) -> Self
 pub fn HttpResponse::delete_cookie(Self, String) -> Unit
 pub fn HttpResponse::json(Self, &ToJson) -> Self
-pub fn HttpResponse::new(StatusCode, headers? : Map[@http.CaseInsensitiveString, StringView], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
+pub fn HttpResponse(StatusCode, headers? : Map[@http.CaseInsensitiveString, StringView], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
 pub fn[T : BodyReader] HttpResponse::read_body(Self) -> T raise
 pub fn HttpResponse::set_cookie(Self, String, String, max_age? : Int, path? : String, domain? : String, secure? : Bool, http_only? : Bool, same_site? : SameSiteOption) -> Unit
 pub fn HttpResponse::to_responder(Self) -> &Responder

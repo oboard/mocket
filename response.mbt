@@ -18,7 +18,8 @@ pub fn[T : BodyReader] HttpResponse::read_body(self : HttpResponse) -> T raise {
 }
 
 ///|
-pub fn HttpResponse::new(
+#alias(new, deprecated="Use `HttpResponse()` instead")
+pub fn HttpResponse::HttpResponse(
   status_code : StatusCode,
   headers? : Map[@http.CaseInsensitiveString, StringView],
   cookies? : Map[String, CookieItem],
@@ -46,7 +47,7 @@ pub fn HttpResponse::body(
   self : HttpResponse,
   body : &Responder,
 ) -> HttpResponse {
-  let probe = HttpResponse::new(OK)
+  let probe = HttpResponse(OK)
   body.options(probe)
   if probe.headers.get("Content-Type") is Some(content_type) &&
     !self.headers.contains("Content-Type") {
@@ -76,7 +77,7 @@ pub fn HttpResponse::to_responder(self : HttpResponse) -> &Responder {
 
 ///|
 test "read_response_body" {
-  let res = HttpResponse::new(OK, raw_body=b"{\"Hello\":\"Response\"}")
+  let res = HttpResponse(OK, raw_body=b"{\"Hello\":\"Response\"}")
   let text : String = res.read_body()
   let json : Json = res.read_body()
   inspect(
