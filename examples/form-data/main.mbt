@@ -7,12 +7,13 @@ async fn main {
 
   // Submit an HTML form with `enctype="multipart/form-data"` to this route.
   app.post("/upload", event => {
-    let form : FormData = event.req.body()
+    let form : FormData = event.body()
     if form.get("file") is Some({ filename, content_type, data, }) {
-      let size = data.length()
-      HttpResponse(OK).body(
-        "received \{filename.unwrap_or("unnamed file")} (\{content_type.unwrap_or("application/octet-stream")}, \{size} bytes)",
-      )
+      let content =
+        $|filename: \{filename.unwrap_or("Unknown")}
+        $|content_type: \{content_type.unwrap_or("Unknown")}
+        $|size: \{data.length()} bytes
+      HttpResponse(OK).body(content)
     } else {
       HttpResponse(BadRequest).body("missing file field")
     }
