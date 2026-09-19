@@ -392,10 +392,7 @@ async fn handle_http_request(
   conn : @http.ServerConnection,
 ) -> Unit {
   let headers = string_headers_to_views(request.headers)
-  let raw_body = if request_has_body(
-      request_method_to_string(request.meth),
-      headers,
-    ) {
+  if request_has_body(request_method_to_string(request.meth), headers) {
     let content_length = request.headers
       .get("content-length")
       .map(s => @string.parse_int(s.trim()) catch { _ => 0 })
@@ -408,47 +405,28 @@ async fn handle_http_request(
       send_native_response(request, conn, err_response)
       return
     }
-    read_body_limited(body_reader, mocket.max_body_size)
-  } else {
-    b""
+    let response = dispatch_http_reader(
+      mocket,
+      request_method_to_string(request.meth),
+      request.path,
+      headers,
+      body_reader,
+    ) catch {
+      err => HttpResponse(InternalServerError).body(err.to_string())
+    }
+    send_native_response(request, conn, response)
+    return
   }
-  // `dispatch_http` normalizes `request.path` into a path + query internally.
   let response = dispatch_http(
     mocket,
     request_method_to_string(request.meth),
     request.path,
     headers,
-    raw_body,
+    b"",
   ) catch {
     err => HttpResponse(InternalServerError).body(err.to_string())
   }
   send_native_response(request, conn, response)
-}
-
-///|
-async fn read_body_limited(reader : &@io.Reader, max_size : Int) -> Bytes {
-  if max_size <= 0 {
-    return reader.read_all().binary()
-  }
-  let buf = Buffer()
-  let chunk_size = 8192
-  let chunk = FixedArray::make(chunk_size, b'\x00')
-  for total = 0 {
-    let n = reader.read(chunk) catch { _ => break }
-    if n <= 0 {
-      break
-    }
-    if total + n > max_size {
-      break
-    }
-    let arr : Array[Byte] = []
-    for i = 0; i < n; i = i + 1 {
-      arr.push(chunk[i])
-    }
-    buf.write_bytes(Bytes::from_array(arr))
-    continue total + n
-  }
-  buf.to_bytes()
 }
 
 ///|

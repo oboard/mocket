@@ -37,6 +37,37 @@ fn request_has_body(
 }
 
 ///|
+/// Dispatch a request whose body is still available as an async reader.
+/// BodyReader implementations decide whether to read it incrementally or buffer
+/// it. This is used by the native HTTP server.
+async fn dispatch_http_reader(
+  mocket : Mocket,
+  http_method : String,
+  url : String,
+  headers : Map[@http.CaseInsensitiveString, StringView],
+  body_reader : &@io.Reader,
+) -> HttpResponse {
+  let (path, query) = split_request_target(url)
+  let (params, handler) = match mocket.find_route(http_method, path) {
+    Some((h, p)) => (p, h)
+    _ => ({}, handle_not_found())
+  }
+  let event = {
+    req: { http_method, url: path, query, headers, reader: body_reader, },
+    res: HttpResponse(OK),
+    params,
+  }
+  let responder = mocket.execute_middlewares(event, handler) catch {
+    err => mocket.handle_request_error(event, err)
+  }
+  responder.options(event.res)
+  let buf = Buffer()
+  responder.output(buf)
+  event.res.raw_body = buf.to_bytes()
+  event.res
+}
+
+///|
 pub async fn dispatch_http(
   mocket : Mocket,
   http_method : String,
@@ -50,7 +81,13 @@ pub async fn dispatch_http(
     _ => ({}, handle_not_found())
   }
   let event = {
-    req: { http_method, url: path, query, raw_body, headers, },
+    req: {
+      http_method,
+      url: path,
+      query,
+      headers,
+      reader: @io.MemoryReader(writer => writer.write(raw_body)),
+    },
     res: HttpResponse(OK),
     params,
   }

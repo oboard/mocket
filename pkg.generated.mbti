@@ -3,6 +3,7 @@ package "oboard/mocket"
 
 import {
   "moonbitlang/async/http",
+  "moonbitlang/async/io",
   "moonbitlang/core/buffer",
   "moonbitlang/core/json",
 }
@@ -95,9 +96,7 @@ pub(all) struct CookieItem {
 } derive(Eq)
 pub impl Show for CookieItem
 
-pub(all) struct FormData {
-  fields : Map[String, MultipartFormValue]
-}
+pub(all) struct FormData(Map[String, MultipartFormValue])
 pub fn FormData::fields(Self) -> Map[String, MultipartFormValue]
 pub fn FormData::get(Self, String) -> MultipartFormValue?
 pub impl BodyReader for FormData
@@ -110,13 +109,12 @@ pub(all) struct HttpRequest {
   url : String
   query : String
   headers : Map[@http.CaseInsensitiveString, StringView]
-  mut raw_body : Bytes
+  reader : &@io.Reader
 }
-pub fn[T : BodyReader] HttpRequest::body(Self) -> T raise
+pub async fn[T : BodyReader] HttpRequest::body(Self) -> T
 pub fn HttpRequest::get_cookie(Self, String) -> CookieItem?
-pub fn[T : @json.FromJson] HttpRequest::json(Self) -> T raise
+pub async fn[T : @json.FromJson] HttpRequest::json(Self) -> T
 pub fn HttpRequest::query(Self) -> Map[String, String]
-pub impl Responder for HttpRequest
 
 pub(all) struct HttpResponse {
   mut status_code : StatusCode
@@ -124,11 +122,12 @@ pub(all) struct HttpResponse {
   cookies : Map[String, CookieItem]
   mut raw_body : Bytes
 }
+#alias(new, deprecated)
+pub fn HttpResponse::HttpResponse(StatusCode, headers? : Map[@http.CaseInsensitiveString, StringView], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
 pub fn HttpResponse::body(Self, &Responder) -> Self
 pub fn HttpResponse::delete_cookie(Self, String) -> Unit
 pub fn HttpResponse::json(Self, &ToJson) -> Self
-pub fn HttpResponse(StatusCode, headers? : Map[@http.CaseInsensitiveString, StringView], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
-pub fn[T : BodyReader] HttpResponse::read_body(Self) -> T raise
+pub async fn[T : BodyReader] HttpResponse::read_body(Self) -> T
 pub fn HttpResponse::set_cookie(Self, String, String, max_age? : Int, path? : String, domain? : String, secure? : Bool, http_only? : Bool, same_site? : SameSiteOption) -> Unit
 pub fn HttpResponse::to_responder(Self) -> &Responder
 pub impl Responder for HttpResponse
@@ -204,6 +203,7 @@ pub(all) struct MocketEvent {
   res : HttpResponse
   params : Map[String, StringView]
 }
+pub async fn[T : BodyReader] MocketEvent::body(Self) -> T
 
 pub(all) struct MultipartFormValue {
   filename : String?
@@ -334,7 +334,7 @@ pub type WebSocketHandler = (WebSocketEvent) -> Unit
 
 // Traits
 pub(open) trait BodyReader {
-  fn from_request(HttpRequest) -> Self raise
+  async fn from_request(HttpRequest) -> Self
 }
 pub impl BodyReader for String
 pub impl BodyReader for FixedArray[Byte]

@@ -88,7 +88,7 @@ async fn request(
 }
 
 ///|
-fn body_string(res : HttpResponse) -> String raise {
+async fn body_string(res : HttpResponse) -> String {
   res.read_body()
 }
 

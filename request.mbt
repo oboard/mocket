@@ -9,22 +9,30 @@ pub(all) struct HttpRequest {
   query : String
   /// Case-insensitive request headers (HTTP field names are case-insensitive).
   headers : Map[@http.CaseInsensitiveString, StringView]
-  mut raw_body : Bytes
+  /// The request body. It can be consumed exactly once through `body()`.
+  reader : &@io.Reader
 }
 
 ///|
 pub(open) trait BodyReader {
-  fn from_request(req : HttpRequest) -> Self raise
+  async fn from_request(req : HttpRequest) -> Self
 }
 
 ///|
-pub fn[T : BodyReader] HttpRequest::body(self : HttpRequest) -> T raise {
+/// Decode the request body with `T`. On native HTTP requests this consumes the
+/// network body incrementally when the selected BodyReader supports it.
+pub async fn[T : BodyReader] HttpRequest::body(self : HttpRequest) -> T {
   T::from_request(self)
 }
 
 ///|
-pub fn[T : FromJson] HttpRequest::json(self : HttpRequest) -> T raise {
+pub async fn[T : FromJson] HttpRequest::json(self : HttpRequest) -> T {
   @json.from_json(self.body())
+}
+
+///|
+async fn HttpRequest::read_all(self : HttpRequest) -> Bytes {
+  self.reader.read_all().binary()
 }
 
 ///|
@@ -35,8 +43,8 @@ pub fn HttpRequest::query(self : HttpRequest) -> Map[String, String] {
 }
 
 ///|
-pub impl BodyReader for String with fn from_request(req : HttpRequest) -> String raise {
-  let bytes = req.raw_body
+pub impl BodyReader for String with fn from_request(req : HttpRequest) -> String {
+  let bytes = req.read_all()
   let arr = bytes.to_array()
   if arr.length() > 0 {
     let mut zero_count = 0
@@ -52,8 +60,8 @@ pub impl BodyReader for String with fn from_request(req : HttpRequest) -> String
 }
 
 ///|
-pub impl BodyReader for Json with fn from_request(req : HttpRequest) -> Json raise {
-  @json.parse(@utf8.decode(req.raw_body))
+pub impl BodyReader for Json with fn from_request(req : HttpRequest) -> Json {
+  @json.parse(@utf8.decode(req.read_all()))
 }
 
 ///|
@@ -99,38 +107,46 @@ pub impl BodyReader for FormData with fn from_request(req : HttpRequest) -> Form
     Some(value) if value != "" => value
     _ => raise MissingBoundary
   }
-  FormData(parse_multipart(req.raw_body[:], boundary.to_owned()))
+  let body = req.read_all()
+  FormData(parse_multipart(body[:], boundary.to_owned()))
 }
 
 ///|
 pub impl BodyReader for Bytes with fn from_request(req : HttpRequest) -> Bytes raise {
-  req.raw_body
+  req.read_all()
 }
 
 ///|
 pub impl BodyReader for FixedArray[Byte] with fn from_request(req : HttpRequest) -> FixedArray[
   Byte,
 ] raise {
-  req.raw_body.to_fixedarray()
+  req.read_all().to_fixedarray()
 }
 
 ///|
 pub impl BodyReader for Array[Byte] with fn from_request(req : HttpRequest) -> Array[
   Byte,
 ] raise {
-  req.raw_body.to_array()
+  req.read_all().to_array()
 }
 
 ///|
-test "read_body" {
+async test "read_body" {
   let req = HttpRequest::{
     http_method: "POST",
     url: "/",
     query: "",
     headers: Map([]),
-    raw_body: b"{\"Hello\":\"World!\"}",
+    reader: @io.MemoryReader(writer => writer.write(b"{\"Hello\":\"World!\"}")),
   }
-  let text : String = req.body()
+  let text_req = HttpRequest::{
+    http_method: "POST",
+    url: "/",
+    query: "",
+    headers: Map([]),
+    reader: @io.MemoryReader(writer => writer.write(b"{\"Hello\":\"World!\"}")),
+  }
+  let text : String = text_req.body()
   let json : Json = req.body()
   debug_inspect(
     text,
@@ -142,7 +158,7 @@ test "read_body" {
 }
 
 ///|
-test "form_data_body_reader" {
+async test "form_data_body_reader" {
   let req = HttpRequest::{
     http_method: "POST",
     url: "/upload",
@@ -150,7 +166,11 @@ test "form_data_body_reader" {
     headers: {
       "Content-Type": "multipart/form-data; boundary=example-boundary",
     },
-    raw_body: b"--example-boundary\r\nContent-Disposition: form-data; name=\"title\"\r\n\r\nMoonBit\r\n--example-boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"hello.txt\"\r\nContent-Type: text/plain\r\n\r\nhello\r\n--example-boundary--\r\n",
+    reader: @io.MemoryReader(writer => {
+      writer.write(
+        b"--example-boundary\r\nContent-Disposition: form-data; name=\"title\"\r\n\r\nMoonBit\r\n--example-boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"hello.txt\"\r\nContent-Type: text/plain\r\n\r\nhello\r\n--example-boundary--\r\n",
+      )
+    }),
   }
   let form : FormData = req.body()
   @test.assert_eq(
@@ -168,13 +188,13 @@ test "form_data_body_reader" {
 }
 
 ///|
-test "form_data_body_reader_requires_multipart_content_type" {
+async test "form_data_body_reader_requires_multipart_content_type" {
   let req = HttpRequest::{
     http_method: "POST",
     url: "/upload",
     query: "",
     headers: {},
-    raw_body: b"",
+    reader: @io.MemoryReader(writer => writer.write(b"")),
   }
   let result = try {
     let _ : FormData = req.body()
@@ -193,7 +213,7 @@ test "query_parsing" {
     url: "/search",
     query: "q=moon&page=2&tag=hello+world",
     headers: Map([]),
-    raw_body: b"",
+    reader: @io.MemoryReader(writer => writer.write(b"")),
   }
   let map = req.query()
   @test.assert_eq(map.get("q").unwrap_or(""), "moon")
@@ -204,7 +224,7 @@ test "query_parsing" {
     url: "/plain",
     query: "",
     headers: Map([]),
-    raw_body: b"",
+    reader: @io.MemoryReader(writer => writer.write(b"")),
   }
   @test.assert_eq(empty.query().length(), 0)
 }

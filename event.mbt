@@ -6,6 +6,6 @@ pub(all) struct MocketEvent {
 }
 
 ///|
-pub fn[T : BodyReader] MocketEvent::body(self : MocketEvent) -> T raise {
+pub async fn[T : BodyReader] MocketEvent::body(self : MocketEvent) -> T {
   self.req.body()
 }

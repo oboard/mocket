@@ -55,7 +55,7 @@ async fn get(
 }
 
 ///|
-fn body_string(res : @mocket.HttpResponse) -> String raise {
+async fn body_string(res : @mocket.HttpResponse) -> String {
   res.read_body()
 }
 

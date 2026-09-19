@@ -15,16 +15,6 @@ pub impl Responder for &ToJson with fn output(self, buf) -> Unit {
 }
 
 ///|
-pub impl Responder for HttpRequest with fn options(self, res) -> Unit {
-  res.headers.merge_in_place(self.headers)
-}
-
-///|
-pub impl Responder for HttpRequest with fn output(self, buf) -> Unit {
-  buf.write_bytes(self.raw_body)
-}
-
-///|
 pub impl Responder for HttpResponse with fn options(self, res) -> Unit {
   res.status_code = self.status_code
   res.headers.merge_in_place(self.headers)

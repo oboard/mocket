@@ -365,8 +365,7 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
       let response = dispatch_http(
         mocket, http_method, url, string_headers, raw,
       ) catch {
-        _ =>
-          HttpResponse(InternalServerError).body("Internal Server Error")
+        _ => HttpResponse(InternalServerError).body("Internal Server Error")
       }
       let safe_headers : Map[@http.CaseInsensitiveString, String] = Map([])
       response.headers.each(fn(k, v) {

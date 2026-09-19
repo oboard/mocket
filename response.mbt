@@ -7,13 +7,13 @@ pub(all) struct HttpResponse {
 }
 
 ///|
-pub fn[T : BodyReader] HttpResponse::read_body(self : HttpResponse) -> T raise {
+pub async fn[T : BodyReader] HttpResponse::read_body(self : HttpResponse) -> T {
   T::from_request({
     http_method: "",
     url: "",
     query: "",
     headers: self.headers,
-    raw_body: self.raw_body,
+    reader: @io.MemoryReader(writer => writer.write(self.raw_body)),
   })
 }
 
@@ -76,7 +76,7 @@ pub fn HttpResponse::to_responder(self : HttpResponse) -> &Responder {
 }
 
 ///|
-test "read_response_body" {
+async test "read_response_body" {
   let res = HttpResponse(OK, raw_body=b"{\"Hello\":\"Response\"}")
   let text : String = res.read_body()
   let json : Json = res.read_body()

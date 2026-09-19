@@ -32,10 +32,14 @@ async fn main {
     event.res.headers["x-benchmark"] = "mocket"
     "ok"
   })
-  ..post("/echo", event => event.req.raw_body)
+  ..post("/echo", event => {
+    let body : Bytes = event.req.body()
+    body
+  })
   ..post("/json-echo", event => {
     event.res.headers["Content-Type"] = "application/json; charset=utf-8"
-    event.req.raw_body
+    let body : Bytes = event.req.body()
+    body
   })
   .post("/consume", _ => "ok")
 
