@@ -58,7 +58,10 @@ async fn main {
   })
 
   // Echo Server
-  ..post("/echo", e => e.req)
+  ..post("/echo", e => {
+    let body : Bytes = e.req.body()
+    body
+  })
 
   // 404 Page
   .use_middleware(not_found_middleware())
