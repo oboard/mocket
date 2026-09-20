@@ -1,0 +1,74 @@
+dispatch.mbt
+  h_c7606fb8f0c97c 44,70
+static_wbtest.mbt
+  h_c7606fb8f0c97c 81,96,119,150,168,183,197,215,239
+examples/route/main.mbt
+  h_c7606fb8f0c97c 5
+error.mbt
+  h_c7606fb8f0c97c 32-33,42
+middleware_wbtest.mbt
+  h_c7606fb8f0c97c 13,29,45,63
+index.mbt
+  h_c7606fb8f0c97c 10-11,32-39,41-42,137-138,163,168,173,178,183,188,193,198,203,208,213,218,223,228,233,238,243,248,253-254,262-263,271,276-277,285-286,294,299-300,308,313,318,323,328,333,338,343,348-349,357,362,367,372-373,381-382,390,396-397,399,401,431
+static.mbt
+  h_c7606fb8f0c97c 96-97
+benchmarks/mocket/main.mbt
+  h_c7606fb8f0c97c 4
+performance_wbtest.mbt
+  h_c7606fb8f0c97c 16-17,33
+benchmarks/mocket_middleware/moon.pkg
+  h_c7606fb8f0c97c 5
+static_file/static_file_blackbox_test.mbt
+  h_c7606fb8f0c97c 50,65,119,135,143
+static_file/static_file_metadata_test.mbt
+  h_c7606fb8f0c97c 9
+responder_test.mbt
+  h_c7606fb8f0c97c 3,17,31,45,59,73,87
+path_match.mbt
+  h_c7606fb8f0c97c 357-358,408-409,574,618,628,639
+error_wbtest.mbt
+  h_c7606fb8f0c97c 8,18,37
+examples/mongoose/main.mbt
+  h_c7606fb8f0c97c 3
+examples/responder/main.mbt
+  h_c7606fb8f0c97c 6
+serve.native.mbt
+  h_c7606fb8f0c97c 3,8
+mocket.native.mbt
+  h_c7606fb8f0c97c 45,126,181,392,463,517,554
+native/mongoose/mongoose.mbt
+  h_c7606fb8f0c97c 102,165,229,234
+middleware.mbt
+  h_c7606fb8f0c97c 27-28,108,125-126
+request_conformance.mbt
+  h_c7606fb8f0c97c 9,19,32,44,56,73,92
+examples/cookie/main.mbt
+  h_c7606fb8f0c97c 3
+benchmarks/mocket/moon.pkg
+  h_c7606fb8f0c97c 5
+examples/form-data/main.mbt
+  h_c7606fb8f0c97c 6
+benchmarks/mocket_middleware/main.mbt
+  h_c7606fb8f0c97c 4,50
+mocket.js.mbt
+  h_c7606fb8f0c97c 458,496,514,528
+examples/static_assets/main.mbt
+  h_c7606fb8f0c97c 3
+README.md
+  h_c7606fb8f0c97c 13
+examples/websocket/websocket_echo.mbt
+  h_c7606fb8f0c97c 3
+examples/body-reader/main.mbt
+  h_c7606fb8f0c97c 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "6521ea319dd6d8130a1d2532b3d5e0fe7053c9a0",
+  "prompts": {},
+  "humans": {
+    "h_c7606fb8f0c97c": {
+      "author": "oboard <oboard@outlook.com>"
+    }
+  }
+}
