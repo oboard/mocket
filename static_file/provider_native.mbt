@@ -49,9 +49,8 @@ pub impl ServeStaticProvider for StaticFileProvider with fn get_contents(
   match bytes {
     // The file vanished between get_meta and this read.
     None => @mocket.HttpResponse(NotFound).body("Not Found").to_responder()
-    // Construct with `raw_body` instead of `body()` so no default
-    // Content-Type (application/octet-stream) clobbers the one the
-    // middleware already resolved from the file extension.
-    Some(bytes) => @mocket.HttpResponse(OK, raw_body=bytes).to_responder()
+    // Provide an explicit responder so no default Content-Type
+    // (application/octet-stream) clobbers the middleware-resolved value.
+    Some(bytes) => @mocket.HttpResponse(OK, body=bytes).to_responder()
   }
 }

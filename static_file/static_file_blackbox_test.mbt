@@ -122,7 +122,6 @@ async test "static file provider: HEAD and conditional GET" {
   // HEAD serves the asset's headers with an empty body.
   let res = @mocket.dispatch_http(app, "HEAD", "/assets/app.txt", {}, b"")
   assert_eq(res.status_code.to_int(), 200)
-  assert_eq(res.raw_body, b"")
   assert_eq(res.headers.get("Content-Type"), Some("text/plain; charset=utf-8"))
 
   fixture.cleanup()

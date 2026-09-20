@@ -355,8 +355,11 @@ async fn send_native_response(
     extra_headers=headers,
     cookies~,
   )
-  if request.meth != Head && !response.raw_body.is_empty() {
-    conn.write(response.raw_body)
+  if request.meth != Head {
+    match response.body {
+      Some(body) => body.output(conn)
+      None => ()
+    }
   }
   conn.end_response()
 }
@@ -398,9 +401,8 @@ async fn handle_http_request(
       .map(s => @string.parse_int(s.trim()) catch { _ => 0 })
       .unwrap_or(0)
     if mocket.max_body_size > 0 && content_length > mocket.max_body_size {
-      let err_response = HttpResponse(
-        RequestEntityTooLarge,
-        raw_body=b"Request body too large",
+      let err_response = HttpResponse(RequestEntityTooLarge).body(
+        "Request body too large",
       )
       send_native_response(request, conn, err_response)
       return
@@ -497,8 +499,7 @@ async fn handle_websocket_request(
       unregister_ws_connection(connection_id)
     }
     None => {
-      let response = HttpResponse(NotFound, raw_body=b"Not Found")
-      response.headers.set("Content-Type", "text/plain; charset=utf-8")
+      let response = HttpResponse(NotFound).body("Not Found")
       send_native_response(request, conn, response)
     }
   }

@@ -1,7 +1,12 @@
 ///|
 pub(open) trait Responder {
   fn options(Self, res : HttpResponse) -> Unit
-  fn output(Self, buf : @buffer.Buffer) -> Unit
+  async fn output(Self, writer : &@io.Writer) -> Unit
+}
+
+///|
+async fn &ToJson::write_response(self : &ToJson, writer : &@io.Writer) -> Unit {
+  writer.write(@utf8.encode(self.to_json().stringify()))
 }
 
 ///|
@@ -10,8 +15,19 @@ pub impl Responder for &ToJson with fn options(_, res) -> Unit {
 }
 
 ///|
-pub impl Responder for &ToJson with fn output(self, buf) -> Unit {
-  buf.write_bytes(@utf8.encode(self.to_json().stringify()))
+pub impl Responder for &ToJson with fn output(self, writer) {
+  self.write_response(writer)
+}
+
+///|
+async fn HttpResponse::write_response(
+  self : HttpResponse,
+  writer : &@io.Writer,
+) -> Unit {
+  match self.body {
+    Some(body) => body.output(writer)
+    None => ()
+  }
 }
 
 ///|
@@ -21,8 +37,13 @@ pub impl Responder for HttpResponse with fn options(self, res) -> Unit {
 }
 
 ///|
-pub impl Responder for HttpResponse with fn output(self, buf) -> Unit {
-  buf.write_bytes(self.raw_body)
+pub impl Responder for HttpResponse with fn output(self, writer) {
+  self.write_response(writer)
+}
+
+///|
+async fn Json::write_response(self : Json, writer : &@io.Writer) -> Unit {
+  writer.write(@utf8.encode(@json.to_json(self).stringify()))
 }
 
 ///|
@@ -31,8 +52,13 @@ pub impl Responder for Json with fn options(_, res) -> Unit {
 }
 
 ///|
-pub impl Responder for Json with fn output(self, buf) -> Unit {
-  buf.write_bytes(@utf8.encode(@json.to_json(self).stringify()))
+pub impl Responder for Json with fn output(self, writer) {
+  self.write_response(writer)
+}
+
+///|
+async fn Bytes::write_response(self : Bytes, writer : &@io.Writer) -> Unit {
+  writer.write(self)
 }
 
 ///|
@@ -41,8 +67,13 @@ pub impl Responder for Bytes with fn options(_, res) -> Unit {
 }
 
 ///|
-pub impl Responder for Bytes with fn output(self, buf) -> Unit {
-  buf.write_bytes(self)
+pub impl Responder for Bytes with fn output(self, writer) {
+  self.write_response(writer)
+}
+
+///|
+async fn String::write_response(self : String, writer : &@io.Writer) -> Unit {
+  writer.write(self)
 }
 
 ///|
@@ -51,8 +82,16 @@ pub impl Responder for String with fn options(_, res) -> Unit {
 }
 
 ///|
-pub impl Responder for String with fn output(self, buf) -> Unit {
-  buf.write_bytes(@utf8.encode(self))
+pub impl Responder for String with fn output(self, writer) {
+  self.write_response(writer)
+}
+
+///|
+async fn StringView::write_response(
+  self : StringView,
+  writer : &@io.Writer,
+) -> Unit {
+  writer.write(self)
 }
 
 ///|
@@ -61,12 +100,17 @@ pub impl Responder for StringView with fn options(_, res) -> Unit {
 }
 
 ///|
-pub impl Responder for StringView with fn output(self, buf) -> Unit {
-  buf.write_bytes(@utf8.encode(self))
+pub impl Responder for StringView with fn output(self, writer) {
+  self.write_response(writer)
 }
 
 ///|
 struct Html(String)
+
+///|
+async fn Html::write_response(self : Html, writer : &@io.Writer) -> Unit {
+  writer.write(self.0)
+}
 
 ///|
 pub impl Responder for Html with fn options(_, res) -> Unit {
@@ -74,8 +118,8 @@ pub impl Responder for Html with fn options(_, res) -> Unit {
 }
 
 ///|
-pub impl Responder for Html with fn output(self, buf) -> Unit {
-  buf.write_bytes(@utf8.encode(self.0))
+pub impl Responder for Html with fn output(self, writer) {
+  self.write_response(writer)
 }
 
 ///|

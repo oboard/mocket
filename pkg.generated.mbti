@@ -120,10 +120,10 @@ pub(all) struct HttpResponse {
   mut status_code : StatusCode
   headers : Map[@http.CaseInsensitiveString, StringView]
   cookies : Map[String, CookieItem]
-  mut raw_body : Bytes
+  mut body : &Responder?
 }
 #alias(new, deprecated)
-pub fn HttpResponse::HttpResponse(StatusCode, headers? : Map[@http.CaseInsensitiveString, StringView], cookies? : Map[String, CookieItem], raw_body? : Bytes) -> Self
+pub fn HttpResponse::HttpResponse(StatusCode, headers? : Map[@http.CaseInsensitiveString, StringView], cookies? : Map[String, CookieItem], body? : &Responder) -> Self
 pub fn HttpResponse::body(Self, &Responder) -> Self
 pub fn HttpResponse::delete_cookie(Self, String) -> Unit
 pub fn HttpResponse::json(Self, &ToJson) -> Self
@@ -210,6 +210,13 @@ pub(all) struct MultipartFormValue {
   content_type : String?
   data : BytesView
 }
+
+pub(all) struct ResponseBuffer {
+  buffer : @buffer.Buffer
+}
+pub fn ResponseBuffer::bytes(Self) -> Bytes
+pub fn ResponseBuffer::new() -> Self
+pub impl @io.Writer for ResponseBuffer
 
 pub(all) enum SameSiteOption {
   Lax
@@ -344,7 +351,7 @@ pub impl BodyReader for Json
 
 pub(open) trait Responder {
   fn options(Self, HttpResponse) -> Unit
-  fn output(Self, @buffer.Buffer) -> Unit
+  async fn output(Self, &@io.Writer) -> Unit
 }
 pub impl Responder for String
 pub impl Responder for Bytes

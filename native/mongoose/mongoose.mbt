@@ -186,10 +186,10 @@ fn handle_request(
   let url = from_cbytes(req.url())
   let http_method = from_cbytes(req.req_method())
   let headers = parse_headers(from_cbytes(req.headers()))
-  let raw_body = safe_request_body(req)
+  let request_body = safe_request_body(req)
   async_run(async fn() noraise {
     let response = @mocket.dispatch_http(
-      mocket, http_method, url, headers, raw_body,
+      mocket, http_method, url, headers, request_body,
     ) catch {
       _ =>
         @mocket.HttpResponse(@mocket.InternalServerError).body(
@@ -214,7 +214,13 @@ fn handle_request(
         to_cbytes(@header.sanitize_header_value(Show::to_string(cookie))),
       )
     })
-    res.end_bytes(response.raw_body, response.raw_body.length())
+    let writer = @mocket.ResponseBuffer::new()
+    match response.body {
+      Some(body) => body.output(writer) catch { _ => () }
+      None => ()
+    }
+    let bytes = writer.bytes()
+    res.end_bytes(bytes, bytes.length())
   })
 }
 

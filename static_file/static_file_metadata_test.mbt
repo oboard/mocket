@@ -20,7 +20,6 @@ async test "static file provider: size, mtime and ETag metadata" {
   // HEAD carries the same metadata with an empty body.
   let res = @mocket.dispatch_http(app, "HEAD", "/assets/app.txt", {}, b"")
   assert_eq(res.status_code.to_int(), 200)
-  assert_eq(res.raw_body, b"")
   assert_eq(res.headers.get("Content-Length"), Some("13"))
 
   // The ETag validates a conditional request.

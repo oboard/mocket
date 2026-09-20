@@ -61,9 +61,7 @@ async fn dispatch_http_reader(
     err => mocket.handle_request_error(event, err)
   }
   responder.options(event.res)
-  let buf = Buffer()
-  responder.output(buf)
-  event.res.raw_body = buf.to_bytes()
+  event.res.body = Some(responder)
   event.res
 }
 
@@ -73,7 +71,7 @@ pub async fn dispatch_http(
   http_method : String,
   url : String,
   headers : Map[@http.CaseInsensitiveString, StringView],
-  raw_body : Bytes,
+  body : Bytes,
 ) -> HttpResponse {
   let (path, query) = split_request_target(url)
   let (params, handler) = match mocket.find_route(http_method, path) {
@@ -86,7 +84,7 @@ pub async fn dispatch_http(
       url: path,
       query,
       headers,
-      reader: @io.MemoryReader(writer => writer.write(raw_body)),
+      reader: @io.MemoryReader(writer => writer.write(body)),
     },
     res: HttpResponse(OK),
     params,
@@ -95,8 +93,6 @@ pub async fn dispatch_http(
     err => mocket.handle_request_error(event, err)
   }
   responder.options(event.res)
-  let buf = Buffer()
-  responder.output(buf)
-  event.res.raw_body = buf.to_bytes()
+  event.res.body = Some(responder)
   event.res
 }

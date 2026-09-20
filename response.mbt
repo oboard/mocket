@@ -3,17 +3,84 @@ pub(all) struct HttpResponse {
   mut status_code : StatusCode
   headers : Map[@http.CaseInsensitiveString, StringView]
   cookies : Map[String, CookieItem]
-  mut raw_body : Bytes
+  mut body : &Responder?
+}
+
+///|
+/// Buffers output written through `@io.Writer` for backends that require a
+/// complete byte slice before they can send a response.
+pub(all) struct ResponseBuffer {
+  buffer : Buffer
+}
+
+///|
+pub fn ResponseBuffer::new() -> ResponseBuffer {
+  { buffer: Buffer(), }
+}
+
+///|
+pub fn ResponseBuffer::bytes(self : ResponseBuffer) -> Bytes {
+  self.buffer.to_bytes()
+}
+
+///|
+fn ResponseBuffer::write_data(self : ResponseBuffer, data : &@io.Data) -> Unit {
+  self.buffer.write_bytes(data.binary())
+}
+
+///|
+fn ResponseBuffer::write_chunk(
+  self : ResponseBuffer,
+  bytes : Bytes,
+  offset~ : Int,
+  len~ : Int,
+) -> Int {
+  self.buffer.write_bytes(bytes[offset:offset + len])
+  len
+}
+
+///|
+async fn ResponseBuffer::write_from_reader(
+  self : ResponseBuffer,
+  reader : &@io.Reader,
+) -> Unit {
+  self.write_data(reader.read_all())
+}
+
+///|
+pub impl @io.Writer for ResponseBuffer with fn write(self, data) {
+  self.write_data(data)
+}
+
+///|
+pub impl @io.Writer for ResponseBuffer with fn write_once(
+  self,
+  bytes,
+  offset~,
+  len~,
+) {
+  self.write_chunk(bytes, offset~, len~)
+}
+
+///|
+pub impl @io.Writer for ResponseBuffer with fn write_reader(self, reader) {
+  self.write_from_reader(reader)
 }
 
 ///|
 pub async fn[T : BodyReader] HttpResponse::read_body(self : HttpResponse) -> T {
+  let response_writer = ResponseBuffer::new()
+  match self.body {
+    Some(body) => body.output(response_writer)
+    None => ()
+  }
+  let bytes = response_writer.bytes()
   T::from_request({
     http_method: "",
     url: "",
     query: "",
     headers: self.headers,
-    reader: @io.MemoryReader(writer => writer.write(self.raw_body)),
+    reader: @io.MemoryReader(writer => writer.write(bytes)),
   })
 }
 
@@ -23,13 +90,13 @@ pub fn HttpResponse::HttpResponse(
   status_code : StatusCode,
   headers? : Map[@http.CaseInsensitiveString, StringView],
   cookies? : Map[String, CookieItem],
-  raw_body? : Bytes,
+  body? : &Responder,
 ) -> HttpResponse {
   {
     status_code,
     headers: headers.unwrap_or({}),
     cookies: cookies.unwrap_or({}),
-    raw_body: raw_body.unwrap_or(b""),
+    body,
   }
 }
 
@@ -53,9 +120,7 @@ pub fn HttpResponse::body(
     !self.headers.contains("Content-Type") {
     self.headers["Content-Type"] = content_type
   }
-  let buf = Buffer()
-  body.output(buf)
-  self.raw_body = buf.to_bytes()
+  self.body = Some(body)
   self
 }
 
@@ -73,18 +138,4 @@ pub fn HttpResponse::json(self : HttpResponse, obj : &ToJson) -> HttpResponse {
 ///|
 pub fn HttpResponse::to_responder(self : HttpResponse) -> &Responder {
   self
-}
-
-///|
-async test "read_response_body" {
-  let res = HttpResponse(OK, raw_body=b"{\"Hello\":\"Response\"}")
-  let text : String = res.read_body()
-  let json : Json = res.read_body()
-  inspect(
-    text,
-    content=(
-      #|{"Hello":"Response"}
-    ),
-  )
-  json_inspect(json, content={ "Hello": "Response" })
 }

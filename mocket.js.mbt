@@ -395,7 +395,12 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
           headers_obj
         },
       )
-      res.end(@js.Value::cast_from(response.raw_body))
+      let writer = ResponseBuffer::new()
+      match response.body {
+        Some(body) => try! body.output(writer)
+        None => ()
+      }
+      res.end(@js.Value::cast_from(writer.bytes()))
     })
   })
   start_server(server, address, websocket_accept_key)

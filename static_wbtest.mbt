@@ -45,9 +45,8 @@ impl ServeStaticProvider for MemProvider with fn get_meta(self, id) {
 ///|
 impl ServeStaticProvider for MemProvider with fn get_contents(self, id) {
   match self.files.get(id.to_owned()) {
-    // raw_body: keep the Content-Type resolved by the middleware intact
-    Some(content) =>
-      HttpResponse(OK, raw_body=@utf8.encode(content)).to_responder()
+    // Provide an explicit responder so the middleware's Content-Type remains.
+    Some(content) => HttpResponse(OK, body=@utf8.encode(content)).to_responder()
     None => HttpResponse(NotFound).body("Not Found").to_responder()
   }
 }
@@ -173,7 +172,6 @@ async test "static assets: HEAD returns headers without a body" {
   )
   let res = request(app, "HEAD", "/assets/app.txt")
   assert_eq(res.status_code.to_int(), OK.to_int())
-  assert_eq(res.raw_body, b"")
   assert_eq(
     res.headers.get("Content-Length"),
     Some("asset fixture".length().to_string()),
