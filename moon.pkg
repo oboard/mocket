@@ -17,6 +17,7 @@ import {
   "moonbitlang/core/string",
   "moonbitlang/core/buffer",
   "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/random",
   "moonbitlang/core/test",
 }
 

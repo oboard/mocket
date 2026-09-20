@@ -105,6 +105,73 @@ pub impl Responder for StringView with fn output(self, writer) {
 }
 
 ///|
+fn multipart_response_boundary() -> String {
+  let random = @random.Rand::new()
+  let suffix = StringBuilder()
+  let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+  for _ in 0..<24 {
+    suffix.write_char(alphabet.get_char(random.int(limit=62)).unwrap())
+  }
+  "----WebKitFormBoundary\{suffix}"
+}
+
+///|
+fn multipart_quote(value : String) -> String {
+  let escaped_backslashes = value.replace_all(old="\\", new="\\\\")
+  escaped_backslashes.replace_all(old="\"", new="\\\"")
+}
+
+///|
+fn FormData::response_boundary(self : FormData) -> String {
+  match self.response_boundary {
+    Some(boundary) => boundary
+    None => {
+      let boundary = multipart_response_boundary()
+      self.response_boundary = Some(boundary)
+      boundary
+    }
+  }
+}
+
+///|
+async fn FormData::write_response(
+  self : FormData,
+  writer : &@io.Writer,
+) -> Unit {
+  let boundary = self.response_boundary()
+  for name, value in self.fields {
+    writer.write("--\{boundary}\r\n")
+    writer.write(
+      "Content-Disposition: form-data; name=\"\{multipart_quote(name)}\"",
+    )
+    match value.filename {
+      Some(filename) =>
+        writer.write("; filename=\"\{multipart_quote(filename)}\"")
+      None => ()
+    }
+    writer.write("\r\n")
+    match value.content_type {
+      Some(content_type) => writer.write("Content-Type: \{content_type}\r\n")
+      None => ()
+    }
+    writer.write("\r\n")
+    writer.write(value.data)
+    writer.write("\r\n")
+  }
+  writer.write("--\{boundary}--\r\n")
+}
+
+///|
+pub impl Responder for FormData with fn options(self, res) -> Unit {
+  res.headers["Content-Type"] = "multipart/form-data; boundary=\{self.response_boundary()}"
+}
+
+///|
+pub impl Responder for FormData with fn output(self, writer) {
+  self.write_response(writer)
+}
+
+///|
 struct Html(String)
 
 ///|

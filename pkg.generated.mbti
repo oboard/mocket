@@ -166,10 +166,15 @@ pub(all) struct CookieItem {
 } derive(Eq)
 pub impl Show for CookieItem
 
-pub(all) struct FormData(Map[String, MultipartFormValue])
+pub(all) struct FormData {
+  fields : Map[String, MultipartFormValue]
+  mut response_boundary : String?
+}
 pub fn FormData::fields(Self) -> Map[String, MultipartFormValue]
 pub fn FormData::get(Self, String) -> MultipartFormValue?
+pub fn FormData::new(Map[String, MultipartFormValue]) -> Self
 pub impl BodyReader for FormData
+pub impl Responder for FormData
 
 type Html
 pub impl Responder for Html

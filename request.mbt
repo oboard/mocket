@@ -70,19 +70,28 @@ pub impl BodyReader for Json with fn from_request(req : HttpRequest) -> Json {
 /// Each form field is indexed by name. Text fields and uploaded files both use
 /// `MultipartFormValue`; an upload has a `filename`, while a normal text field
 /// does not.
-pub(all) struct FormData(Map[String, MultipartFormValue])
+pub(all) struct FormData {
+  fields : Map[String, MultipartFormValue]
+  mut response_boundary : String?
+}
+
+///|
+/// Creates multipart form data for use as a request body or response body.
+pub fn FormData::new(fields : Map[String, MultipartFormValue]) -> FormData {
+  { fields, response_boundary: None, }
+}
 
 ///|
 /// Looks up a form field or uploaded file by its field name.
 pub fn FormData::get(self : FormData, name : String) -> MultipartFormValue? {
-  self.0.get(name)
+  self.fields.get(name)
 }
 
 ///|
 /// Returns all parsed form fields. For duplicate field names, the final value
 /// in the multipart body is retained.
 pub fn FormData::fields(self : FormData) -> Map[String, MultipartFormValue] {
-  self.0
+  self.fields
 }
 
 ///|
@@ -108,7 +117,7 @@ pub impl BodyReader for FormData with fn from_request(req : HttpRequest) -> Form
     _ => raise MissingBoundary
   }
   let body = req.read_all()
-  FormData(parse_multipart(body[:], boundary.to_owned()))
+  FormData::new(parse_multipart(body[:], boundary.to_owned()))
 }
 
 ///|

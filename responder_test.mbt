@@ -83,6 +83,47 @@ async test "json response infers json content type" {
 }
 
 ///|
+async test "form data responder writes a multipart body" {
+  let app = App()
+  let form = FormData::new({
+    "title": {
+      filename: None,
+      content_type: None,
+      data: @utf8.encode("MoonBit")[:],
+    },
+    "file": {
+      filename: Some("hello.txt"),
+      content_type: Some("text/plain"),
+      data: @utf8.encode("hello")[:],
+    },
+  })
+  app.get("/form", _ => form)
+  let response = dispatch_http(app, "GET", "/form", {}, b"")
+  guard response.headers.get("Content-Type") is Some(content_type) else {
+    fail("missing multipart Content-Type")
+  }
+  guard content_type
+    is [.. "multipart/form-data; boundary=----WebKitFormBoundary", .. boundary] else {
+    fail("unexpected multipart boundary")
+  }
+  @test.assert_eq(boundary.length(), 24)
+  let boundary = "----WebKitFormBoundary\{boundary}"
+  let body : String = response.read_body()
+  assert_true(body.has_prefix("--\{boundary}\r\n"))
+  assert_true(
+    body.contains(
+      "Content-Disposition: form-data; name=\"title\"\r\n\r\nMoonBit\r\n",
+    ),
+  )
+  assert_true(
+    body.contains(
+      "Content-Disposition: form-data; name=\"file\"; filename=\"hello.txt\"\r\nContent-Type: text/plain\r\n\r\nhello\r\n",
+    ),
+  )
+  assert_true(body.has_suffix("--\{boundary}--\r\n"))
+}
+
+///|
 async test "explicit content type wins over inferred body type" {
   let app = App()
   app.get("/custom-body", _ => {
