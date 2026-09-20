@@ -1,0 +1,16 @@
+mocket.native.mbt
+  h_c7606fb8f0c97c 336-392,401,417,419
+examples/streaming/main.mbt
+  h_c7606fb8f0c97c 1-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "820c745716ded4dcac831a3eca06df4bd0e7006d",
+  "prompts": {},
+  "humans": {
+    "h_c7606fb8f0c97c": {
+      "author": "oboard <oboard@outlook.com>"
+    }
+  }
+}
