@@ -1,0 +1,13 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/mocket/examples/streaming"
+
+// Values
+
+// Errors
+
+// Types and methods
+type EventStream
+
+// Type aliases
+
+// Traits

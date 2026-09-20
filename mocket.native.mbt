@@ -333,6 +333,64 @@ fn register_native_ws_connection(
 }
 
 ///|
+/// An `@io.Writer` adapter that flushes every response write. This prevents
+/// Server-Sent Events and other incremental responders from remaining in the
+/// native connection buffer until the response ends.
+priv struct NativeResponseWriter {
+  conn : @http.ServerConnection
+}
+
+///|
+async fn NativeResponseWriter::write_and_flush(
+  self : NativeResponseWriter,
+  data : &@io.Data,
+) -> Unit {
+  self.conn.write(data)
+  self.conn.flush()
+}
+
+///|
+async fn NativeResponseWriter::write_chunk_and_flush(
+  self : NativeResponseWriter,
+  bytes : Bytes,
+  offset~ : Int,
+  len~ : Int,
+) -> Int {
+  let written = self.conn.write_once(bytes, offset~, len~)
+  self.conn.flush()
+  written
+}
+
+///|
+async fn NativeResponseWriter::write_reader_and_flush(
+  self : NativeResponseWriter,
+  reader : &@io.Reader,
+) -> Unit {
+  self.conn.write_reader(reader)
+  self.conn.flush()
+}
+
+///|
+impl @io.Writer for NativeResponseWriter with fn write(self, data) {
+  self.write_and_flush(data)
+}
+
+///|
+impl @io.Writer for NativeResponseWriter with fn write_once(
+  self,
+  bytes,
+  offset~,
+  len~,
+) {
+  self.write_chunk_and_flush(bytes, offset~, len~)
+}
+
+///|
+impl @io.Writer for NativeResponseWriter with fn write_reader(self, reader) {
+  self.write_reader_and_flush(reader)
+}
+
+///|
 async fn send_native_response(
   request : @http.Request,
   conn : @http.ServerConnection,
@@ -340,7 +398,7 @@ async fn send_native_response(
 ) -> Unit {
   let raw_headers = view_headers_to_strings(response.headers)
   let headers : Map[@http.CaseInsensitiveString, String] = Map([])
-  raw_headers.each(fn(key, value) {
+  raw_headers.each((key, value) => {
     if @header.is_valid_header_name(Show::to_string(key)) {
       headers[key] = @header.sanitize_header_value(value)
     }
@@ -356,8 +414,9 @@ async fn send_native_response(
     cookies~,
   )
   if request.meth != Head {
+    let writer = NativeResponseWriter::{ conn, }
     match response.body {
-      Some(body) => body.output(conn)
+      Some(body) => body.output(writer)
       None => ()
     }
   }

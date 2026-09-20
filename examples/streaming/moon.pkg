@@ -1,0 +1,11 @@
+import {
+  "moonbitlang/async",
+  "moonbitlang/async/io",
+  "oboard/mocket",
+}
+
+warnings = "-67"
+
+supported_targets = "+native"
+
+pkgtype(kind: "executable")
