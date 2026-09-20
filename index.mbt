@@ -7,7 +7,8 @@ pub(all) struct MultipartFormValue {
 
 ///|
 #alias(T)
-pub(all) struct Mocket {
+#alias(Mocket)
+pub(all) struct App {
   base_path : String
   mappings : Map[(String, String), HttpHandler]
   middlewares : Array[(String, Middleware)]
@@ -28,7 +29,17 @@ pub(all) struct Mocket {
 }
 
 ///|
-pub fn new(base_path? : String = "", max_body_size? : Int = 1048576) -> Mocket {
+#deprecated("Use `App()` instead")
+pub fn new(base_path? : String = "", max_body_size? : Int = 1048576) -> App {
+  App(base_path~, max_body_size~)
+}
+
+///|
+#alias(new, deprecated="Use `App()` instead")
+pub fn App::App(
+  base_path? : String = "",
+  max_body_size? : Int = 1048576,
+) -> App {
   {
     base_path,
     mappings: {},
@@ -123,8 +134,8 @@ pub impl Show for CookieItem with fn to_string(self : CookieItem) -> String {
 }
 
 ///|
-pub fn Mocket::on(
-  self : Mocket,
+pub fn App::on(
+  self : App,
   event : String,
   path : String,
   handler : HttpHandler,
@@ -149,158 +160,98 @@ pub fn Mocket::on(
 }
 
 ///|
-pub fn Mocket::get(self : Mocket, path : String, handler : HttpHandler) -> Unit {
+pub fn App::get(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("GET", path, handler)
 }
 
 ///|
-pub fn Mocket::post(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::post(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("POST", path, handler)
 }
 
 ///|
-pub fn Mocket::patch(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::patch(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("PATCH", path, handler)
 }
 
 ///|
-pub fn Mocket::connect(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::connect(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("CONNECT", path, handler)
 }
 
 ///|
-pub fn Mocket::put(self : Mocket, path : String, handler : HttpHandler) -> Unit {
+pub fn App::put(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("PUT", path, handler)
 }
 
 ///|
-pub fn Mocket::delete(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::delete(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("DELETE", path, handler)
 }
 
 ///|
-pub fn Mocket::head(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::head(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("HEAD", path, handler)
 }
 
 ///|
-pub fn Mocket::options(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::options(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("OPTIONS", path, handler)
 }
 
 ///|
-pub fn Mocket::trace(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::trace(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("TRACE", path, handler)
 }
 
 ///|
-pub fn Mocket::acl(self : Mocket, path : String, handler : HttpHandler) -> Unit {
+pub fn App::acl(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("ACL", path, handler)
 }
 
 ///|
-pub fn Mocket::bind(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::bind(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("BIND", path, handler)
 }
 
 ///|
-pub fn Mocket::checkin(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::checkin(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("CHECKIN", path, handler)
 }
 
 ///|
-pub fn Mocket::checkout(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::checkout(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("CHECKOUT", path, handler)
 }
 
 ///|
-pub fn Mocket::copy(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::copy(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("COPY", path, handler)
 }
 
 ///|
-pub fn Mocket::label(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::label(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("LABEL", path, handler)
 }
 
 ///|
-pub fn Mocket::link(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::link(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("LINK", path, handler)
 }
 
 ///|
-pub fn Mocket::lock(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::lock(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("LOCK", path, handler)
 }
 
 ///|
-pub fn Mocket::merge(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::merge(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("MERGE", path, handler)
 }
 
 ///|
-pub fn Mocket::mkactivity(
-  self : Mocket,
+pub fn App::mkactivity(
+  self : App,
   path : String,
   handler : HttpHandler,
 ) -> Unit {
@@ -308,8 +259,8 @@ pub fn Mocket::mkactivity(
 }
 
 ///|
-pub fn Mocket::mkcalendar(
-  self : Mocket,
+pub fn App::mkcalendar(
+  self : App,
   path : String,
   handler : HttpHandler,
 ) -> Unit {
@@ -317,17 +268,13 @@ pub fn Mocket::mkcalendar(
 }
 
 ///|
-pub fn Mocket::mkcol(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::mkcol(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("MKCOL", path, handler)
 }
 
 ///|
-pub fn Mocket::mkredirectref(
-  self : Mocket,
+pub fn App::mkredirectref(
+  self : App,
   path : String,
   handler : HttpHandler,
 ) -> Unit {
@@ -335,8 +282,8 @@ pub fn Mocket::mkredirectref(
 }
 
 ///|
-pub fn Mocket::mkworkspace(
-  self : Mocket,
+pub fn App::mkworkspace(
+  self : App,
   path : String,
   handler : HttpHandler,
 ) -> Unit {
@@ -344,17 +291,13 @@ pub fn Mocket::mkworkspace(
 }
 
 ///|
-pub fn Mocket::move_(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::move_(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("MOVE", path, handler)
 }
 
 ///|
-pub fn Mocket::orderpatch(
-  self : Mocket,
+pub fn App::orderpatch(
+  self : App,
   path : String,
   handler : HttpHandler,
 ) -> Unit {
@@ -362,76 +305,48 @@ pub fn Mocket::orderpatch(
 }
 
 ///|
-pub fn Mocket::pri(self : Mocket, path : String, handler : HttpHandler) -> Unit {
+pub fn App::pri(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("PRI", path, handler)
 }
 
 ///|
-pub fn Mocket::propfind(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::propfind(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("PROPFIND", path, handler)
 }
 
 ///|
-pub fn Mocket::proppatch(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::proppatch(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("PROPPATCH", path, handler)
 }
 
 ///|
-pub fn Mocket::query(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::query(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("QUERY", path, handler)
 }
 
 ///|
-pub fn Mocket::rebind(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::rebind(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("REBIND", path, handler)
 }
 
 ///|
-pub fn Mocket::report(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::report(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("REPORT", path, handler)
 }
 
 ///|
-pub fn Mocket::search(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::search(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("SEARCH", path, handler)
 }
 
 ///|
-pub fn Mocket::unbind(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::unbind(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("UNBIND", path, handler)
 }
 
 ///|
-pub fn Mocket::uncheckout(
-  self : Mocket,
+pub fn App::uncheckout(
+  self : App,
   path : String,
   handler : HttpHandler,
 ) -> Unit {
@@ -439,35 +354,23 @@ pub fn Mocket::uncheckout(
 }
 
 ///|
-pub fn Mocket::unlink(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::unlink(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("UNLINK", path, handler)
 }
 
 ///|
-pub fn Mocket::unlock(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::unlock(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("UNLOCK", path, handler)
 }
 
 ///|
-pub fn Mocket::update(
-  self : Mocket,
-  path : String,
-  handler : HttpHandler,
-) -> Unit {
+pub fn App::update(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("UPDATE", path, handler)
 }
 
 ///|
-pub fn Mocket::updateredirectref(
-  self : Mocket,
+pub fn App::updateredirectref(
+  self : App,
   path : String,
   handler : HttpHandler,
 ) -> Unit {
@@ -475,8 +378,8 @@ pub fn Mocket::updateredirectref(
 }
 
 ///|
-pub fn Mocket::version_control(
-  self : Mocket,
+pub fn App::version_control(
+  self : App,
   path : String,
   handler : HttpHandler,
 ) -> Unit {
@@ -484,18 +387,18 @@ pub fn Mocket::version_control(
 }
 
 ///|
-pub fn Mocket::all(self : Mocket, path : String, handler : HttpHandler) -> Unit {
+pub fn App::all(self : App, path : String, handler : HttpHandler) -> Unit {
   self.on("*", path, handler)
 }
 
 ///|
 // 创建路由组
-pub fn Mocket::group(
-  self : Mocket,
+pub fn App::group(
+  self : App,
   base_path : String,
-  configure : (Mocket) -> Unit,
+  configure : (App) -> Unit,
 ) -> Unit {
-  let group = new(base_path=self.base_path + base_path)
+  let group = App(base_path=self.base_path + base_path)
   configure(group)
   // 合并路由
   group.mappings.iter().each(i => self.mappings.set(i.0, i.1))
@@ -525,11 +428,7 @@ pub fn Mocket::group(
 
 ///|
 // 注册 WebSocket 路由（不区分方法，按路径匹配）
-pub fn Mocket::ws(
-  self : Mocket,
-  path : String,
-  handler : WebSocketHandler,
-) -> Unit {
+pub fn App::ws(self : App, path : String, handler : WebSocketHandler) -> Unit {
   let path = self.base_path + path
   // 静态路径直接缓存
   if path.find(":").unwrap_or(-1) == -1 && path.find("*").unwrap_or(-1) == -1 {

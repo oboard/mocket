@@ -1,7 +1,7 @@
 ///|
 async fn main {
   let port = benchmark_port()
-  let app = @mocket_lib.new()
+  let app = @mocket.App()
 
   app.use_middleware(noop_middleware())
   for i in 0..<1000 {
@@ -47,7 +47,7 @@ async fn main {
 }
 
 ///|
-fn noop_middleware() -> @mocket_lib.Middleware {
+fn noop_middleware() -> @mocket.Middleware {
   (_event, next) => next()
 }
 

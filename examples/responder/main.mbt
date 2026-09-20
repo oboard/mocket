@@ -3,7 +3,7 @@ using @mocket {type HttpResponse}
 
 ///|
 async fn main {
-  let app = @mocket.new()
+  let app = @mocket.App()
 
   // Text Response
   app

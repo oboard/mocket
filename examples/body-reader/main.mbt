@@ -12,7 +12,7 @@ impl @mocket.BodyReader for Csv with fn from_request(req) -> Csv {
 
 ///|
 async fn main {
-  let app = @mocket.new()
+  let app = @mocket.App()
 
   // Text Response
   app.post("/", event => {

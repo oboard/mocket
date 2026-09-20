@@ -41,7 +41,7 @@ fn request_has_body(
 /// BodyReader implementations decide whether to read it incrementally or buffer
 /// it. This is used by the native HTTP server.
 async fn dispatch_http_reader(
-  mocket : Mocket,
+  mocket : App,
   http_method : String,
   url : String,
   headers : Map[@http.CaseInsensitiveString, StringView],
@@ -67,7 +67,7 @@ async fn dispatch_http_reader(
 
 ///|
 pub async fn dispatch_http(
-  mocket : Mocket,
+  mocket : App,
   http_method : String,
   url : String,
   headers : Map[@http.CaseInsensitiveString, StringView],

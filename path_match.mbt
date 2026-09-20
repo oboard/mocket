@@ -354,8 +354,8 @@ fn DynamicRouteTrieNode::find(
 }
 
 ///|
-fn Mocket::insert_dynamic_route(
-  self : Mocket,
+fn App::insert_dynamic_route(
+  self : App,
   event : String,
   path : String,
   handler : HttpHandler,
@@ -405,8 +405,8 @@ fn DynamicRouteTrieNode::find_path(
 
 ///|
 // 查找匹配的路由和参数
-fn Mocket::find_route(
-  self : Mocket,
+fn App::find_route(
+  self : App,
   http_method : String,
   path : String,
 ) -> (HttpHandler, Map[String, StringView])? {
@@ -571,7 +571,7 @@ test "** with trailing segments" {
 
 ///|
 test "** mid-pattern preserves registration order" {
-  let app = new()
+  let app = App()
   let noop : HttpHandler = fn(_) noraise { text("") }
   app.get("/admin/**/settings", noop)
   app.get("/admin/:id/settings", noop)
@@ -615,7 +615,7 @@ test "lexmatch 特殊字符处理" {
 
 ///|
 test "动态路由 trie 匹配命名参数" {
-  let app = new()
+  let app = App()
   app.get("/name/:id/x", _ => "ok")
   match app.find_route("GET", "/name/42/x") {
     Some((_, params)) => @test.assert_eq(params, { "id": "42" })
@@ -625,7 +625,7 @@ test "动态路由 trie 匹配命名参数" {
 
 ///|
 test "动态路由 trie 保留注册顺序" {
-  let app = new()
+  let app = App()
   app.get("/users/:id/profile", _ => "first")
   app.get("/users/me/:tab", _ => "second")
   match app.find_route("GET", "/users/me/profile") {
@@ -636,7 +636,7 @@ test "动态路由 trie 保留注册顺序" {
 
 ///|
 test "动态路由 trie 合并分组路由" {
-  let app = new()
+  let app = App()
   app.group("/api", group => group.get("/users/:id", _ => "ok"))
   match app.find_route("GET", "/api/users/7") {
     Some((_, params)) => @test.assert_eq(params, { "id": "7" })

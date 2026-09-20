@@ -6,7 +6,7 @@
 ///|
 async test "static file provider: size, mtime and ETag metadata" {
   let fixture = Fixture::create("metadata")
-  let app = @mocket.new()
+  let app = @mocket.App()
   app.static_assets("/assets", new(fixture.root))
 
   // GET carries real Content-Length and a weak ETag.

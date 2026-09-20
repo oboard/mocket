@@ -29,8 +29,8 @@ fn default_error_handler(_event : MocketEvent, err : Error) -> &Responder {
 
 ///|
 // 将未捕获的请求错误转换为响应，优先使用用户注册的错误处理器。
-fn Mocket::handle_request_error(
-  self : Mocket,
+fn App::handle_request_error(
+  self : App,
   event : MocketEvent,
   err : Error,
 ) -> &Responder {
@@ -39,6 +39,6 @@ fn Mocket::handle_request_error(
 
 ///|
 // 注册请求错误处理器，用于记录日志或返回自定义错误响应。
-pub fn Mocket::on_error(self : Mocket, handler : ErrorHandler) -> Unit {
+pub fn App::on_error(self : App, handler : ErrorHandler) -> Unit {
   self.error_handler = handler
 }

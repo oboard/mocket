@@ -13,7 +13,7 @@ pub fn __ws_emit(Bytes, Bytes, Bytes) -> Unit
 
 pub fn cookie_to_string(Array[CookieItem]) -> String
 
-pub async fn dispatch_http(Mocket, String, String, Map[@http.CaseInsensitiveString, StringView], Bytes) -> HttpResponse
+pub async fn dispatch_http(App, String, String, Map[@http.CaseInsensitiveString, StringView], Bytes) -> HttpResponse
 
 pub fn dispatch_ws_event((WebSocketEvent) -> Unit, WebSocketPeer, String, Bytes) -> Unit
 
@@ -29,9 +29,10 @@ pub fn handle_not_found() -> async (MocketEvent) -> &Responder
 
 pub fn html(&Show) -> &Responder
 
-pub async fn listen_ffi(Mocket, String) -> Unit noraise
+pub async fn listen_ffi(App, String) -> Unit noraise
 
-pub fn new(base_path? : String, max_body_size? : Int) -> Mocket
+#deprecated
+pub fn new(base_path? : String, max_body_size? : Int) -> App
 
 pub fn parse_cookie(StringView) -> Map[String, CookieItem]
 
@@ -43,9 +44,9 @@ pub fn parse_query(StringView) -> Map[String, String]
 
 pub fn register_ws_connection(String, (String) -> Unit, (Bytes) -> Unit, () -> Unit) -> Unit
 
-pub fn register_ws_handler(Mocket, Int) -> Unit
+pub fn register_ws_handler(App, Int) -> Unit
 
-pub async fn serve_ffi(Mocket, port~ : Int) -> Unit noraise
+pub async fn serve_ffi(App, port~ : Int) -> Unit noraise
 
 pub async fn[T, E : Error] suspend(((T) -> Unit, (E) -> Unit) -> Unit) -> T raise E
 
@@ -84,6 +85,75 @@ pub suberror IOError
 pub suberror NetworkError
 
 // Types and methods
+#alias(Mocket)
+#alias(T)
+pub(all) struct App {
+  base_path : String
+  mappings : Map[(String, String), async (MocketEvent) -> &Responder]
+  middlewares : Array[(String, async (MocketEvent, async () -> &Responder) -> &Responder)]
+  static_routes : Map[String, Map[String, async (MocketEvent) -> &Responder]]
+  dynamic_routes : Map[String, Array[(String, async (MocketEvent) -> &Responder)]]
+  ws_static_routes : Map[String, (WebSocketEvent) -> Unit]
+  ws_dynamic_routes : Array[(String, (WebSocketEvent) -> Unit)]
+  ws_clients : Map[String, Unit]
+  ws_channels : Map[String, Map[String, Unit]]
+  ws_client_port : Map[String, Int]
+  max_body_size : Int
+  mut error_handler : (MocketEvent, Error) -> &Responder
+  // private fields
+}
+#alias(new, deprecated)
+pub fn App::App(base_path? : String, max_body_size? : Int) -> Self
+pub fn App::acl(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::all(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::bind(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::checkin(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::checkout(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::connect(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::copy(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::delete(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::get(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::group(Self, String, (Self) -> Unit) -> Unit
+pub fn App::head(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::label(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::link(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub async fn App::listen(Self, String) -> Unit noraise
+pub fn App::lock(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::merge(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::mkactivity(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::mkcalendar(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::mkcol(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::mkredirectref(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::mkworkspace(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::move_(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::on(Self, String, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::on_error(Self, (MocketEvent, Error) -> &Responder) -> Unit
+pub fn App::options(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::orderpatch(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::patch(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::post(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::pri(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::propfind(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::proppatch(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::put(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::query(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::rebind(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::report(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::search(Self, String, async (MocketEvent) -> &Responder) -> Unit
+#deprecated
+pub async fn App::serve(Self, port~ : Int) -> Unit noraise
+pub fn App::static_assets(Self, String, &ServeStaticProvider) -> Unit
+pub fn App::trace(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::unbind(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::uncheckout(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::unlink(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::unlock(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::update(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::updateredirectref(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::use_middleware(Self, async (MocketEvent, async () -> &Responder) -> &Responder, base_path? : String) -> Unit
+pub fn App::version_control(Self, String, async (MocketEvent) -> &Responder) -> Unit
+pub fn App::ws(Self, String, (WebSocketEvent) -> Unit) -> Unit
+
 pub(all) struct CookieItem {
   name : String
   value : String
@@ -131,72 +201,6 @@ pub async fn[T : BodyReader] HttpResponse::read_body(Self) -> T
 pub fn HttpResponse::set_cookie(Self, String, String, max_age? : Int, path? : String, domain? : String, secure? : Bool, http_only? : Bool, same_site? : SameSiteOption) -> Unit
 pub fn HttpResponse::to_responder(Self) -> &Responder
 pub impl Responder for HttpResponse
-
-#alias(T)
-pub(all) struct Mocket {
-  base_path : String
-  mappings : Map[(String, String), async (MocketEvent) -> &Responder]
-  middlewares : Array[(String, async (MocketEvent, async () -> &Responder) -> &Responder)]
-  static_routes : Map[String, Map[String, async (MocketEvent) -> &Responder]]
-  dynamic_routes : Map[String, Array[(String, async (MocketEvent) -> &Responder)]]
-  ws_static_routes : Map[String, (WebSocketEvent) -> Unit]
-  ws_dynamic_routes : Array[(String, (WebSocketEvent) -> Unit)]
-  ws_clients : Map[String, Unit]
-  ws_channels : Map[String, Map[String, Unit]]
-  ws_client_port : Map[String, Int]
-  max_body_size : Int
-  mut error_handler : (MocketEvent, Error) -> &Responder
-  // private fields
-}
-pub fn Mocket::acl(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::all(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::bind(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::checkin(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::checkout(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::connect(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::copy(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::delete(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::get(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::group(Self, String, (Self) -> Unit) -> Unit
-pub fn Mocket::head(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::label(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::link(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub async fn Mocket::listen(Self, String) -> Unit noraise
-pub fn Mocket::lock(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::merge(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::mkactivity(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::mkcalendar(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::mkcol(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::mkredirectref(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::mkworkspace(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::move_(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::on(Self, String, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::on_error(Self, (MocketEvent, Error) -> &Responder) -> Unit
-pub fn Mocket::options(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::orderpatch(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::patch(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::post(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::pri(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::propfind(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::proppatch(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::put(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::query(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::rebind(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::report(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::search(Self, String, async (MocketEvent) -> &Responder) -> Unit
-#deprecated
-pub async fn Mocket::serve(Self, port~ : Int) -> Unit noraise
-pub fn Mocket::static_assets(Self, String, &ServeStaticProvider) -> Unit
-pub fn Mocket::trace(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::unbind(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::uncheckout(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::unlink(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::unlock(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::update(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::updateredirectref(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::use_middleware(Self, async (MocketEvent, async () -> &Responder) -> &Responder, base_path? : String) -> Unit
-pub fn Mocket::version_control(Self, String, async (MocketEvent) -> &Responder) -> Unit
-pub fn Mocket::ws(Self, String, (WebSocketEvent) -> Unit) -> Unit
 
 pub(all) struct MocketEvent {
   req : HttpRequest

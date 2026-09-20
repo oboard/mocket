@@ -47,7 +47,7 @@ fn Fixture::cleanup(self : Fixture) -> Unit {
 
 ///|
 async fn get(
-  app : @mocket.Mocket,
+  app : @mocket.App,
   url : String,
   headers? : Map[@http.CaseInsensitiveString, StringView] = {},
 ) -> @mocket.HttpResponse {
@@ -62,7 +62,7 @@ async fn body_string(res : @mocket.HttpResponse) -> String {
 ///|
 async test "static file provider: issue reproduction table" {
   let fixture = Fixture::create("repro")
-  let app = @mocket.new()
+  let app = @mocket.App()
   app.static_assets("/assets", new(fixture.root))
   app.get("/api", _ => "api ok")
 
@@ -116,7 +116,7 @@ async test "static file provider: issue reproduction table" {
 ///|
 async test "static file provider: HEAD and conditional GET" {
   let fixture = Fixture::create("head")
-  let app = @mocket.new()
+  let app = @mocket.App()
   app.static_assets("/assets", new(fixture.root))
 
   // HEAD serves the asset's headers with an empty body.
@@ -132,7 +132,7 @@ async test "static file provider: methods and fallthrough" {
   let fixture = Fixture::create("fallthrough")
 
   // Default: no fallthrough — unsupported methods are rejected...
-  let app = @mocket.new()
+  let app = @mocket.App()
   app.static_assets("/assets", new(fixture.root))
   let res = @mocket.dispatch_http(app, "POST", "/assets/app.txt", {}, b"")
   assert_eq(res.status_code.to_int(), 405)
@@ -140,7 +140,7 @@ async test "static file provider: methods and fallthrough" {
 
   // ...while with fallthrough they reach the router, and unmatched asset
   // paths keep working for explicit routes.
-  let app = @mocket.new()
+  let app = @mocket.App()
   app.static_assets("/assets", new(fixture.root, fallthrough=true))
   app.get("/assets/dynamic", _ => "dynamic handler")
   let res = @mocket.dispatch_http(app, "POST", "/assets/app.txt", {}, b"")

@@ -455,7 +455,7 @@ pub fn __ws_emit_js_port(
   }
   let mocket = match ws_mocket_map.get(port) {
     Some(m) => m
-    None => new()
+    None => App()
   }
   match event_type {
     "open" => {
@@ -493,7 +493,7 @@ pub extern "js" fn __ws_emit_js_export(
 
 ///|
 pub fn __ws_subscribe_js(connection_id : String, channel : String) -> Unit {
-  let mut mocket = new()
+  let mut mocket = App()
   ws_mocket_map.each(fn(_, m) {
     if m.ws_clients.get(connection_id) is Some(_) {
       mocket = m
@@ -511,7 +511,7 @@ pub fn __ws_subscribe_js(connection_id : String, channel : String) -> Unit {
 
 ///|
 pub fn __ws_unsubscribe_js(connection_id : String, channel : String) -> Unit {
-  let mut mocket = new()
+  let mut mocket = App()
   ws_mocket_map.each(fn(_, m) {
     if m.ws_clients.get(connection_id) is Some(_) {
       mocket = m
@@ -525,7 +525,7 @@ pub fn __ws_unsubscribe_js(connection_id : String, channel : String) -> Unit {
 
 ///|
 pub fn __ws_get_members_js(channel : String) -> Array[String] {
-  let mut mocket = new()
+  let mut mocket = App()
   ws_mocket_map.each(fn(_, m) {
     match m.ws_channels.get(channel) {
       Some(_) => mocket = m

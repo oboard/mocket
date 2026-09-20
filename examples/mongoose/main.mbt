@@ -1,6 +1,6 @@
 ///|
 fn main {
-  let app = @mocket.new()
+  let app = @mocket.App()
 
   app
   ..get("/", _ => "Hello from Mongoose")

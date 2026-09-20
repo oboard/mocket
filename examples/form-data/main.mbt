@@ -3,7 +3,7 @@ using @mocket {type FormData, type HttpResponse}
 
 ///|
 async fn main {
-  let app = @mocket.new(max_body_size=10 * 1024 * 1024)
+  let app = @mocket.App(max_body_size=10 * 1024 * 1024)
 
   // Submit an HTML form with `enctype="multipart/form-data"` to this route.
   app.post("/upload", event => {

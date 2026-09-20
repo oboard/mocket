@@ -93,8 +93,8 @@ test "join_asset_id" {
 }
 
 ///|
-pub fn Mocket::static_assets(
-  self : Mocket,
+pub fn App::static_assets(
+  self : App,
   path : String,
   provider : &ServeStaticProvider,
 ) -> Unit {

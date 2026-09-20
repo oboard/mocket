@@ -1,6 +1,6 @@
 ///|
 async test "direct string responder sets text content type" {
-  let app = new()
+  let app = App()
   app.get("/text", _ => "hello")
   let response = dispatch_http(app, "GET", "/text", {}, b"")
   inspect(response.status_code.to_int(), content="200")
@@ -14,7 +14,7 @@ async test "direct string responder sets text content type" {
 
 ///|
 async test "direct json responder sets json content type" {
-  let app = new()
+  let app = App()
   app.get("/json", _ => ({ "ok": true } : Json))
   let response = dispatch_http(app, "GET", "/json", {}, b"")
   inspect(response.status_code.to_int(), content="200")
@@ -28,7 +28,7 @@ async test "direct json responder sets json content type" {
 
 ///|
 async test "direct html responder sets html content type" {
-  let app = new()
+  let app = App()
   app.get("/html", _ => html("<h1>Hello</h1>"))
   let response = dispatch_http(app, "GET", "/html", {}, b"")
   inspect(response.status_code.to_int(), content="200")
@@ -42,7 +42,7 @@ async test "direct html responder sets html content type" {
 
 ///|
 async test "custom status body infers text content type" {
-  let app = new()
+  let app = App()
   app.get("/bad-request", _ => HttpResponse(BadRequest).body("Invalid JSON"))
   let response = dispatch_http(app, "GET", "/bad-request", {}, b"")
   inspect(response.status_code.to_int(), content="400")
@@ -56,7 +56,7 @@ async test "custom status body infers text content type" {
 
 ///|
 async test "custom status html body infers html content type" {
-  let app = new()
+  let app = App()
   app.get("/not-found", _ => HttpResponse(NotFound).body(html("<h1>404</h1>")))
   let response = dispatch_http(app, "GET", "/not-found", {}, b"")
   inspect(response.status_code.to_int(), content="404")
@@ -70,7 +70,7 @@ async test "custom status html body infers html content type" {
 
 ///|
 async test "json response infers json content type" {
-  let app = new()
+  let app = App()
   app.get("/created", _ => HttpResponse(Created).json({ "ok": true }))
   let response = dispatch_http(app, "GET", "/created", {}, b"")
   inspect(response.status_code.to_int(), content="201")
@@ -84,7 +84,7 @@ async test "json response infers json content type" {
 
 ///|
 async test "explicit content type wins over inferred body type" {
-  let app = new()
+  let app = App()
   app.get("/custom-body", _ => {
     HttpResponse(OK, headers={ "Content-Type": "application/vnd.custom" }).body(
       "plain text",

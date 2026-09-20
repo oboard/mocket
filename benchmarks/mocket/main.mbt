@@ -1,7 +1,7 @@
 ///|
 async fn main {
   let port = benchmark_port()
-  let app = @mocket_lib.new()
+  let app = @mocket.App()
   for i in 0..<1000 {
     app.get("/static/\{i}", _ => "Hello, World!")
   }

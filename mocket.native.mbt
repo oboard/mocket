@@ -42,7 +42,7 @@ let ws_client_channels : Map[String, Array[String]] = Map([])
 let ws_channel_clients : Map[String, Map[String, Unit]] = Map([])
 
 ///|
-let native_ws_handler_map : Map[Int, Mocket] = Map([])
+let native_ws_handler_map : Map[Int, App] = Map([])
 
 ///|
 fn request_method_to_string(meth : @http.RequestMethod) -> String {
@@ -123,7 +123,7 @@ fn is_websocket_upgrade(request : @http.Request) -> Bool {
 
 ///|
 fn find_ws_route(
-  mocket : Mocket,
+  mocket : App,
   path : String,
 ) -> (WebSocketHandler, Map[String, StringView])? {
   match mocket.ws_static_routes.get(path) {
@@ -178,7 +178,7 @@ pub fn unregister_ws_connection(connection_id : String) -> Unit {
 }
 
 ///|
-pub fn register_ws_handler(mocket : Mocket, port : Int) -> Unit {
+pub fn register_ws_handler(mocket : App, port : Int) -> Unit {
   native_ws_handler_map.set(port, mocket)
 }
 
@@ -389,7 +389,7 @@ fn cookie_item_to_http_cookie(item : CookieItem) -> @http.Cookie {
 
 ///|
 async fn handle_http_request(
-  mocket : Mocket,
+  mocket : App,
   request : @http.Request,
   body_reader : &@io.Reader,
   conn : @http.ServerConnection,
@@ -460,7 +460,7 @@ async fn read_ws_limited(reader : &@io.Reader, max_size : Int) -> Bytes? {
 ///|
 async fn handle_websocket_request(
   port : Int,
-  mocket : Mocket,
+  mocket : App,
   request : @http.Request,
   conn : @http.ServerConnection,
 ) -> Unit {
@@ -514,7 +514,7 @@ async fn handle_websocket_request(
 /// address may "steal" the specific interface from an existing wildcard bind
 /// (`0.0.0.0`), and a wildcard bind can bind to the remaining interfaces if a
 /// specific-interface bind already exists.
-pub async fn listen_ffi(mocket : Mocket, address : String) -> Unit noraise {
+pub async fn listen_ffi(mocket : App, address : String) -> Unit noraise {
   let address = normalize_listen_address(address)
   let addr = @socket.Addr::parse(address) catch {
     err => {
@@ -551,7 +551,7 @@ fn normalize_listen_address(address : String) -> String {
 }
 
 ///|
-pub async fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit noraise {
+pub async fn serve_ffi(mocket : App, port~ : Int) -> Unit noraise {
   listen_ffi(mocket, "127.0.0.1:\{port}")
 }
 

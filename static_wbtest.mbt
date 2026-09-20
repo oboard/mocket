@@ -78,7 +78,7 @@ fn no_headers() -> Map[@http.CaseInsensitiveString, StringView] {
 
 ///|
 async fn request(
-  app : Mocket,
+  app : App,
   http_method : String,
   url : String,
   headers? : Map[@http.CaseInsensitiveString, StringView] = no_headers(),
@@ -93,7 +93,7 @@ async fn body_string(res : HttpResponse) -> String {
 
 ///|
 async test "static assets: unrelated and shorter routes pass through" {
-  let app = new()
+  let app = App()
   let provider = MemProvider::new({ "/index.html": "index fixture" })
   app.static_assets("/assets", provider)
   app.get("/api", _ => "api ok")
@@ -116,7 +116,7 @@ async test "static assets: unrelated and shorter routes pass through" {
 
 ///|
 async test "static assets: mount root and directory indexes" {
-  let app = new()
+  let app = App()
   app.static_assets(
     "/assets",
     MemProvider::new({
@@ -147,7 +147,7 @@ async test "static assets: mount root and directory indexes" {
 
 ///|
 async test "static assets: file serving, MIME type and metadata headers" {
-  let app = new()
+  let app = App()
   app.static_assets(
     "/assets",
     MemProvider::new({ "/app.txt": "asset fixture" }),
@@ -165,7 +165,7 @@ async test "static assets: file serving, MIME type and metadata headers" {
 
 ///|
 async test "static assets: HEAD returns headers without a body" {
-  let app = new()
+  let app = App()
   app.static_assets(
     "/assets",
     MemProvider::new({ "/app.txt": "asset fixture" }),
@@ -180,7 +180,7 @@ async test "static assets: HEAD returns headers without a body" {
 
 ///|
 async test "static assets: conditional request with matching ETag" {
-  let app = new()
+  let app = App()
   app.static_assets(
     "/assets",
     MemProvider::new({ "/app.txt": "asset fixture" }),
@@ -194,7 +194,7 @@ async test "static assets: conditional request with matching ETag" {
 
 ///|
 async test "static assets: missing assets and unsupported methods" {
-  let app = new()
+  let app = App()
   app.static_assets(
     "/assets",
     MemProvider::new({ "/app.txt": "asset fixture" }),
@@ -212,7 +212,7 @@ async test "static assets: missing assets and unsupported methods" {
 
 ///|
 async test "static assets: fallthrough preserves later handlers" {
-  let app = new()
+  let app = App()
   app.static_assets(
     "/assets",
     MemProvider::new({ "/app.txt": "asset fixture" }, fallthrough=true),
@@ -236,7 +236,7 @@ async test "static assets: fallthrough preserves later handlers" {
 
 ///|
 async test "static assets: asset ids stay confined to the mount root" {
-  let app = new()
+  let app = App()
   let provider = MemProvider::new({ "/secret.txt": "top secret" })
   app.static_assets("/assets", provider)
 

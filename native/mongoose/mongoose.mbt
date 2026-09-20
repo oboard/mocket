@@ -99,7 +99,7 @@ extern "c" fn ws_msg_body_len() -> Int = "ws_msg_body_len"
 extern "c" fn ws_msg_copy(dst : Bytes, max_len : Int) -> Int = "ws_msg_copy"
 
 ///|
-let server_map : Map[Int, @mocket.Mocket] = Map([])
+let server_map : Map[Int, @mocket.App] = Map([])
 
 ///|
 let ws_handler_map : Map[Int, @mocket.WebSocketHandler] = Map([])
@@ -162,7 +162,7 @@ fn first_ws_handler() -> @mocket.WebSocketHandler {
 }
 
 ///|
-fn register_ws_handlers(mocket : @mocket.Mocket, port : Int) -> Unit {
+fn register_ws_handlers(mocket : @mocket.App, port : Int) -> Unit {
   ws_max_body_size.val = mocket.max_body_size
   let mut done = false
   mocket.ws_static_routes.each(fn(_, handler) {
@@ -226,12 +226,12 @@ fn handle_request(
 
 ///|
 #deprecated("use `listen(mocket, address)` instead")
-pub fn serve(mocket : @mocket.Mocket, port~ : Int) -> Unit {
+pub fn serve(mocket : @mocket.App, port~ : Int) -> Unit {
   listen(mocket, "0.0.0.0:\{port}")
 }
 
 ///|
-pub fn listen(mocket : @mocket.Mocket, address : String) -> Unit {
+pub fn listen(mocket : @mocket.App, address : String) -> Unit {
   let address = normalize_listen_address(address)
   let port = listen_port(address)
   server_map.set(port, mocket)
