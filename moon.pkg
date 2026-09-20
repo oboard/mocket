@@ -1,5 +1,4 @@
 import {
-  "oboard/mocket/js",
   "oboard/mocket/uri",
   "oboard/mocket/internal/header",
   "Yoorkin/multipart",
@@ -10,6 +9,7 @@ import {
   "moonbitlang/async",
   "moonbitlang/async/http",
   "moonbitlang/async/io",
+  "moonbitlang/async/js_async",
   "moonbitlang/async/socket",
   "moonbitlang/async/websocket",
   "moonbitlang/core/bench",

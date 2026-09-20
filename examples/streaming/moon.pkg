@@ -6,6 +6,6 @@ import {
 
 warnings = "-67"
 
-supported_targets = "+native"
+supported_targets = "+js+native"
 
 pkgtype(kind: "executable")

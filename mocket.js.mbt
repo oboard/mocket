@@ -7,6 +7,19 @@ pub type HttpRequestInternal
 pub type HttpResponseInternal
 
 ///|
+#external
+priv type JsValue
+
+///|
+fn[T] JsValue::cast_from(value : T) -> JsValue = "%identity"
+
+///|
+extern "js" fn JsValue::new_object() -> JsValue = "() => ({})"
+
+///|
+fn JsValue::from_json(json : Json) -> JsValue = "%identity"
+
+///|
 #borrow(self)
 pub extern "js" fn HttpResponseInternal::url(
   self : HttpResponseInternal,
@@ -30,12 +43,12 @@ pub extern "js" fn HttpRequestInternal::req_method(
 extern "js" fn HttpRequestInternal::on(
   self : HttpRequestInternal,
   event : String,
-  handler : (@js.Value) -> Unit,
+  handler : (JsValue) -> Unit,
 ) -> Unit = "(s, event, handler) => s.on(event, handler)"
 
 ///|
 #borrow(data)
-extern "js" fn node_body_chunk_to_bytes(data : @js.Value) -> Bytes =
+extern "js" fn node_body_chunk_to_bytes(data : JsValue) -> Bytes =
   #| (data) => {
   #|   if (data instanceof Uint8Array) {
   #|     return new Uint8Array(data);
@@ -45,9 +58,9 @@ extern "js" fn node_body_chunk_to_bytes(data : @js.Value) -> Bytes =
 
 ///|
 #borrow(self)
-extern "js" fn HttpRequestInternal::headers(
+extern "js" fn HttpRequestInternal::headers_json(
   self : HttpRequestInternal,
-) -> @js.Object = "(s) => s.headers"
+) -> String = "(s) => JSON.stringify(s.headers)"
 
 ///|
 // extern "js" fn HttpResponseInternal::status_code(
@@ -57,28 +70,35 @@ extern "js" fn HttpRequestInternal::headers(
 ///|
 #borrow(obj, key, value)
 extern "js" fn set_js_property(
-  obj : @js.Value,
+  obj : JsValue,
   key : String,
-  value : @js.Value,
+  value : JsValue,
 ) -> Unit = "(obj, key, value) => obj[key] = value"
 
 ///|
 #borrow(arr)
-extern "js" fn array_to_js(arr : FixedArray[String]) -> @js.Value = "(arr) => arr"
+extern "js" fn array_to_js(arr : FixedArray[String]) -> JsValue = "(arr) => arr"
 
 ///|
 #borrow(self, data)
-pub extern "js" fn HttpResponseInternal::end(
+extern "js" fn HttpResponseInternal::end(
   self : HttpResponseInternal,
-  data : @js.Value,
+  data : JsValue,
 ) -> Unit = "(s, data) => s.end(data)"
+
+///|
+#borrow(self, data)
+extern "js" fn HttpResponseInternal::write(
+  self : HttpResponseInternal,
+  data : Bytes,
+) -> Unit = "(s, data) => s.write(Buffer.from(data))"
 
 ///|
 #borrow(self, headers)
 extern "js" fn HttpResponseInternal::write_head(
   self : HttpResponseInternal,
   statusCode : Int,
-  headers : @js.Value,
+  headers : JsValue,
 ) -> Unit = "(s, statusCode, headers) => s.writeHead(statusCode, headers)"
 
 ///|
@@ -296,6 +316,34 @@ pub extern "js" fn start_server(
   #|}
 
 ///|
+/// An `@io.Writer` adapter that writes every response chunk straight to Node's
+/// `ServerResponse`, so asynchronous responders can stream data incrementally.
+priv struct JsResponseWriter {
+  response : HttpResponseInternal
+}
+
+///|
+fn JsResponseWriter::write_chunk(
+  self : JsResponseWriter,
+  bytes : Bytes,
+  offset~ : Int,
+  len~ : Int,
+) -> Int {
+  self.response.write(bytes[offset:offset + len].to_owned())
+  len
+}
+
+///|
+impl @io.Writer for JsResponseWriter with fn write_once(
+  self,
+  bytes,
+  offset~,
+  len~,
+) {
+  self.write_chunk(bytes, offset~, len~)
+}
+
+///|
 fn listen_port(address : String) -> Int {
   match address.rev_split_once(":") {
     Some((_, port_text)) => @string.parse_int(port_text) catch { _ => 0 }
@@ -309,16 +357,16 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
   let server = create_server(fn(req, res, _) {
     // 构造大小写不敏感的头部映射表（HTTP 字段名不区分大小写）
     let string_headers : Map[@http.CaseInsensitiveString, StringView] = Map([])
-    let json_val = req.headers().to_value().to_json() catch {
-        _ => {
-          res.write_head(400, @js.Object::new().to_value())
-          res.end(@js.Value::cast_from("Invalid headers"))
-          return
-        }
+    let json_val = @json.parse(req.headers_json()) catch {
+      _ => {
+        res.write_head(400, JsValue::new_object())
+        res.end(JsValue::cast_from("Invalid headers"))
+        return
       }
+    }
     guard json_val is Object(headers) else {
-      res.write_head(400, @js.Object::new().to_value())
-      res.end(@js.Value::cast_from("Invalid headers"))
+      res.write_head(400, JsValue::new_object())
+      res.end(JsValue::cast_from("Invalid headers"))
       return
     }
 
@@ -331,7 +379,7 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
     let http_method = req.req_method()
     let url = req.url()
     let should_read_body = request_has_body(http_method, string_headers)
-    async_run(() => {
+    let request_task = @js_async.Promise::from_async(async fn() {
       let mut raw = b""
       if should_read_body {
         let buffer = Buffer()
@@ -354,8 +402,8 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
           _ => ()
         }
         if exceeded {
-          res.write_head(413, @js.Object::new().to_value())
-          res.end(@js.Value::cast_from("Request body too large"))
+          res.write_head(413, JsValue::new_object())
+          res.end(JsValue::cast_from("Request body too large"))
           return
         }
         raw = buffer.to_bytes()
@@ -376,9 +424,7 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
       res.write_head(
         response.status_code.to_int(),
         {
-          let mut headers_obj = @js.Value::from_json(safe_headers.to_json()) catch {
-            _ => @js.Object::new().to_value()
-          }
+          let headers_obj = JsValue::from_json(safe_headers.to_json())
           if !response.cookies.is_empty() {
             let cookies = response.cookies.map(fn(cookie) {
               @header.sanitize_header_value(serialize_cookie(cookie))
@@ -392,15 +438,23 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
           headers_obj
         },
       )
-      let writer = ResponseBuffer::new()
       if http_method != "HEAD" {
         match response.body {
-          Some(body) => try! body.output(writer)
+          Some(body) => {
+            let stream = @js_async.Promise::from_async(async fn() {
+              let writer = JsResponseWriter::{ response: res, }
+              body.output(writer)
+              res.end(JsValue::cast_from(""))
+            })
+            ignore(stream)
+            return
+          }
           None => ()
         }
       }
-      res.end(@js.Value::cast_from(writer.bytes()))
+      res.end(JsValue::cast_from(""))
     })
+    ignore(request_task)
   })
   start_server(server, address, websocket_accept_key)
   register_ws_handler(mocket, port)
@@ -424,7 +478,7 @@ let ws_handler_map : Map[Int, WebSocketHandler] = Map([])
 let ws_mocket_map : Map[Int, Mocket] = Map([])
 
 ///|
-extern "js" fn _init_bindings_map() -> @js.Value = "() => { if (!globalThis.ws_port_bindings) globalThis.ws_port_bindings = new Map(); return globalThis.ws_port_bindings; }"
+extern "js" fn _init_bindings_map() -> JsValue = "() => { if (!globalThis.ws_port_bindings) globalThis.ws_port_bindings = new Map(); return globalThis.ws_port_bindings; }"
 
 ///|
 /// 在 serve_ffi 里注册 WS handler（只取第一个静态路由）
