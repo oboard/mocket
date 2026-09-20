@@ -13,7 +13,6 @@ import {
   "moonbitlang/async/websocket",
   "moonbitlang/core/bench",
   "moonbitlang/core/json",
-  "moonbitlang/core/strconv",
   "moonbitlang/core/env",
   "moonbitlang/core/string",
   "moonbitlang/core/buffer",

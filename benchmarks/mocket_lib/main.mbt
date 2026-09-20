@@ -1,7 +1,7 @@
 ///|
 async fn main {
   let port = benchmark_port()
-  let app = @mocket_lib.new()
+  let app = @mocket.App()
   for i in 0..<1000 {
     app.get("/static/\{i}", _ => "Hello, World!")
   }
@@ -21,10 +21,14 @@ async fn main {
     event.res.headers["x-benchmark"] = "mocket"
     "ok"
   })
-  ..post("/echo", event => event.req.raw_body)
+  ..post("/echo", event => {
+    let body : Bytes = event.req.body()
+    body
+  })
   ..post("/json-echo", event => {
     event.res.headers["Content-Type"] = "application/json; charset=utf-8"
-    event.req.raw_body
+    let body : Bytes = event.req.body()
+    body
   })
   .post("/consume", _ => "ok")
 
@@ -35,7 +39,7 @@ async fn main {
 fn benchmark_port() -> Int {
   match @env.get_env_var("PORT") {
     Some(port_text) => {
-      let port : Int = @strconv.from_str(port_text) catch { _ => 3000 }
+      let port : Int = @string.from_str(port_text) catch { _ => 3000 }
       port
     }
     None => 3000

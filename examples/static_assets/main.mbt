@@ -1,6 +1,6 @@
 ///|
 async fn main {
-  let app = @mocket.new()
+  let app = @mocket.App()
   app.use_middleware(logger_middleware())
   // Register global middleware.
   // The mount is "/", so every URL enters the static middleware; with

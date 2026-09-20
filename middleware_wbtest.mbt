@@ -10,7 +10,7 @@ fn test_middleware(label : String, log : Array[String]) -> Middleware {
 
 ///|
 async test "indexed middleware keeps registration order" {
-  let app = new()
+  let app = App()
   let log = []
   app.use_middleware(test_middleware("global-1", log))
   app.use_middleware(test_middleware("api", log), base_path="/api")
@@ -26,7 +26,7 @@ async test "indexed middleware keeps registration order" {
 
 ///|
 async test "indexed middleware uses path segment boundaries" {
-  let app = new()
+  let app = App()
   let log = []
   app.use_middleware(test_middleware("api", log), base_path="/api")
   app.get("/api", _ => "api")
@@ -42,7 +42,7 @@ async test "indexed middleware uses path segment boundaries" {
 
 ///|
 async test "indexed middleware skips unrelated prefixes" {
-  let app = new()
+  let app = App()
   let log = []
   app.use_middleware(test_middleware("global", log))
   app.use_middleware(test_middleware("api", log), base_path="/api")
@@ -60,7 +60,7 @@ async test "indexed middleware skips unrelated prefixes" {
 
 ///|
 async test "indexed middleware reorders group registrations globally" {
-  let app = new()
+  let app = App()
   let log = []
   app.use_middleware(test_middleware("global-1", log))
   app.group("/api", group => {

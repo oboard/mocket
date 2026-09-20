@@ -99,7 +99,7 @@ extern "c" fn ws_msg_body_len() -> Int = "ws_msg_body_len"
 extern "c" fn ws_msg_copy(dst : Bytes, max_len : Int) -> Int = "ws_msg_copy"
 
 ///|
-let server_map : Map[Int, @mocket.Mocket] = Map([])
+let server_map : Map[Int, @mocket.App] = Map([])
 
 ///|
 let ws_handler_map : Map[Int, @mocket.WebSocketHandler] = Map([])
@@ -162,7 +162,7 @@ fn first_ws_handler() -> @mocket.WebSocketHandler {
 }
 
 ///|
-fn register_ws_handlers(mocket : @mocket.Mocket, port : Int) -> Unit {
+fn register_ws_handlers(mocket : @mocket.App, port : Int) -> Unit {
   ws_max_body_size.val = mocket.max_body_size
   let mut done = false
   mocket.ws_static_routes.each(fn(_, handler) {
@@ -186,13 +186,13 @@ fn handle_request(
   let url = from_cbytes(req.url())
   let http_method = from_cbytes(req.req_method())
   let headers = parse_headers(from_cbytes(req.headers()))
-  let raw_body = safe_request_body(req)
+  let request_body = safe_request_body(req)
   async_run(async fn() noraise {
     let response = @mocket.dispatch_http(
-      mocket, http_method, url, headers, raw_body,
+      mocket, http_method, url, headers, request_body,
     ) catch {
       _ =>
-        @mocket.HttpResponse::new(@mocket.InternalServerError).body(
+        @mocket.HttpResponse(@mocket.InternalServerError).body(
           "Internal Server Error",
         )
     }
@@ -214,18 +214,24 @@ fn handle_request(
         to_cbytes(@header.sanitize_header_value(Show::to_string(cookie))),
       )
     })
-    res.end_bytes(response.raw_body, response.raw_body.length())
+    let writer = @mocket.ResponseBuffer::new()
+    match response.body {
+      Some(body) => body.output(writer) catch { _ => () }
+      None => ()
+    }
+    let bytes = writer.bytes()
+    res.end_bytes(bytes, bytes.length())
   })
 }
 
 ///|
 #deprecated("use `listen(mocket, address)` instead")
-pub fn serve(mocket : @mocket.Mocket, port~ : Int) -> Unit {
+pub fn serve(mocket : @mocket.App, port~ : Int) -> Unit {
   listen(mocket, "0.0.0.0:\{port}")
 }
 
 ///|
-pub fn listen(mocket : @mocket.Mocket, address : String) -> Unit {
+pub fn listen(mocket : @mocket.App, address : String) -> Unit {
   let address = normalize_listen_address(address)
   let port = listen_port(address)
   server_map.set(port, mocket)

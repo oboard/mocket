@@ -12,12 +12,12 @@ impl @mocket.BodyReader for Csv with fn from_request(req) -> Csv {
 
 ///|
 async fn main {
-  let app = @mocket.new()
+  let app = @mocket.App()
 
   // Text Response
   app.post("/", event => {
     let csv : Csv = event.req.body() catch { _ => Csv("") }
-    HttpResponse::new(OK).body(csv.0)
+    HttpResponse(OK).body(csv.0)
   })
 
   // Print Server URL

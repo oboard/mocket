@@ -93,8 +93,8 @@ test "join_asset_id" {
 }
 
 ///|
-pub fn Mocket::static_assets(
-  self : Mocket,
+pub fn App::static_assets(
+  self : App,
   path : String,
   provider : &ServeStaticProvider,
 ) -> Unit {
@@ -126,7 +126,7 @@ pub fn Mocket::static_assets(
         return next()
       }
       event.res.headers.set("Allow", "GET, HEAD")
-      return HttpResponse::new(MethodNotAllowed)
+      return HttpResponse(MethodNotAllowed)
     }
 
     // Safe to slice now: `url` equals the mount or starts with "mount/".
@@ -196,7 +196,7 @@ pub fn Mocket::static_assets(
         if provider.get_fallthrough() {
           return next()
         }
-        return HttpResponse::new(NotFound)
+        return HttpResponse(NotFound)
       }
       Some(meta) => {
         // Handle caching
@@ -214,7 +214,7 @@ pub fn Mocket::static_assets(
               event.res.headers.set("ETag", etag)
             }
             if event.req.headers.get("If-None-Match") == Some(etag) {
-              return HttpResponse::new(NotModified)
+              return HttpResponse(NotModified)
             }
           }
           None => ()
@@ -255,7 +255,7 @@ pub fn Mocket::static_assets(
           None => ()
         }
         if event.req.http_method == "HEAD" {
-          return HttpResponse::new(OK)
+          return HttpResponse(OK)
         }
         let contents = provider.get_contents(id)
         event.res.status_code = OK

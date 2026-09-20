@@ -1,10 +1,10 @@
 name = "oboard/mocket"
 
-version = "0.9.1"
+version = "0.9.5"
 
 import {
-  "moonbitlang/async@0.21.0",
-  "moonbitlang/x@0.5.1",
+  "moonbitlang/async@0.22.1",
+  "moonbitlang/x@0.5.5",
   "oboard/mimetype@0.2.0",
 }
 

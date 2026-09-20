@@ -37,12 +37,15 @@ fn request_has_body(
 }
 
 ///|
-pub async fn dispatch_http(
-  mocket : Mocket,
+/// Dispatch a request whose body is still available as an async reader.
+/// BodyReader implementations decide whether to read it incrementally or buffer
+/// it. This is used by the native HTTP server.
+async fn dispatch_http_reader(
+  mocket : App,
   http_method : String,
   url : String,
   headers : Map[@http.CaseInsensitiveString, StringView],
-  raw_body : Bytes,
+  body_reader : &@io.Reader,
 ) -> HttpResponse {
   let (path, query) = split_request_target(url)
   let (params, handler) = match mocket.find_route(http_method, path) {
@@ -50,21 +53,46 @@ pub async fn dispatch_http(
     _ => ({}, handle_not_found())
   }
   let event = {
-    req: { http_method, url: path, query, raw_body, headers, },
-    res: HttpResponse::new(OK),
+    req: { http_method, url: path, query, headers, reader: body_reader, },
+    res: HttpResponse(OK),
     params,
   }
   let responder = mocket.execute_middlewares(event, handler) catch {
-    err => {
-      if @async.is_cancellation_error(err) {
-        raise err
-      }
-      mocket.handle_request_error(event, err)
-    }
+    err => mocket.handle_request_error(event, err)
   }
   responder.options(event.res)
-  let buf = Buffer()
-  responder.output(buf)
-  event.res.raw_body = buf.to_bytes()
+  event.res.body = Some(responder)
+  event.res
+}
+
+///|
+pub async fn dispatch_http(
+  mocket : App,
+  http_method : String,
+  url : String,
+  headers : Map[@http.CaseInsensitiveString, StringView],
+  body : Bytes,
+) -> HttpResponse {
+  let (path, query) = split_request_target(url)
+  let (params, handler) = match mocket.find_route(http_method, path) {
+    Some((h, p)) => (p, h)
+    _ => ({}, handle_not_found())
+  }
+  let event = {
+    req: {
+      http_method,
+      url: path,
+      query,
+      headers,
+      reader: @io.MemoryReader(writer => writer.write(body)),
+    },
+    res: HttpResponse(OK),
+    params,
+  }
+  let responder = mocket.execute_middlewares(event, handler) catch {
+    err => mocket.handle_request_error(event, err)
+  }
+  responder.options(event.res)
+  event.res.body = Some(responder)
   event.res
 }

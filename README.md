@@ -10,7 +10,7 @@ A web framework for MoonBit.
 
 ```moonbit
 async fn main {
-  let app = @mocket.new()
+  let app = @mocket.App()
   app.get("/", _ => "Hello, Mocket!")
   app.listen(":80")
 }

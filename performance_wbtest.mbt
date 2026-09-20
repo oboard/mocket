@@ -13,8 +13,8 @@ async fn benchmark_middleware(
 }
 
 ///|
-fn benchmark_router() -> Mocket {
-  let app = new()
+fn benchmark_router() -> App {
+  let app = App()
   app
   ..get("/plaintext", benchmark_route_handler)
   ..get("/api/v1/users/current/profile/settings", benchmark_route_handler)
@@ -30,7 +30,7 @@ fn benchmark_router() -> Mocket {
 }
 
 ///|
-fn benchmark_middleware_router() -> Mocket {
+fn benchmark_middleware_router() -> App {
   let app = benchmark_router()
   app.use_middleware(benchmark_middleware)
   app.use_middleware(benchmark_middleware, base_path="/api")

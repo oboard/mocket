@@ -64,7 +64,7 @@ extern "js" fn set_js_property(
 
 ///|
 #borrow(arr)
-extern "js" fn array_to_js(arr : Array[String]) -> @js.Value = "(arr) => arr"
+extern "js" fn array_to_js(arr : FixedArray[String]) -> @js.Value = "(arr) => arr"
 
 ///|
 #borrow(self, data)
@@ -365,8 +365,7 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
       let response = dispatch_http(
         mocket, http_method, url, string_headers, raw,
       ) catch {
-        _ =>
-          HttpResponse::new(InternalServerError).body("Internal Server Error")
+        _ => HttpResponse(InternalServerError).body("Internal Server Error")
       }
       let safe_headers : Map[@http.CaseInsensitiveString, String] = Map([])
       response.headers.each(fn(k, v) {
@@ -387,12 +386,21 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
                 @header.sanitize_header_value(Show::to_string(cookie))
               })
               .to_array()
-            set_js_property(headers_obj, "Set-Cookie", array_to_js(cookies))
+            set_js_property(
+              headers_obj,
+              "Set-Cookie",
+              array_to_js(FixedArray::from_array(cookies)),
+            )
           }
           headers_obj
         },
       )
-      res.end(@js.Value::cast_from(response.raw_body))
+      let writer = ResponseBuffer::new()
+      match response.body {
+        Some(body) => try! body.output(writer)
+        None => ()
+      }
+      res.end(@js.Value::cast_from(writer.bytes()))
     })
   })
   start_server(server, address, websocket_accept_key)
@@ -447,7 +455,7 @@ pub fn __ws_emit_js_port(
   }
   let mocket = match ws_mocket_map.get(port) {
     Some(m) => m
-    None => new()
+    None => App()
   }
   match event_type {
     "open" => {
@@ -485,7 +493,7 @@ pub extern "js" fn __ws_emit_js_export(
 
 ///|
 pub fn __ws_subscribe_js(connection_id : String, channel : String) -> Unit {
-  let mut mocket = new()
+  let mut mocket = App()
   ws_mocket_map.each(fn(_, m) {
     if m.ws_clients.get(connection_id) is Some(_) {
       mocket = m
@@ -503,7 +511,7 @@ pub fn __ws_subscribe_js(connection_id : String, channel : String) -> Unit {
 
 ///|
 pub fn __ws_unsubscribe_js(connection_id : String, channel : String) -> Unit {
-  let mut mocket = new()
+  let mut mocket = App()
   ws_mocket_map.each(fn(_, m) {
     if m.ws_clients.get(connection_id) is Some(_) {
       mocket = m
@@ -517,7 +525,7 @@ pub fn __ws_unsubscribe_js(connection_id : String, channel : String) -> Unit {
 
 ///|
 pub fn __ws_get_members_js(channel : String) -> Array[String] {
-  let mut mocket = new()
+  let mut mocket = App()
   ws_mocket_map.each(fn(_, m) {
     match m.ws_channels.get(channel) {
       Some(_) => mocket = m

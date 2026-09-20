@@ -38,13 +38,11 @@ pub impl ServeStaticProvider for StaticFileProvider with fn get_contents(
     // file (404) apart from a real I/O failure (500).
     _ =>
       return if @fs.path_exists(full) {
-        @mocket.HttpResponse::new(InternalServerError)
-        .body("Internal Server Error")
-        .to_responder()
+        @mocket.HttpResponse(InternalServerError, body="Internal Server Error")
       } else {
-        @mocket.HttpResponse::new(NotFound).body("Not Found").to_responder()
+        @mocket.HttpResponse(NotFound, body="Not Found")
       }
   }
-  // See provider_native.mbt for why `raw_body` is used instead of `body()`.
-  @mocket.HttpResponse::new(OK, raw_body=bytes).to_responder()
+  // See provider_native.mbt: preserve the middleware-resolved Content-Type.
+  @mocket.HttpResponse(OK, body=bytes).to_responder()
 }

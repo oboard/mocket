@@ -1,6 +1,6 @@
 ///|
 async fn main {
-  let app = @mocket.new()
+  let app = @mocket.App()
   app.ws("/ws", event => {
     match event {
       Open(peer) => println("WS open: " + peer.to_string())

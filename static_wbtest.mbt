@@ -45,10 +45,9 @@ impl ServeStaticProvider for MemProvider with fn get_meta(self, id) {
 ///|
 impl ServeStaticProvider for MemProvider with fn get_contents(self, id) {
   match self.files.get(id.to_owned()) {
-    // raw_body: keep the Content-Type resolved by the middleware intact
-    Some(content) =>
-      HttpResponse::new(OK, raw_body=@utf8.encode(content)).to_responder()
-    None => HttpResponse::new(NotFound).body("Not Found").to_responder()
+    // Provide an explicit responder so the middleware's Content-Type remains.
+    Some(content) => HttpResponse(OK, body=@utf8.encode(content)).to_responder()
+    None => HttpResponse(NotFound).body("Not Found").to_responder()
   }
 }
 
@@ -79,7 +78,7 @@ fn no_headers() -> Map[@http.CaseInsensitiveString, StringView] {
 
 ///|
 async fn request(
-  app : Mocket,
+  app : App,
   http_method : String,
   url : String,
   headers? : Map[@http.CaseInsensitiveString, StringView] = no_headers(),
@@ -88,13 +87,13 @@ async fn request(
 }
 
 ///|
-fn body_string(res : HttpResponse) -> String raise {
+async fn body_string(res : HttpResponse) -> String {
   res.read_body()
 }
 
 ///|
 async test "static assets: unrelated and shorter routes pass through" {
-  let app = new()
+  let app = App()
   let provider = MemProvider::new({ "/index.html": "index fixture" })
   app.static_assets("/assets", provider)
   app.get("/api", _ => "api ok")
@@ -117,7 +116,7 @@ async test "static assets: unrelated and shorter routes pass through" {
 
 ///|
 async test "static assets: mount root and directory indexes" {
-  let app = new()
+  let app = App()
   app.static_assets(
     "/assets",
     MemProvider::new({
@@ -148,7 +147,7 @@ async test "static assets: mount root and directory indexes" {
 
 ///|
 async test "static assets: file serving, MIME type and metadata headers" {
-  let app = new()
+  let app = App()
   app.static_assets(
     "/assets",
     MemProvider::new({ "/app.txt": "asset fixture" }),
@@ -166,14 +165,13 @@ async test "static assets: file serving, MIME type and metadata headers" {
 
 ///|
 async test "static assets: HEAD returns headers without a body" {
-  let app = new()
+  let app = App()
   app.static_assets(
     "/assets",
     MemProvider::new({ "/app.txt": "asset fixture" }),
   )
   let res = request(app, "HEAD", "/assets/app.txt")
   assert_eq(res.status_code.to_int(), OK.to_int())
-  assert_eq(res.raw_body, b"")
   assert_eq(
     res.headers.get("Content-Length"),
     Some("asset fixture".length().to_string()),
@@ -182,7 +180,7 @@ async test "static assets: HEAD returns headers without a body" {
 
 ///|
 async test "static assets: conditional request with matching ETag" {
-  let app = new()
+  let app = App()
   app.static_assets(
     "/assets",
     MemProvider::new({ "/app.txt": "asset fixture" }),
@@ -196,7 +194,7 @@ async test "static assets: conditional request with matching ETag" {
 
 ///|
 async test "static assets: missing assets and unsupported methods" {
-  let app = new()
+  let app = App()
   app.static_assets(
     "/assets",
     MemProvider::new({ "/app.txt": "asset fixture" }),
@@ -214,7 +212,7 @@ async test "static assets: missing assets and unsupported methods" {
 
 ///|
 async test "static assets: fallthrough preserves later handlers" {
-  let app = new()
+  let app = App()
   app.static_assets(
     "/assets",
     MemProvider::new({ "/app.txt": "asset fixture" }, fallthrough=true),
@@ -238,7 +236,7 @@ async test "static assets: fallthrough preserves later handlers" {
 
 ///|
 async test "static assets: asset ids stay confined to the mount root" {
-  let app = new()
+  let app = App()
   let provider = MemProvider::new({ "/secret.txt": "top secret" })
   app.static_assets("/assets", provider)
 

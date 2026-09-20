@@ -6,7 +6,7 @@
 /// below hold identically on the `+js` and `+native` targets (the workspace
 /// runs the tests on both).
 async test "query string does not break path routing" {
-  let app = new()
+  let app = App()
   app.get("/hello", _ => "hello")
   let response = dispatch_http(app, "GET", "/hello?x=1", {}, b"")
   @test.assert_eq(response.status_code.to_int(), 200)
@@ -16,7 +16,7 @@ async test "query string does not break path routing" {
 
 ///|
 async test "query string is exposed separately from the route path" {
-  let app = new()
+  let app = App()
   let captured : Array[String] = []
   app.get("/hello/:name", event => {
     captured.push(event.req.url)
@@ -29,7 +29,7 @@ async test "query string is exposed separately from the route path" {
 
 ///|
 async test "fragment is stripped from the query string" {
-  let app = new()
+  let app = App()
   let captured : Array[String] = []
   app.get("/hello", event => {
     captured.push(event.req.query)
@@ -41,7 +41,7 @@ async test "fragment is stripped from the query string" {
 
 ///|
 async test "route with no query string yields an empty query" {
-  let app = new()
+  let app = App()
   let captured : Array[String] = []
   app.get("/plain", event => {
     captured.push(event.req.query)
@@ -53,7 +53,7 @@ async test "route with no query string yields an empty query" {
 
 ///|
 async test "query parameters are URL-decoded and exposed via HttpRequest::query" {
-  let app = new()
+  let app = App()
   let captured : Array[String] = []
   app.get("/search", event => {
     let q = event.req.query()
@@ -70,7 +70,7 @@ async test "query parameters are URL-decoded and exposed via HttpRequest::query"
 
 ///|
 async test "PUT and PATCH bodies are delivered to the handler" {
-  let app = new()
+  let app = App()
   let captured : Array[String] = []
   app.put("/raw1", event => {
     let text : String = event.req.body()
@@ -89,7 +89,7 @@ async test "PUT and PATCH bodies are delivered to the handler" {
 
 ///|
 async test "request headers are case-insensitive" {
-  let app = new()
+  let app = App()
   let captured : Array[StringView?] = []
   app.get("/hdr", event => {
     captured.push(event.req.headers.get("X-Test"))

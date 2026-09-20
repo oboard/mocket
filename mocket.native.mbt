@@ -42,7 +42,7 @@ let ws_client_channels : Map[String, Array[String]] = Map([])
 let ws_channel_clients : Map[String, Map[String, Unit]] = Map([])
 
 ///|
-let native_ws_handler_map : Map[Int, Mocket] = Map([])
+let native_ws_handler_map : Map[Int, App] = Map([])
 
 ///|
 fn request_method_to_string(meth : @http.RequestMethod) -> String {
@@ -123,7 +123,7 @@ fn is_websocket_upgrade(request : @http.Request) -> Bool {
 
 ///|
 fn find_ws_route(
-  mocket : Mocket,
+  mocket : App,
   path : String,
 ) -> (WebSocketHandler, Map[String, StringView])? {
   match mocket.ws_static_routes.get(path) {
@@ -178,7 +178,7 @@ pub fn unregister_ws_connection(connection_id : String) -> Unit {
 }
 
 ///|
-pub fn register_ws_handler(mocket : Mocket, port : Int) -> Unit {
+pub fn register_ws_handler(mocket : App, port : Int) -> Unit {
   native_ws_handler_map.set(port, mocket)
 }
 
@@ -355,8 +355,11 @@ async fn send_native_response(
     extra_headers=headers,
     cookies~,
   )
-  if request.meth != Head && !response.raw_body.is_empty() {
-    conn.write(response.raw_body)
+  if request.meth != Head {
+    match response.body {
+      Some(body) => body.output(conn)
+      None => ()
+    }
   }
   conn.end_response()
 }
@@ -386,74 +389,46 @@ fn cookie_item_to_http_cookie(item : CookieItem) -> @http.Cookie {
 
 ///|
 async fn handle_http_request(
-  mocket : Mocket,
+  mocket : App,
   request : @http.Request,
   body_reader : &@io.Reader,
   conn : @http.ServerConnection,
 ) -> Unit {
   let headers = string_headers_to_views(request.headers)
-  let raw_body = if request_has_body(
-      request_method_to_string(request.meth),
-      headers,
-    ) {
+  if request_has_body(request_method_to_string(request.meth), headers) {
     let content_length = request.headers
       .get("content-length")
       .map(s => @string.parse_int(s.trim()) catch { _ => 0 })
       .unwrap_or(0)
     if mocket.max_body_size > 0 && content_length > mocket.max_body_size {
-      let err_response = HttpResponse::new(
-        RequestEntityTooLarge,
-        raw_body=b"Request body too large",
+      let err_response = HttpResponse(RequestEntityTooLarge).body(
+        "Request body too large",
       )
       send_native_response(request, conn, err_response)
       return
     }
-    read_body_limited(body_reader, mocket.max_body_size)
-  } else {
-    b""
+    let response = dispatch_http_reader(
+      mocket,
+      request_method_to_string(request.meth),
+      request.path,
+      headers,
+      body_reader,
+    ) catch {
+      err => HttpResponse(InternalServerError).body(err.to_string())
+    }
+    send_native_response(request, conn, response)
+    return
   }
-  // `dispatch_http` normalizes `request.path` into a path + query internally.
   let response = dispatch_http(
     mocket,
     request_method_to_string(request.meth),
     request.path,
     headers,
-    raw_body,
+    b"",
   ) catch {
-    err => {
-      if @async.is_cancellation_error(err) {
-        raise err
-      }
-      HttpResponse::new(InternalServerError).body(err.to_string())
-    }
+    err => HttpResponse(InternalServerError).body(err.to_string())
   }
   send_native_response(request, conn, response)
-}
-
-///|
-async fn read_body_limited(reader : &@io.Reader, max_size : Int) -> Bytes {
-  if max_size <= 0 {
-    return reader.read_all().binary()
-  }
-  let buf = Buffer()
-  let chunk_size = 8192
-  let chunk = FixedArray::make(chunk_size, b'\x00')
-  for total = 0 {
-    let n = reader.read(chunk) catch { _ => break }
-    if n <= 0 {
-      break
-    }
-    if total + n > max_size {
-      break
-    }
-    let arr : Array[Byte] = []
-    for i = 0; i < n; i = i + 1 {
-      arr.push(chunk[i])
-    }
-    buf.write_bytes(Bytes::from_array(arr))
-    continue total + n
-  }
-  buf.to_bytes()
 }
 
 ///|
@@ -485,7 +460,7 @@ async fn read_ws_limited(reader : &@io.Reader, max_size : Int) -> Bytes? {
 ///|
 async fn handle_websocket_request(
   port : Int,
-  mocket : Mocket,
+  mocket : App,
   request : @http.Request,
   conn : @http.ServerConnection,
 ) -> Unit {
@@ -524,8 +499,7 @@ async fn handle_websocket_request(
       unregister_ws_connection(connection_id)
     }
     None => {
-      let response = HttpResponse::new(NotFound, raw_body=b"Not Found")
-      response.headers.set("Content-Type", "text/plain; charset=utf-8")
+      let response = HttpResponse(NotFound).body("Not Found")
       send_native_response(request, conn, response)
     }
   }
@@ -540,7 +514,7 @@ async fn handle_websocket_request(
 /// address may "steal" the specific interface from an existing wildcard bind
 /// (`0.0.0.0`), and a wildcard bind can bind to the remaining interfaces if a
 /// specific-interface bind already exists.
-pub async fn listen_ffi(mocket : Mocket, address : String) -> Unit noraise {
+pub async fn listen_ffi(mocket : App, address : String) -> Unit noraise {
   let address = normalize_listen_address(address)
   let addr = @socket.Addr::parse(address) catch {
     err => {
@@ -577,7 +551,7 @@ fn normalize_listen_address(address : String) -> String {
 }
 
 ///|
-pub async fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit noraise {
+pub async fn serve_ffi(mocket : App, port~ : Int) -> Unit noraise {
   listen_ffi(mocket, "127.0.0.1:\{port}")
 }
 

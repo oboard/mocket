@@ -42,16 +42,15 @@ pub impl ServeStaticProvider for StaticFileProvider with fn get_contents(
     // A real I/O failure (permissions, unreadable device, ...) is a server
     // error, not a missing asset.
     _ =>
-      return @mocket.HttpResponse::new(InternalServerError)
+      return @mocket.HttpResponse(InternalServerError)
         .body("Internal Server Error")
         .to_responder()
   }
   match bytes {
     // The file vanished between get_meta and this read.
-    None => @mocket.HttpResponse::new(NotFound).body("Not Found").to_responder()
-    // Construct with `raw_body` instead of `body()` so no default
-    // Content-Type (application/octet-stream) clobbers the one the
-    // middleware already resolved from the file extension.
-    Some(bytes) => @mocket.HttpResponse::new(OK, raw_body=bytes).to_responder()
+    None => @mocket.HttpResponse(NotFound).body("Not Found").to_responder()
+    // Provide an explicit responder so no default Content-Type
+    // (application/octet-stream) clobbers the middleware-resolved value.
+    Some(bytes) => @mocket.HttpResponse(OK, body=bytes).to_responder()
   }
 }

@@ -5,7 +5,7 @@ suberror TestRequestError {
 
 ///|
 async test "dispatch converts unhandled handler errors to 500" {
-  let app = new()
+  let app = App()
   app.get("/boom", _ => raise TestRequestError("boom"))
   let response = dispatch_http(app, "GET", "/boom", {}, b"")
   inspect(response.status_code.to_int(), content="500")
@@ -15,11 +15,11 @@ async test "dispatch converts unhandled handler errors to 500" {
 
 ///|
 async test "dispatch uses custom error handler" {
-  let app = new()
+  let app = App()
   let log : Array[String] = []
   app.on_error((event, err) => {
     log.push("\{event.req.http_method} \{event.req.url}: \{err}")
-    HttpResponse::new(Custom(599)).body("custom")
+    HttpResponse(Custom(599)).body("custom")
   })
   app.post("/custom", _ => raise TestRequestError("custom"))
 
@@ -34,7 +34,7 @@ async test "dispatch uses custom error handler" {
 
 ///|
 async test "handlers can still catch errors locally" {
-  let app = new()
+  let app = App()
   app.get("/local", _ => {
     let text = try {
       raise TestRequestError("local")

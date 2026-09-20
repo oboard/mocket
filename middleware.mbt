@@ -24,8 +24,8 @@ fn new_middleware_trie_node() -> MiddlewareTrieNode {
 
 ///|
 // 注册中间件，支持路径匹配
-pub fn Mocket::use_middleware(
-  self : Mocket,
+pub fn App::use_middleware(
+  self : App,
   middleware : Middleware,
   base_path? : String,
 ) -> Unit {
@@ -105,7 +105,7 @@ fn append_sorted_middleware_entries(
 }
 
 ///|
-fn Mocket::match_middlewares(self : Mocket, url : String) -> Array[Middleware] {
+fn App::match_middlewares(self : App, url : String) -> Array[Middleware] {
   let entries = []
   let mut node = self.middleware_trie
   append_sorted_middleware_entries(entries, node.middlewares)
@@ -122,8 +122,8 @@ fn Mocket::match_middlewares(self : Mocket, url : String) -> Array[Middleware] {
 }
 
 ///|
-async fn Mocket::execute_middlewares(
-  self : Mocket,
+async fn App::execute_middlewares(
+  self : App,
   event : MocketEvent,
   final_handler : HttpHandler,
 ) -> &Responder {
