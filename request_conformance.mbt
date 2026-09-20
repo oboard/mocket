@@ -28,15 +28,19 @@ async test "query string is exposed separately from the route path" {
 }
 
 ///|
-async test "fragment is stripped from the query string" {
+async test "fragment is excluded from both routing path and query" {
   let app = App()
   let captured : Array[String] = []
   app.get("/hello", event => {
+    captured.push(event.req.url)
     captured.push(event.req.query)
     "ok"
   })
-  ignore(dispatch_http(app, "GET", "/hello?a=1#frag", {}, b""))
-  @test.assert_eq(captured, ["a=1"])
+  let with_query = dispatch_http(app, "GET", "/hello?a=1#frag", {}, b"")
+  let without_query = dispatch_http(app, "GET", "/hello#frag", {}, b"")
+  @test.assert_eq(with_query.status_code.to_int(), 200)
+  @test.assert_eq(without_query.status_code.to_int(), 200)
+  @test.assert_eq(captured, ["/hello", "a=1", "/hello", ""])
 }
 
 ///|

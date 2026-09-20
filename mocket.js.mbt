@@ -380,12 +380,9 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
             _ => @js.Object::new().to_value()
           }
           if !response.cookies.is_empty() {
-            let cookies = response.cookies
-              .values()
-              .map(fn(cookie) {
-                @header.sanitize_header_value(Show::to_string(cookie))
-              })
-              .to_array()
+            let cookies = response.cookies.map(fn(cookie) {
+              @header.sanitize_header_value(serialize_cookie(cookie))
+            })
             set_js_property(
               headers_obj,
               "Set-Cookie",
@@ -396,9 +393,11 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
         },
       )
       let writer = ResponseBuffer::new()
-      match response.body {
-        Some(body) => try! body.output(writer)
-        None => ()
+      if http_method != "HEAD" {
+        match response.body {
+          Some(body) => try! body.output(writer)
+          None => ()
+        }
       }
       res.end(@js.Value::cast_from(writer.bytes()))
     })

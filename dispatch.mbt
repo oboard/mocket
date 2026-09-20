@@ -5,15 +5,14 @@
 /// `HttpRequest`. A `#fragment` is never used for routing, so it is stripped
 /// from the query rather than exposed.
 fn split_request_target(target : String) -> (String, String) {
-  let (path, rest) = match target.find("?") {
-    Some(q) => (target[:q].to_owned(), target[q + 1:].to_owned())
+  let target = match target.find("#") {
+    Some(fragment) => target[:fragment].to_owned()
+    None => target
+  }
+  match target.find("?") {
+    Some(query) => (target[:query].to_owned(), target[query + 1:].to_owned())
     None => (target, "")
   }
-  let query = match rest.find("#") {
-    Some(f) => rest[:f].to_owned()
-    None => rest
-  }
-  (path, query)
 }
 
 ///|
@@ -34,35 +33,6 @@ fn request_has_body(
       .map(value => value.to_owned().trim() != "0")
       .unwrap_or(false)
   }
-}
-
-///|
-/// Dispatch a request whose body is still available as an async reader.
-/// BodyReader implementations decide whether to read it incrementally or buffer
-/// it. This is used by the native HTTP server.
-async fn dispatch_http_reader(
-  mocket : App,
-  http_method : String,
-  url : String,
-  headers : Map[@http.CaseInsensitiveString, StringView],
-  body_reader : &@io.Reader,
-) -> HttpResponse {
-  let (path, query) = split_request_target(url)
-  let (params, handler) = match mocket.find_route(http_method, path) {
-    Some((h, p)) => (p, h)
-    _ => ({}, handle_not_found())
-  }
-  let event = {
-    req: { http_method, url: path, query, headers, reader: body_reader, },
-    res: HttpResponse(OK),
-    params,
-  }
-  let responder = mocket.execute_middlewares(event, handler) catch {
-    err => mocket.handle_request_error(event, err)
-  }
-  responder.options(event.res)
-  event.res.body = Some(responder)
-  event.res
 }
 
 ///|

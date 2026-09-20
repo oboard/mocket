@@ -1,121 +1,72 @@
 ///|
-test "CookieItem::to_string" {
-  let item : CookieItem = {
-    name: "session_id",
-    value: "12345",
-    max_age: Some(3600),
-    path: Some("/"),
-    domain: Some("example.com"),
-    secure: Some(true),
-    http_only: Some(true),
-    same_site: Some(SameSiteNone),
+test "async HTTP cookies preserve attributes and extensions" {
+  let response = HttpResponse(OK)
+  response.set_cookie(
+    @http.Cookie(
+      "session_id",
+      "12345",
+      path="/",
+      domain="example.com",
+      max_age=3600L,
+      secure=true,
+      http_only=true,
+      extensions=["SameSite=None"],
+    ),
+  )
+  @test.assert_eq(response.cookies.length(), 1)
+  let cookie = response.cookies[0]
+  @test.assert_eq(cookie.name, "session_id")
+  @test.assert_eq(cookie.path, Some("/"))
+  @test.assert_eq(cookie.domain, Some("example.com"))
+  @test.assert_eq(cookie.max_age, Some(3600L))
+  @test.assert_eq(cookie.extensions, ["SameSite=None"])
+}
+
+///|
+test "response retains cookies with the same name and distinct paths" {
+  let response = HttpResponse(OK)
+  response.set_cookie(@http.Cookie("session", "root", path="/"))
+  response.set_cookie(@http.Cookie("session", "api", path="/api"))
+  @test.assert_eq(response.cookies.length(), 2)
+  @test.assert_eq(response.cookies[0].path, Some("/"))
+  @test.assert_eq(response.cookies[1].path, Some("/api"))
+}
+
+///|
+test "request cookies are parsed as name value pairs" {
+  let request = HttpRequest::{
+    http_method: "GET",
+    url: "/",
+    query: "",
+    headers: { "Cookie": "session=abc; Path=/ignored; theme=dark" },
+    reader: @io.MemoryReader(writer => writer.write(b"")),
   }
-  let s = Show::to_string(item)
-  inspect(
-    s,
-    content="session_id=12345; Max-Age=3600; Path=/; Domain=example.com; Secure; HttpOnly; SameSite=SameSiteNone",
+  @test.assert_eq(
+    request.get_cookie("session").map(item => item.value),
+    Some("abc"),
+  )
+  @test.assert_eq(
+    request.get_cookie("Path").map(item => item.value),
+    Some("/ignored"),
+  )
+  @test.assert_eq(
+    request.get_cookie("theme").map(item => item.value),
+    Some("dark"),
   )
 }
 
 ///|
-test "parse_cookie" {
-  let cookie_str = "name=value; name2=value2; name3=value3"
-  let cookies = parse_cookie(cookie_str)
-  @test.assert_eq(cookies.get("name").map(fn(i) { i.value }), Some("value"))
-  @test.assert_eq(cookies.get("name2").map(fn(i) { i.value }), Some("value2"))
-  @test.assert_eq(cookies.get("name3").map(fn(i) { i.value }), Some("value3"))
-}
-
-///|
-test "parse_cookie_with_attributes" {
-  let cookie_str = "session_id=12345; Path=/; Domain=example.com; Max-Age=3600; Secure; HttpOnly; SameSite=Lax"
-  let cookies = parse_cookie(cookie_str)
-  match cookies.get("session_id") {
-    Some(item) => {
-      @test.assert_eq(item.value, "12345")
-      @test.assert_eq(item.path, Some("/"))
-      @test.assert_eq(item.domain, Some("example.com"))
-      @test.assert_eq(item.max_age, Some(3600))
-      @test.assert_eq(item.secure, Some(true))
-      @test.assert_eq(item.http_only, Some(true))
-      assert_true(item.same_site == Some(Lax))
-    }
-    None => fail("Expected session_id cookie")
-  }
-}
-
-///|
-test "parse_cookie_multiple_with_attributes" {
-  let cookie_str = "c1=v1; Path=/app; c2=v2; Secure; SameSite=Strict"
-  let cookies = parse_cookie(cookie_str)
-  match cookies.get("c1") {
-    Some(item) => {
-      @test.assert_eq(item.value, "v1")
-      @test.assert_eq(item.path, Some("/app"))
-      @test.assert_eq(item.secure, None) // Should not have secure
-    }
-    None => fail("Expected c1")
-  }
-  match cookies.get("c2") {
-    Some(item) => {
-      @test.assert_eq(item.value, "v2")
-      @test.assert_eq(item.secure, Some(true))
-      assert_true(item.same_site == Some(Strict))
-      @test.assert_eq(item.path, None) // Should not have path
-    }
-    None => fail("Expected c2")
-  }
-}
-
-///|
-test "parse_cookie_with_spaces" {
-  let cookie_str = " name = value ; name2= value2 "
-  let cookies = parse_cookie(cookie_str)
-  @test.assert_eq(cookies.get("name").map(fn(i) { i.value }), Some("value"))
-  @test.assert_eq(cookies.get("name2").map(fn(i) { i.value }), Some("value2"))
-}
-
-///|
-test "parse_cookie_quoted" {
-  let cookie_str = "name=\"value with spaces\"; name2=\"value2\""
-  let cookies = parse_cookie(cookie_str)
+test "request cookie parser handles quoted and empty values" {
+  let cookies = parse_request_cookie(
+    "name=\"value with spaces\"; empty=; ignored",
+  )
   @test.assert_eq(
-    cookies.get("name").map(fn(i) { i.value }),
+    cookies.get("name").map(item => item.value),
     Some("value with spaces"),
   )
-  @test.assert_eq(cookies.get("name2").map(fn(i) { i.value }), Some("value2"))
-}
-
-///|
-test "parse_cookie_empty_value" {
-  let cookie_str = "name=; name2="
-  let cookies = parse_cookie(cookie_str)
-  @test.assert_eq(cookies.get("name").map(fn(i) { i.value }), Some(""))
-  @test.assert_eq(cookies.get("name2").map(fn(i) { i.value }), Some(""))
-}
-
-///|
-test "parse_cookie_no_value" {
-  let cookie_str = "name; name2"
-  let cookies = parse_cookie(cookie_str)
-  @test.assert_eq(cookies.get("name").map(fn(i) { i.value }), Some(""))
-  @test.assert_eq(cookies.get("name2").map(fn(i) { i.value }), Some(""))
-}
-
-///|
-test "parse_complex_cookie_string" {
-  let cookie_str = "__stripe_mid=4e192e8c-7c22-4923-aaf1-6b174a77a43555136e; JSESSIONID=5C63BF22946D333F1079A0150ECABBCB; session_id=12345"
-  let cookies = parse_cookie(cookie_str)
-  @test.assert_eq(
-    cookies.get("__stripe_mid").map(fn(i) { i.value }),
-    Some("4e192e8c-7c22-4923-aaf1-6b174a77a43555136e"),
-  )
-  @test.assert_eq(
-    cookies.get("session_id").map(fn(i) { i.value }),
-    Some("12345"),
-  )
-  @test.assert_eq(
-    cookies.get("JSESSIONID").map(fn(i) { i.value }),
-    Some("5C63BF22946D333F1079A0150ECABBCB"),
-  )
+  @test.assert_eq(cookies.get("empty").map(item => item.value), Some(""))
+  match cookies.get("ignored") {
+    None => ()
+    Some(_) => fail("a cookie without '=' must be ignored")
+  }
 }

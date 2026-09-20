@@ -4,6 +4,7 @@
 priv struct MemProvider {
   files : Map[String, String] // virtual asset id -> content
   mime : Map[String, String] // extension -> MIME type
+  encodings : Map[String, String] // encoding -> asset suffix
   fallthrough : Bool
   index_names : Array[String]
   probed : Array[String] // every id passed to get_meta, in order
@@ -18,6 +19,7 @@ fn MemProvider::new(
   {
     files,
     mime: { "txt": "text/plain" },
+    encodings: {},
     fallthrough,
     index_names,
     probed: [],
@@ -57,8 +59,8 @@ impl ServeStaticProvider for MemProvider with fn get_type(self, ext) {
 }
 
 ///|
-impl ServeStaticProvider for MemProvider with fn get_encodings(_) {
-  {}
+impl ServeStaticProvider for MemProvider with fn get_encodings(self) {
+  self.encodings
 }
 
 ///|
@@ -179,17 +181,32 @@ async test "static assets: HEAD returns headers without a body" {
 }
 
 ///|
-async test "static assets: conditional request with matching ETag" {
+async test "static assets: conditional requests accept ETag lists and wildcard" {
   let app = App()
   app.static_assets(
     "/assets",
     MemProvider::new({ "/app.txt": "asset fixture" }),
   )
-  let headers : Map[@http.CaseInsensitiveString, StringView] = {
-    "If-None-Match": "\"mem\"",
+  for if_none_match in ["\"other\", \"mem\"", "*"] {
+    let headers : Map[@http.CaseInsensitiveString, StringView] = {
+      "If-None-Match": if_none_match,
+    }
+    let res = request(app, "GET", "/assets/app.txt", headers~)
+    assert_eq(res.status_code.to_int(), NotModified.to_int())
   }
-  let res = request(app, "GET", "/assets/app.txt", headers~)
-  assert_eq(res.status_code.to_int(), NotModified.to_int())
+}
+
+///|
+async test "static assets vary when encoded representations are available" {
+  let app = App()
+  let provider = MemProvider::new({ "/app.txt": "asset fixture.gz" })
+  provider.encodings["gzip"] = ".gz"
+  app.static_assets("/assets", provider)
+  let res = request(app, "GET", "/assets/app.txt", headers={
+    "Accept-Encoding": "gzip",
+  })
+  assert_eq(res.status_code.to_int(), OK.to_int())
+  assert_eq(res.headers.get("Vary"), Some("Accept-Encoding"))
 }
 
 ///|

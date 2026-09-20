@@ -197,6 +197,38 @@ pub fn form_encode(map : Map[String, String]) -> String {
 }
 
 ///|
+fn boundary_at(bytes : BytesView, boundary : BytesView, index : Int) -> Bool {
+  let boundary_len = boundary.length()
+  let len = bytes.length()
+  if index < 0 || index + boundary_len > len {
+    return false
+  }
+  // A delimiter is valid only at the beginning of the body or immediately after
+  // CRLF, and must be followed by CRLF or the closing `--` marker.
+  if index != 0 &&
+    (index < 2 || bytes[index - 2] != b'\r' || bytes[index - 1] != b'\n') {
+    return false
+  }
+  if index + boundary_len + 2 > len ||
+    !((
+      bytes[index + boundary_len] == b'\r' &&
+      bytes[index + boundary_len + 1] == b'\n'
+    ) ||
+    (
+      bytes[index + boundary_len] == b'-' &&
+      bytes[index + boundary_len + 1] == b'-'
+    )) {
+    return false
+  }
+  for j in 0..<boundary_len {
+    if bytes[index + j] != boundary[j] {
+      return false
+    }
+  }
+  true
+}
+
+///|
 fn find_boundary(
   bytes : BytesView,
   boundary : BytesView,
@@ -208,14 +240,7 @@ fn find_boundary(
     return -1
   }
   for i in start_index..<=(len - boundary_len) {
-    let mut match_found = true
-    for j in 0..<boundary_len {
-      if bytes[i + j] != boundary[j] {
-        match_found = false
-        break
-      }
-    }
-    if match_found {
+    if boundary_at(bytes, boundary, i) {
       return i
     }
   }
@@ -231,49 +256,44 @@ pub fn parse_multipart(
   let boundary_bytes = @utf8.encode("--" + boundary)
   let boundary_len = boundary_bytes.length()
   let len = bytes.length()
-  let mut start = 0
-  // Find first boundary
-  let first_boundary = find_boundary(bytes, boundary_bytes[:], start)
+  let first_boundary = find_boundary(bytes, boundary_bytes[:], 0)
   if first_boundary == -1 {
     return res
   }
-  start = first_boundary + boundary_len
-  while start < len {
-    // Check for end boundary "--"
-    if start + 2 <= len && bytes[start] == b'-' && bytes[start + 1] == b'-' {
+  let mut boundary_start = first_boundary
+  while boundary_start < len {
+    let after_boundary = boundary_start + boundary_len
+    if after_boundary + 2 > len {
       break
     }
-
-    // Skip CRLF after boundary
-    if start + 2 <= len && bytes[start] == b'\r' && bytes[start + 1] == b'\n' {
-      start = start + 2
-    } else {
-      // Malformed or unexpected char, try to find next boundary
-      let next = find_boundary(bytes, boundary_bytes[:], start)
-      if next == -1 {
-        break
-      }
-      start = next + boundary_len
-      continue
-    }
-
-    // Find next boundary
-    let next_boundary = find_boundary(bytes, boundary_bytes[:], start)
-    if next_boundary == -1 {
+    if bytes[after_boundary] == b'-' && bytes[after_boundary + 1] == b'-' {
       break
     }
-
-    // Part content is between start and next_boundary - 2 (CRLF)
-    let part_end = next_boundary - 2
-    if part_end < start {
-      // Should not happen if format is correct
+    if bytes[after_boundary] != b'\r' || bytes[after_boundary + 1] != b'\n' {
       break
     }
-    let part_bytes = bytes[start:part_end]
-    parse_multipart_part(part_bytes, res)
-    start = next_boundary + boundary_len
+    let part_start = after_boundary + 2
+    let next_boundary = find_boundary(bytes, boundary_bytes[:], part_start)
+    if next_boundary == -1 || next_boundary < part_start + 2 {
+      break
+    }
+    // `find_boundary` requires the CRLF before every non-initial delimiter,
+    // so this excludes only the delimiter framing and preserves body bytes.
+    parse_multipart_part(bytes[part_start:next_boundary - 2], res)
+    boundary_start = next_boundary
   }
   res
+}
+
+///|
+fn unquote_multipart_param(value : StringView) -> String {
+  let value = value.trim()
+  let len = value.length()
+  if len >= 2 && value[0] == '"' && value[len - 1] == '"' {
+    value[1:len - 1].to_owned()
+  } else {
+    value.to_owned()
+  }
 }
 
 ///|
@@ -304,23 +324,20 @@ fn parse_multipart_part(
   let mut filename : String? = None
   let mut content_type : String? = None
   for header in headers {
-    let parts = header.split(":").to_array()
-    if parts.length() >= 2 {
-      let key = parts[0].trim().to_lower()
-      let val = parts[1].trim()
+    if header.split_once(":") is Some((header_key, header_value)) {
+      let key = header_key.trim().to_lower()
+      let val = header_value.trim()
       if key == "content-disposition" {
-        // form-data; name="field"; filename="file.txt"
         let directives = val.split(";").to_array()
-        for i in 0..<directives.length() {
-          let directive = directives[i].trim()
-          if directive.has_prefix("name=") {
-            let d_str = directive.to_owned()
-            let substr = d_str[6:d_str.length() - 1]
-            name = substr.to_owned()
-          } else if directive.has_prefix("filename=") {
-            let d_str = directive.to_owned()
-            let substr = d_str[10:d_str.length() - 1]
-            filename = Some(substr.to_owned())
+        for directive in directives {
+          if directive.trim().split_once("=") is Some((param_key, param_value)) {
+            let key = param_key.trim().to_lower()
+            let value = unquote_multipart_param(param_value.trim())
+            if key == "name" {
+              name = value
+            } else if key == "filename" {
+              filename = Some(value)
+            }
           }
         }
       } else if key == "content-type" {
@@ -334,27 +351,61 @@ fn parse_multipart_part(
 }
 
 ///|
+fn append_string(bytes : Array[Byte], value : String) -> Unit {
+  for byte in @utf8.encode(value) {
+    bytes.push(byte)
+  }
+}
+
+///|
+fn sanitize_multipart_metadata(value : String) -> String {
+  let result = StringBuilder()
+  for char in value {
+    if char != '\r' && char != '\n' {
+      result.write_char(char)
+    }
+  }
+  result.to_string()
+}
+
+///|
 pub fn encode_multipart(
   m : Map[String, MultipartFormValue],
   boundary : String,
-) -> String {
-  let sb = StringBuilder()
+) -> Bytes {
+  let bytes = []
+  let boundary = sanitize_multipart_metadata(boundary)
   m.each(fn(name, v) {
-    sb.write_string("--" + boundary + "\r\n")
-    sb.write_string("Content-Disposition: form-data; name=\"" + name + "\"")
+    append_string(bytes, "--" + boundary + "\r\n")
+    append_string(
+      bytes,
+      "Content-Disposition: form-data; name=\"" +
+      sanitize_multipart_metadata(name) +
+      "\"",
+    )
     match v.filename {
-      Some(fnm) => sb.write_string("; filename=\"" + fnm + "\"")
+      Some(filename) =>
+        append_string(
+          bytes,
+          "; filename=\"" + sanitize_multipart_metadata(filename) + "\"",
+        )
       None => ()
     }
-    sb.write_string("\r\n")
+    append_string(bytes, "\r\n")
     match v.content_type {
-      Some(ct) => sb.write_string("Content-Type: " + ct + "\r\n")
+      Some(content_type) =>
+        append_string(
+          bytes,
+          "Content-Type: " + sanitize_multipart_metadata(content_type) + "\r\n",
+        )
       None => ()
     }
-    sb.write_string("\r\n")
-    sb.write_string(@utf8.decode(v.data) catch { _ => "" })
-    sb.write_string("\r\n")
+    append_string(bytes, "\r\n")
+    for byte in v.data {
+      bytes.push(byte)
+    }
+    append_string(bytes, "\r\n")
   })
-  sb.write_string("--" + boundary + "--\r\n")
-  sb.to_string()
+  append_string(bytes, "--" + boundary + "--\r\n")
+  Bytes::from_array(bytes)
 }

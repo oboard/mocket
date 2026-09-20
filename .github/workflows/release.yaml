@@ -1,0 +1,81 @@
+name: release examples
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-examples:
+    name: Build examples (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-arm64
+            runner: macos-14
+          - platform: linux-amd64
+            runner: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Restore dependencies
+        run: moon update
+
+      - name: Build native examples
+        shell: bash
+        run: |
+          set -euo pipefail
+          platform="${{ matrix.platform }}"
+          dist_dir="dist/${platform}"
+          mkdir -p "$dist_dir"
+
+          for package in examples/*; do
+            [ -f "$package/moon.pkg" ] || continue
+            example="${package##*/}"
+            moon build --target native --release "$package"
+
+            binary="_build/native/release/build/$package/$example.exe"
+            if [ ! -f "$binary" ]; then
+              echo "Could not locate the native executable for $example at $binary" >&2
+              exit 1
+            fi
+            install -m 755 "$binary" "$dist_dir/$example"
+          done
+
+          tar -C dist -czf "mocket-examples-${platform}.tar.gz" "$platform"
+
+      - name: Upload example archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: mocket-examples-${{ matrix.platform }}
+          path: mocket-examples-${{ matrix.platform }}.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub release
+    needs: build-examples
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download example archives
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release-assets/*.tar.gz

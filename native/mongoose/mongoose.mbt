@@ -206,18 +206,20 @@ fn handle_request(
         )
       }
     })
-    response.cookies
-    .values()
-    .each(cookie => {
+    response.cookies.each(cookie => {
       res.set_header(
         to_cbytes("Set-Cookie"),
-        to_cbytes(@header.sanitize_header_value(Show::to_string(cookie))),
+        to_cbytes(
+          @header.sanitize_header_value(@mocket.serialize_cookie(cookie)),
+        ),
       )
     })
     let writer = @mocket.ResponseBuffer::new()
-    match response.body {
-      Some(body) => body.output(writer) catch { _ => () }
-      None => ()
+    if http_method != "HEAD" {
+      match response.body {
+        Some(body) => body.output(writer) catch { _ => () }
+        None => ()
+      }
     }
     let bytes = writer.bytes()
     res.end_bytes(bytes, bytes.length())

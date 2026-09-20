@@ -66,3 +66,61 @@ test "parse_multipart" {
     Some("text/plain"),
   )
 }
+
+///|
+test "parse_multipart preserves boundary-like binary payload" {
+  let boundary = "boundary"
+  let payload : Bytes = [
+    0x00, b'a', b'\r', b'\n', b'-', b'-', b'b', b'o', b'u', b'n', b'd', b'a', b'r',
+    b'y', b'x', 0xff,
+  ]
+  let body = []
+  for
+    byte in @utf8.encode(
+      "--boundary\r\nContent-Disposition: form-data; name=field\r\n\r\n",
+    ) {
+    body.push(byte)
+  }
+  for byte in payload {
+    body.push(byte)
+  }
+  for byte in @utf8.encode("\r\n--boundary--\r\n") {
+    body.push(byte)
+  }
+  let parts = parse_multipart(Bytes::from_array(body)[:], boundary)
+  @test.assert_eq(parts.get("field").map(v => v.data.to_owned()), Some(payload))
+}
+
+///|
+test "parse_multipart accepts unquoted disposition parameters" {
+  let body = "--boundary\r\nContent-Disposition: form-data; name=field; filename=file.txt\r\n\r\nvalue\r\n--boundary--\r\n"
+  let parts = parse_multipart(@utf8.encode(body)[:], "boundary")
+  @test.assert_eq(parts.get("field").bind(v => v.filename), Some("file.txt"))
+  @test.assert_eq(
+    parts.get("field").map(v => @utf8.decode(v.data)),
+    Some("value"),
+  )
+}
+
+///|
+test "encode_multipart preserves binary data and sanitizes metadata" {
+  let data : Bytes = [
+    0x00, 0xff, b'\r', b'\n', b'-', b'-', b'b', b'o', b'u', b'n', b'd', b'a', b'r',
+    b'y', b'x',
+  ]
+  let fields : Map[String, MultipartFormValue] = Map([])
+  fields.set("field\r\nInjected: value", {
+    filename: Some("file\r\nInjected: value"),
+    content_type: Some("application/octet-stream\r\nInjected: value"),
+    data: data[:],
+  })
+  let encoded = encode_multipart(fields, "boundary")
+  let expected_headers = "Content-Disposition: form-data; name=\"fieldInjected: value\"; filename=\"fileInjected: value\"\r\nContent-Type: application/octet-streamInjected: value\r\n"
+  assert_true(encoded.find(@utf8.encode(expected_headers)[:]) is Some(_))
+  assert_true(encoded.find(@utf8.encode("\r\nInjected: value\r\n")[:]) is None)
+  let parts = parse_multipart(encoded[:], "boundary")
+  @test.assert_eq(
+    parts.get("fieldInjected: value").map(v => v.data.to_owned()),
+    Some(data),
+  )
+}

@@ -10,6 +10,19 @@ pub fn is_preflight_request(event : @mocket.MocketEvent) -> Bool {
 }
 
 ///|
+fn allowed_origin(
+  event : @mocket.MocketEvent,
+  configured_origin : String,
+  credentials : Bool,
+) -> String? {
+  if credentials && configured_origin == "*" {
+    event.req.headers.get("Origin").map(value => value.to_owned())
+  } else {
+    Some(configured_origin)
+  }
+}
+
+///|
 pub fn append_cors_preflight_headers(
   event : @mocket.MocketEvent,
   origin? : String = "*",
@@ -19,7 +32,10 @@ pub fn append_cors_preflight_headers(
   max_age? : Int = 86400,
 ) -> Unit noraise {
   let headers = event.res.headers
-  headers["Access-Control-Allow-Origin"] = origin
+  match allowed_origin(event, origin, credentials) {
+    Some(origin) => headers["Access-Control-Allow-Origin"] = origin
+    None => ()
+  }
   if credentials {
     headers["Access-Control-Allow-Credentials"] = "true"
   }
@@ -38,7 +54,10 @@ pub fn append_cors_headers(
   credentials? : Bool = false,
 ) -> Unit noraise {
   let headers = event.res.headers
-  headers["Access-Control-Allow-Origin"] = origin
+  match allowed_origin(event, origin, credentials) {
+    Some(origin) => headers["Access-Control-Allow-Origin"] = origin
+    None => ()
+  }
   headers["Access-Control-Allow-Methods"] = methods
   headers["Access-Control-Allow-Headers"] = allow_headers
   headers["Access-Control-Expose-Headers"] = expose_headers

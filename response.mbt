@@ -2,7 +2,7 @@
 pub(all) struct HttpResponse {
   mut status_code : StatusCode
   headers : Map[@http.CaseInsensitiveString, StringView]
-  cookies : Map[String, CookieItem]
+  cookies : Array[@http.Cookie]
   mut body : &Responder?
 }
 
@@ -89,13 +89,13 @@ pub async fn[T : BodyReader] HttpResponse::read_body(self : HttpResponse) -> T {
 pub fn HttpResponse::HttpResponse(
   status_code : StatusCode,
   headers? : Map[@http.CaseInsensitiveString, StringView],
-  cookies? : Map[String, CookieItem],
+  cookies? : Array[@http.Cookie],
   body? : &Responder,
 ) -> HttpResponse {
   {
     status_code,
     headers: headers.unwrap_or({}),
-    cookies: cookies.unwrap_or({}),
+    cookies: cookies.unwrap_or([]),
     body,
   }
 }

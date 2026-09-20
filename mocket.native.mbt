@@ -404,9 +404,6 @@ async fn send_native_response(
     }
   })
   let cookies = response.cookies
-    .values()
-    .map(cookie_item_to_http_cookie)
-    .to_array()
   conn.send_response(
     response.status_code.to_int(),
     "OK",
@@ -424,29 +421,6 @@ async fn send_native_response(
 }
 
 ///|
-fn cookie_item_to_http_cookie(item : CookieItem) -> @http.Cookie {
-  let extensions : Array[String] = []
-  match item.same_site {
-    Some(Lax) => extensions.push("SameSite=Lax")
-    Some(Strict) => extensions.push("SameSite=Strict")
-    Some(SameSiteNone) => extensions.push("SameSite=None")
-    None => ()
-  }
-  @http.Cookie(
-    @header.sanitize_header_value(item.name),
-    @header.sanitize_header_value(item.value),
-    path?=item.path.map(@header.sanitize_header_value),
-    domain?=item.domain.map(@header.sanitize_header_value),
-    max_age?=item.max_age.map(fn(a) { a.to_int64() }),
-    secure=item.secure.unwrap_or(false),
-    http_only=item.http_only.unwrap_or(false),
-    extensions~,
-  )
-}
-
-///|
-
-///|
 async fn handle_http_request(
   mocket : App,
   request : @http.Request,
@@ -454,40 +428,66 @@ async fn handle_http_request(
   conn : @http.ServerConnection,
 ) -> Unit {
   let headers = string_headers_to_views(request.headers)
-  if request_has_body(request_method_to_string(request.meth), headers) {
+  let http_method = request_method_to_string(request.meth)
+  if request_has_body(http_method, headers) {
     let content_length = request.headers
       .get("content-length")
       .map(s => @string.parse_int(s.trim()) catch { _ => 0 })
       .unwrap_or(0)
     if mocket.max_body_size > 0 && content_length > mocket.max_body_size {
-      let err_response = HttpResponse(RequestEntityTooLarge).body(
-        "Request body too large",
+      send_native_response(
+        request,
+        conn,
+        HttpResponse(RequestEntityTooLarge).body("Request body too large"),
       )
-      send_native_response(request, conn, err_response)
       return
     }
-    let response = dispatch_http_reader(
-      mocket,
-      request_method_to_string(request.meth),
-      request.path,
-      headers,
-      body_reader,
-    ) catch {
-      err => HttpResponse(InternalServerError).body(err.to_string())
+    let body = if mocket.max_body_size > 0 {
+      read_http_body_limited(body_reader, mocket.max_body_size) catch {
+        _ => None
+      }
+    } else {
+      Some(body_reader.read_all().binary())
+    }
+    let response = match body {
+      Some(body) =>
+        dispatch_http(mocket, http_method, request.path, headers, body) catch {
+          err => HttpResponse(InternalServerError).body(err.to_string())
+        }
+      None => HttpResponse(RequestEntityTooLarge).body("Request body too large")
     }
     send_native_response(request, conn, response)
     return
   }
-  let response = dispatch_http(
-    mocket,
-    request_method_to_string(request.meth),
-    request.path,
-    headers,
-    b"",
-  ) catch {
+  let response = dispatch_http(mocket, http_method, request.path, headers, b"") catch {
     err => HttpResponse(InternalServerError).body(err.to_string())
   }
   send_native_response(request, conn, response)
+}
+
+///|
+async fn read_http_body_limited(reader : &@io.Reader, max_size : Int) -> Bytes? {
+  if max_size <= 0 {
+    return Some(reader.read_all().binary())
+  }
+  let buffer = Buffer()
+  let chunk = FixedArray::make(8192, b'\x00')
+  let mut total = 0
+  let mut done = false
+  while !done {
+    let read = reader.read(chunk) catch { _ => return None }
+    if read <= 0 {
+      done = true
+    } else if total + read > max_size {
+      return None
+    } else {
+      for index in 0..<read {
+        buffer.write_byte(chunk[index])
+      }
+      total = total + read
+    }
+  }
+  Some(buffer.to_bytes())
 }
 
 ///|

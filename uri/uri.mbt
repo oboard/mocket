@@ -43,53 +43,43 @@ fn BytesView::slice_until(self : BytesView, other : BytesView) -> BytesView {
 
 ///|
 fn is_alpha_byte(b : Byte) -> Bool {
-  (b >= b'A' && b <= b'Z') || (b >= b'a' && b <= b'z')
+  b is (b'A'..=b'Z' | b'a'..=b'z')
 }
 
 ///|
 fn is_digit_byte(b : Byte) -> Bool {
-  b >= b'0' && b <= b'9'
+  b is (b'0'..=b'9')
 }
 
 ///|
 fn is_hexdig_byte(b : Byte) -> Bool {
-  is_digit_byte(b) || (b >= b'A' && b <= b'F') || (b >= b'a' && b <= b'f')
+  b is (b'0'..=b'9' | b'A'..=b'F' | b'a'..=b'f')
 }
 
 ///|
 fn is_unreserved_byte(b : Byte) -> Bool {
-  is_alpha_byte(b) ||
-  is_digit_byte(b) ||
-  b == b'-' ||
-  b == b'.' ||
-  b == b'_' ||
-  b == b'~'
+  b is (b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~')
 }
 
 ///|
 fn is_gen_delim_byte(b : Byte) -> Bool {
-  b == b':' ||
-  b == b'/' ||
-  b == b'?' ||
-  b == b'#' ||
-  b == b'[' ||
-  b == b']' ||
-  b == b'@'
+  b is (b':' | b'/' | b'?' | b'#' | b'[' | b']' | b'@')
 }
 
 ///|
 fn is_sub_delim_byte(b : Byte) -> Bool {
-  b == b'!' ||
-  b == b'$' ||
-  b == b'&' ||
-  b == b'\'' ||
-  b == b'(' ||
-  b == b')' ||
-  b == b'*' ||
-  b == b'+' ||
-  b == b',' ||
-  b == b';' ||
-  b == b'='
+  b
+  is (b'!'
+  | b'$'
+  | b'&'
+  | b'\''
+  | b'('
+  | b')'
+  | b'*'
+  | b'+'
+  | b','
+  | b';'
+  | b'=')
 }
 
 ///|
@@ -117,7 +107,20 @@ fn parse_scheme_or_segment_nz_nc(
   for s = source {
     match s {
       [b':', .. k] as s => {
-        uri.scheme = Some(source.slice_until(s))
+        let scheme = source.slice_until(s)
+        if !(scheme is [first, ..] && is_alpha_byte(first)) {
+          raise InvalidScheme(scheme)
+        }
+        for byte in scheme {
+          if !(is_alpha_byte(byte) ||
+            is_digit_byte(byte) ||
+            byte == b'+' ||
+            byte == b'-' ||
+            byte == b'.') {
+            raise InvalidScheme(scheme)
+          }
+        }
+        uri.scheme = Some(scheme)
         return parse_hier_part_then_query(k, uri)
       }
       [b'/', .. k] as s => {
@@ -206,15 +209,8 @@ fn parse_scheme(source : BytesView, uri : Uri) -> BytesView raise ParseError {
 ///|
 fn parse_percent_encoding(source : BytesView) -> BytesView raise ParseError {
   match source {
-    [
-      b'0'..=b'9'
-      | b'A'..=b'Z'
-      | b'a'..=b'z',
-      b'0'..=b'9'
-      | b'A'..=b'Z'
-      | b'a'..=b'z',
-      .. source,
-    ] => source
+    [first, second, .. rest] if is_hexdig_byte(first) && is_hexdig_byte(second) =>
+      rest
     [..] => raise InvalidPercentEncoding(source)
   }
 }
@@ -430,7 +426,7 @@ fn parse_hier_part_then_query(
       match parse_authority(k, uri) {
         [b'/', .. k] => parse_path_abempty_then_query(k, uri)
         [b'?', .. k] => parse_query_then_fragment(k, uri)
-        [b'#', ..] => parse_fragment(k, uri)
+        [b'#', .. fragment] => parse_fragment(fragment, uri)
         [] => parse_done(k, uri)
         [..] as s => raise Invalid(s)
       }
@@ -724,6 +720,36 @@ test "RFC 3986 Dot Segment Removal" {
   let path3 : Array[BytesView] = [b".", b"a", b".", b"b", b"."]
   let result3 = remove_dot_segments(path3)
   @test.assert_eq(result3, [b"a", b"b"])
+}
+
+///|
+test "URI parsing rejects invalid schemes and percent encodings" {
+  let invalid_schemes = [b"1:foo", b"a_b:foo", b"a!b:foo"]
+  for source in invalid_schemes {
+    try Uri::parse(source) catch {
+      InvalidScheme(_) => ()
+      _ => fail("expected invalid scheme")
+    } noraise {
+      _ => fail("expected invalid scheme")
+    }
+  }
+  let valid = Uri::parse(b"a+1.-:foo")
+  @test.assert_eq(valid.scheme, Some(b"a+1.-"))
+  for source in [b"/x%GG", b"/x%G0", b"/x%0G"] {
+    try Uri::parse(source) catch {
+      InvalidPercentEncoding(_) => ()
+      _ => fail("expected invalid percent encoding")
+    } noraise {
+      _ => fail("expected invalid percent encoding")
+    }
+  }
+}
+
+///|
+test "URI authority parses fragments" {
+  let uri = Uri::parse(b"http://example.com#frag")
+  @test.assert_eq(uri.scheme, Some(b"http"))
+  @test.assert_eq(uri.fragment, Some(b"frag"))
 }
 
 ///|

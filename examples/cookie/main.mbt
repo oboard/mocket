@@ -2,7 +2,7 @@
 async fn main {
   let app = @mocket.App()
   app.get("/", e => {
-    e.res.set_cookie("session_id", "12345", max_age=3600)
+    e.res.set_cookie(@http.Cookie("session_id", "12345", max_age=3600L))
     if e.req.get_cookie("session_id") is Some(session_id) {
       session_id.value
     } else {

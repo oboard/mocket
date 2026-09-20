@@ -1,155 +1,81 @@
 ///|
+/// Adds an async HTTP runtime cookie as a `Set-Cookie` entry.
 pub fn HttpResponse::set_cookie(
   self : HttpResponse,
-  name : String,
-  value : String,
-  max_age? : Int,
-  path? : String,
-  domain? : String,
-  secure? : Bool,
-  http_only? : Bool,
-  same_site? : SameSiteOption,
+  cookie : @http.Cookie,
 ) -> Unit {
-  let item : CookieItem = {
-    name,
-    value,
-    max_age,
-    path,
-    domain,
-    secure,
-    http_only,
-    same_site,
-  }
-  self.cookies.set(name, item)
+  self.cookies.push(cookie)
 }
 
 ///|
+/// Looks up a cookie from a request's `Cookie` header.
 pub fn HttpRequest::get_cookie(
   self : HttpRequest,
   name : String,
-) -> CookieItem? {
-  // 请求头现在大小写不敏感，`Cookie` 一次查找即可。
+) -> @http.Cookie? {
   if self.headers.get("Cookie") is Some(cookie) {
-    parse_cookie(cookie).get(name)
+    parse_request_cookie(cookie).get(name)
   } else {
     None
   }
 }
 
 ///|
-pub fn HttpResponse::delete_cookie(self : HttpResponse, key : String) -> Unit {
-  self.set_cookie(key, "", max_age=0)
-}
-
-///|
-pub fn cookie_to_string(cookie : Array[CookieItem]) -> String {
-  cookie.map(x => Show::to_string(x)).join(";")
-}
-
-///|
-pub fn parse_cookie(cookie : StringView) -> Map[String, CookieItem] {
-  fn dequote(value : StringView) -> StringView {
-    if value is ['"', .. rest, '"'] {
-      rest
-    } else {
-      value
-    }
-  }
-
-  let res = Map([])
-  let mut last_cookie_item : (String, CookieItem)? = None
-  fn on_key_value(key : StringView, value : StringView) -> Unit {
-    let key = key.to_owned()
-    let value = dequote(value).to_owned()
-    if last_cookie_item is Some((name, item)) {
-      if key =~ re"^(?i:path)$" {
-        let new_item = { ..item, path: Some(value), }
-        res.set(name, new_item)
-        last_cookie_item = Some((name, new_item))
-        return
-      } else if key =~ re"^(?i:domain)$" {
-        let new_item = { ..item, domain: Some(value), }
-        res.set(name, new_item)
-        last_cookie_item = Some((name, new_item))
-        return
-      } else if key =~ re"^(?i:max-age)$" {
-        let new_item = {
-          ..item,
-          max_age: try @string.parse_int(value) catch {
-            _ => None
-          } noraise {
-            x => Some(x)
-          },
-        }
-        res.set(name, new_item)
-        last_cookie_item = Some((name, new_item))
-        return
-      } else if key =~ re"^(?i:secure)$" {
-        let new_item = { ..item, secure: Some(true), }
-        res.set(name, new_item)
-        last_cookie_item = Some((name, new_item))
-        return
-      } else if key =~ re"^(?i:httponly)$" {
-        let new_item = { ..item, http_only: Some(true), }
-        res.set(name, new_item)
-        last_cookie_item = Some((name, new_item))
-        return
-      } else if key =~ re"^(?i:samesite)$" {
-        let same_site = if value =~ re"^(?i:lax)$" {
-          Some(Lax)
-        } else if value =~ re"^(?i:strict)$" {
-          Some(Strict)
-        } else if value =~ re"^(?i:none)$" {
-          Some(SameSiteNone)
-        } else {
-          None
-        }
-        let new_item = { ..item, same_site, }
-        res.set(name, new_item)
-        last_cookie_item = Some((name, new_item))
-        return
+/// Parses the `Cookie` request header. Request cookies are name/value pairs;
+/// `Set-Cookie` attributes never apply to this header.
+pub fn parse_request_cookie(cookie : StringView) -> Map[String, @http.Cookie] {
+  let result : Map[String, @http.Cookie] = Map([])
+  for part in cookie.split(";") {
+    if part.trim().split_once("=") is Some((name, value)) {
+      let name = name.trim().to_owned()
+      if name != "" {
+        let value = value.trim()
+        let value = if value is ['\"', .. inner, '\"'] { inner } else { value }
+        result[name] = @http.Cookie(name, value.to_owned())
       }
     }
-    let item = CookieItem::{
-      name: key,
-      value,
-      max_age: None,
-      path: None,
-      domain: None,
-      secure: None,
-      http_only: None,
-      same_site: None,
-    }
-    res.set(key, item)
-    last_cookie_item = Some((key, item))
   }
+  result
+}
 
-  for curr = cookie {
-    // TODO: more spec compliance
-    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes
-    if curr =~ (re"^[ \t]+", after=rest) {
-      continue rest
-    } else if curr =~ (
-        re"^" +
-        (re"[^ \t=;]([ \t]*[^ \t=;])*" as key) +
-        re"[ \t]*=[ \t]*" +
-        (re"[^ \t;]([ \t]*[^ \t;])*" as value) +
-        re"[ \t]*;?",
-        after=rest,
-      ) {
-      on_key_value(key, value)
-      continue rest
-    } else if curr =~ (
-        re"^" +
-        (re"[^ \t=;]([ \t]*[^ \t=;])*" as key) +
-        re"[ \t]*(=[ \t]*)?;?",
-        after=rest,
-      ) {
-      on_key_value(key, "")
-      continue rest
-    } else {
-      break
-    }
+///|
+pub fn HttpResponse::delete_cookie(self : HttpResponse, key : String) -> Unit {
+  self.set_cookie(@http.Cookie(key, "", max_age=0L))
+}
+
+///|
+/// Serializes an async HTTP cookie for non-native backends that need to write
+/// `Set-Cookie` themselves.
+pub fn serialize_cookie(cookie : @http.Cookie) -> String {
+  let result = StringBuilder()
+  result.write_string(cookie.name)
+  result.write_char('=')
+  result.write_string(cookie.value)
+  if cookie.path is Some(path) {
+    result.write_string("; Path=")
+    result.write_string(path)
   }
-  res
+  if cookie.expires_raw is Some(expires_raw) {
+    result.write_string("; Expires=")
+    result.write_string(expires_raw)
+  }
+  if cookie.max_age is Some(max_age) {
+    result.write_string("; Max-Age=")
+    result.write_string(max_age.to_string())
+  }
+  if cookie.domain is Some(domain) {
+    result.write_string("; Domain=")
+    result.write_string(domain)
+  }
+  if cookie.secure {
+    result.write_string("; Secure")
+  }
+  if cookie.http_only {
+    result.write_string("; HttpOnly")
+  }
+  for extension in cookie.extensions {
+    result.write_string("; ")
+    result.write_string(extension)
+  }
+  result.to_string()
 }

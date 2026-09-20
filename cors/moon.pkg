@@ -2,6 +2,11 @@ import {
   "oboard/mocket",
 }
 
+import {
+  "moonbitlang/async",
+  "moonbitlang/core/test",
+} for "test"
+
 // Suppress warning 20 from MoonBit's generated native test driver.
 
 warnings = "-20"

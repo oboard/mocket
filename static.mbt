@@ -72,6 +72,17 @@ test "normalize_path" {
 ///|
 /// Join a candidate suffix (usually an index file name) onto a resolved
 /// asset id, inserting exactly one path separator between them.
+fn if_none_match_matches(value : StringView, etag : StringView) -> Bool {
+  for candidate in value.split(",") {
+    let candidate = candidate.trim()
+    if candidate == "*" || candidate == etag {
+      return true
+    }
+  }
+  false
+}
+
+///|
 fn join_asset_id(id : String, suffix : String) -> String {
   if suffix == "" {
     return id
@@ -152,7 +163,7 @@ pub fn App::static_assets(
         }
       }
     }
-    if matched_encodings.length() > 1 {
+    if !encodings.is_empty() {
       event.res.headers.set("Vary", "Accept-Encoding")
     }
 
@@ -213,7 +224,10 @@ pub fn App::static_assets(
             if !event.res.headers.contains("ETag") {
               event.res.headers.set("ETag", etag)
             }
-            if event.req.headers.get("If-None-Match") == Some(etag) {
+            if event.req.headers
+              .get("If-None-Match")
+              .map(value => if_none_match_matches(value, etag))
+              .unwrap_or(false) {
               return HttpResponse(NotModified)
             }
           }
