@@ -15,8 +15,6 @@ pub async fn dispatch_http(App, String, String, Map[@http.CaseInsensitiveString,
 
 pub fn dispatch_ws_event((WebSocketEvent) -> Unit, WebSocketPeer, String, Bytes) -> Unit
 
-pub fn encode_multipart(Map[String, MultipartFormValue], String) -> Bytes
-
 pub fn escape_html(String) -> String
 
 pub async fn execute_middlewares(Array[(String, async (MocketEvent, async () -> &Responder) -> &Responder)], MocketEvent, async (MocketEvent) -> &Responder) -> &Responder
@@ -33,8 +31,6 @@ pub async fn listen_ffi(App, String) -> Unit noraise
 pub fn new(base_path? : String, max_body_size? : Int) -> App
 
 pub fn parse_form_data(BytesView) -> Map[String, String]
-
-pub fn parse_multipart(BytesView, String) -> Map[String, MultipartFormValue]
 
 pub fn parse_query(StringView) -> Map[String, String]
 

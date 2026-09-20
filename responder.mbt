@@ -138,27 +138,21 @@ async fn FormData::write_response(
   self : FormData,
   writer : &@io.Writer,
 ) -> Unit {
-  let boundary = self.response_boundary()
+  let multipart = @multipart.Writer(writer, boundary=self.response_boundary())
   for name, value in self.fields {
-    writer.write("--\{boundary}\r\n")
-    writer.write(
-      "Content-Disposition: form-data; name=\"\{multipart_quote(name)}\"",
-    )
-    match value.filename {
+    let disposition = match value.filename {
       Some(filename) =>
-        writer.write("; filename=\"\{multipart_quote(filename)}\"")
-      None => ()
+        "form-data; name=\"\{multipart_quote(name)}\"; filename=\"\{multipart_quote(filename)}\""
+      None => "form-data; name=\"\{multipart_quote(name)}\""
     }
-    writer.write("\r\n")
+    let headers : @http.Headers = { "Content-Disposition": disposition }
     match value.content_type {
-      Some(content_type) => writer.write("Content-Type: \{content_type}\r\n")
+      Some(content_type) => headers["Content-Type"] = content_type
       None => ()
     }
-    writer.write("\r\n")
-    writer.write(value.data)
-    writer.write("\r\n")
+    multipart.write_part(headers~, target => target.write(value.data))
   }
-  writer.write("--\{boundary}--\r\n")
+  multipart.finish()
 }
 
 ///|

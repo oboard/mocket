@@ -116,8 +116,21 @@ pub impl BodyReader for FormData with fn from_request(req : HttpRequest) -> Form
     Some(value) if value != "" => value
     _ => raise MissingBoundary
   }
-  let body = req.read_all()
-  FormData::new(parse_multipart(body[:], boundary.to_owned()))
+  let form = @multipart.Form(req.reader, boundary=boundary.to_owned())
+  let fields = Map([])
+  while form.next_part() is Some(part) {
+    let data = part.read_all().binary()
+    let content_type = match part.headers().get("Content-Type") {
+      Some(value) => Some(value)
+      None => None
+    }
+    fields.set(part.name(), {
+      filename: part.filename(),
+      content_type,
+      data: data[:],
+    })
+  }
+  FormData::new(fields)
 }
 
 ///|
