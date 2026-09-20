@@ -1,0 +1,53 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oboard/mocket/multipart"
+
+import {
+  "moonbitlang/async/http",
+  "moonbitlang/async/io",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn parse_header_value(String) -> (String, Map[@http.CaseInsensitiveString, String]) raise MultipartError
+
+// Errors
+pub suberror MultipartError {
+  MultipartError(String)
+} derive(@debug.Debug)
+
+// Types and methods
+type Form
+pub fn Form::Form(&@io.Reader, boundary~ : String) -> Self raise MultipartError
+pub async fn Form::next_part(Self) -> FormPart?
+
+type FormPart
+pub fn FormPart::content_type(Self) -> String
+pub fn FormPart::filename(Self) -> String?
+pub fn FormPart::headers(Self) -> Map[@http.CaseInsensitiveString, String]
+pub fn FormPart::name(Self) -> String
+pub impl @io.Reader for FormPart
+
+type FormWriter
+pub fn FormWriter::FormWriter(&@io.Writer) -> Self raise MultipartError
+pub fn FormWriter::boundary(Self) -> String
+pub fn FormWriter::content_type(Self) -> String
+pub async fn FormWriter::finish(Self) -> Unit
+pub async fn FormWriter::write_field(Self, String, String) -> Unit
+pub async fn FormWriter::write_file(Self, String, filename? : String, content_type? : String, &@io.Reader) -> Unit
+pub async fn FormWriter::write_json(Self, String, Json) -> Unit
+pub async fn FormWriter::write_part(Self, headers~ : Map[@http.CaseInsensitiveString, String], async (&@io.Writer) -> Unit) -> Unit
+
+type Reader
+pub fn Reader::Reader(&@io.Reader, boundary~ : String) -> Self raise MultipartError
+pub async fn Reader::next_part(Self) -> (Map[@http.CaseInsensitiveString, String], &@io.Reader)?
+
+type Writer
+pub fn Writer::Writer(&@io.Writer, boundary~ : String) -> Self raise MultipartError
+pub async fn Writer::finish(Self) -> Unit
+pub async fn Writer::write_part(Self, headers~ : Map[@http.CaseInsensitiveString, String], async (&@io.Writer) -> Unit) -> Unit
+pub async fn Writer::write_reader(Self, headers~ : Map[@http.CaseInsensitiveString, String], &@io.Reader) -> Unit
+
+// Type aliases
+pub type Callback = async (&@io.Writer) -> Unit
+
+// Traits

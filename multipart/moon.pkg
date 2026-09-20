@@ -1,0 +1,10 @@
+import {
+  "moonbitlang/async/io",
+  "moonbitlang/async/http",
+  "moonbitlang/core/cmp",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/encoding/hex",
+  "moonbitlang/core/env",
+}
+
+supported_targets = "+js+native"

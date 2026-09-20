@@ -1,7 +1,7 @@
 import {
   "oboard/mocket/uri",
   "oboard/mocket/internal/header",
-  "Yoorkin/multipart",
+  "oboard/mocket/multipart",
   "moonbitlang/x/fs",
   "moonbitlang/x/crypto",
   "moonbitlang/x/path/posix",
