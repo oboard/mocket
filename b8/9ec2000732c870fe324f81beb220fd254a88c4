@@ -1,0 +1,16 @@
+responder.mbt
+  h_c7606fb8f0c97c 4,8-9,18-19,23-25,27-30,40-46,55-56,60-61,70-76,85-86,90-92,94,103-104,110-113,121-122
+static_file/provider_js.mbt
+  h_c7606fb8f0c97c 41,43,46-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "b89ec2000732c870fe324f81beb220fd254a88c4",
+  "prompts": {},
+  "humans": {
+    "h_c7606fb8f0c97c": {
+      "author": "oboard <oboard@outlook.com>"
+    }
+  }
+}
