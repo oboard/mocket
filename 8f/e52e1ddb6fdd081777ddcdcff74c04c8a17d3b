@@ -1,0 +1,14 @@
+.github/workflows/release.yaml
+  h_c7606fb8f0c97c 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "8fe52e1ddb6fdd081777ddcdcff74c04c8a17d3b",
+  "prompts": {},
+  "humans": {
+    "h_c7606fb8f0c97c": {
+      "author": "oboard <oboard@outlook.com>"
+    }
+  }
+}
