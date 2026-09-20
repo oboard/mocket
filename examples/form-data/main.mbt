@@ -13,9 +13,9 @@ async fn main {
         $|filename: \{filename.unwrap_or("Unknown")}
         $|content_type: \{content_type.unwrap_or("Unknown")}
         $|size: \{data.length()} bytes
-      HttpResponse(OK).body(content)
+      HttpResponse(OK, body=content)
     } else {
-      HttpResponse(BadRequest).body("missing file field")
+      HttpResponse(BadRequest, body="missing file field")
     }
   })
 
