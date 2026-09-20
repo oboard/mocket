@@ -1,0 +1,16 @@
+cookie_test.mbt
+  h_c7606fb8f0c97c 2-5,8-14,16-22,26-32,36-42,45-46,49-50,53-54,56-61,64-65,67-68
+moon.mod
+  h_c7606fb8f0c97c 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "3d26811c45afc7dfc5ac89c4948a78a39bc5c9a0",
+  "prompts": {},
+  "humans": {
+    "h_c7606fb8f0c97c": {
+      "author": "oboard <oboard@outlook.com>"
+    }
+  }
+}
