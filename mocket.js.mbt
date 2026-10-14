@@ -593,11 +593,19 @@ pub fn __ws_get_members_js(channel : String) -> Array[String] {
 
 ///|
 #owned(sub, unsub, get_members)
-pub extern "js" fn __ws_state_js_export(
+pub extern "js" fn __ws_state_js_export_ffi(
+  sub : (String, String) -> Unit,
+  unsub : (String, String) -> Unit,
+  get_members : (String) -> FixedArray[String],
+) -> Unit = "(sub, unsub, get_members) => { globalThis.__ws_subscribe_js = (id, ch) => { try { sub(id, ch); } catch (_) {} }; globalThis.__ws_unsubscribe_js = (id, ch) => { try { unsub(id, ch); } catch (_) {} }; globalThis.__ws_get_members_js = (ch) => { try { return get_members(ch); } catch (_) { return []; } }; }"
+
+pub fn __ws_state_js_export(
   sub : (String, String) -> Unit,
   unsub : (String, String) -> Unit,
   get_members : (String) -> Array[String],
-) -> Unit = "(sub, unsub, get_members) => { globalThis.__ws_subscribe_js = (id, ch) => { try { sub(id, ch); } catch (_) {} }; globalThis.__ws_unsubscribe_js = (id, ch) => { try { unsub(id, ch); } catch (_) {} }; globalThis.__ws_get_members_js = (ch) => { try { return get_members(ch); } catch (_) { return []; } }; }"
+) -> Unit {
+  __ws_state_js_export_ffi(sub, unsub, fn(__a1) { FixedArray::from_array(get_members(__a1)) })
+}
 
 ///|
 pub fn __get_port_by_connection_js(id : String) -> Int {
