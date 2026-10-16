@@ -16,7 +16,7 @@ async fn main {
 }
 ```
 
-Mocket supports both `js` and `native` backends.
+Mocket supports `js`, `wasm`, and `native` backends.
 
 ### JavaScript Backend
 
@@ -26,6 +26,16 @@ Command: `MoonBit: Select Backend` -> `js`
 
 ```bash
 moon run src/example --target js
+```
+
+### WebAssembly Backend
+
+Set the backend of MoonBit to `wasm` in `Visual Studio Code`
+
+Command: `MoonBit: Select Backend` -> `wasm`
+
+```bash
+moon run examples/route --target wasm
 ```
 
 ### Native Backend
@@ -38,11 +48,11 @@ Command: `MoonBit: Select Backend` -> `native`
 moon run src/example --target native
 ```
 
-Then visit http://localhost:4000
+Then visit <http://localhost:4000>
 
 ## Usage
 
-Minimum Example: https://github.com/oboard/mocket_example
+Minimum Example: <https://github.com/oboard/mocket_example>
 
 🙌快来吧！🙌
 
