@@ -424,7 +424,7 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
       res.write_head(
         response.status_code.to_int(),
         {
-          let headers_obj = JsValue::from_json(safe_headers.to_json())
+          let headers_obj = JsValue::from_json(Json(safe_headers))
           if !response.cookies.is_empty() {
             let cookies = response.cookies.map(fn(cookie) {
               @header.sanitize_header_value(serialize_cookie(cookie))

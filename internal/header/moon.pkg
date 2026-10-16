@@ -4,4 +4,4 @@ import {
 
 warnings = "-15-29"
 
-supported_targets = "+js+native"
+supported_targets = "+native+wasm+js"

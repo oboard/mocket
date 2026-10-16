@@ -7,4 +7,4 @@ import {
   "moonbitlang/core/env",
 }
 
-supported_targets = "+js+native"
+supported_targets = "+native+wasm+js"

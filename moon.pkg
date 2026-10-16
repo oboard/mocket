@@ -24,7 +24,7 @@ import {
 
 warnings = "-15-29"
 
-supported_targets = "+js+native"
+supported_targets = "+js+native+wasm"
 
 options(
   expose: [
@@ -40,10 +40,10 @@ options(
     "ws_publish",
   ],
   targets: {
-    "async.mbt": [ "js", "native" ],
+    "async.mbt": [ "wasm", "js", "native" ],
     "mocket.js.mbt": [ "js" ],
-    "mocket.native.mbt": [ "native" ],
+    "mocket.native.mbt": [ "wasm", "native" ],
     "serve.mbt": [ "js" ],
-    "serve.native.mbt": [ "native" ],
+    "serve.native.mbt": [ "wasm", "native" ],
   },
 )
