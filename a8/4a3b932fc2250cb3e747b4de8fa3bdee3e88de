@@ -1,0 +1,36 @@
+examples/jwt-login/main.mbt
+  s_4493ab2d2b74bc::t_301d1b20d410bb 27-39
+  s_4493ab2d2b74bc::t_42298228c48e68 49,74
+  s_4493ab2d2b74bc::t_d841a01ae1666d 44-48,50-51,56-58,63-72,77-80,84,108,154-165
+  s_4493ab2d2b74bc::t_a2ee27a1692604 1-26,40-43,81-83,85-89,91-93,95-99,101,103,105-107,109-153,166-175
+  h_c7606fb8f0c97c 52-55,61,90,94,100,102,104
+  s_4493ab2d2b74bc::t_bafebc38eaad5b 59-60,62
+  s_4493ab2d2b74bc::t_761e6b4a0e1aba 73,75-76
+examples/jwt-login/moon.pkg
+  s_4493ab2d2b74bc::t_fd6f687c6dc27b 1-12
+examples/jwt-login/pkg.generated.mbti
+  s_4493ab2d2b74bc::t_76017053d24b90 1-12
+moon.mod
+  h_c7606fb8f0c97c 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "a84a3b932fc2250cb3e747b4de8fa3bdee3e88de",
+  "prompts": {},
+  "humans": {
+    "h_c7606fb8f0c97c": {
+      "author": "oboard <oboard@outlook.com>"
+    }
+  },
+  "sessions": {
+    "s_4493ab2d2b74bc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6b54bb76-26b3-4cf3-8f87-504bad31b52f",
+        "model": "GLM-5.2"
+      },
+      "human_author": "oboard <oboard@outlook.com>"
+    }
+  }
+}
