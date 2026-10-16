@@ -155,12 +155,17 @@ pub(all) struct FormData {
   mut response_boundary : String?
 }
 pub fn FormData::fields(Self) -> Map[String, MultipartFormValue]
+pub async fn FormData::from_request(HttpRequest) -> Self
 pub fn FormData::get(Self, String) -> MultipartFormValue?
 pub fn FormData::new(Map[String, MultipartFormValue]) -> Self
+pub fn FormData::options(Self, HttpResponse) -> Unit
+pub async fn FormData::output(Self, &@io.Writer) -> Unit
 pub impl BodyReader for FormData
 pub impl Responder for FormData
 
 type Html
+pub fn Html::options(Self, HttpResponse) -> Unit
+pub async fn Html::output(Self, &@io.Writer) -> Unit
 pub impl Responder for Html
 
 pub(all) struct HttpRequest {
@@ -186,6 +191,8 @@ pub fn HttpResponse::HttpResponse(StatusCode, headers? : Map[@http.CaseInsensiti
 pub fn HttpResponse::body(Self, &Responder) -> Self
 pub fn HttpResponse::delete_cookie(Self, String) -> Unit
 pub fn HttpResponse::json(Self, &ToJson) -> Self
+pub fn HttpResponse::options(Self, Self) -> Unit
+pub async fn HttpResponse::output(Self, &@io.Writer) -> Unit
 pub async fn[T : BodyReader] HttpResponse::read_body(Self) -> T
 pub fn HttpResponse::set_cookie(Self, @http.Cookie) -> Unit
 pub fn HttpResponse::to_responder(Self) -> &Responder
@@ -209,6 +216,9 @@ pub(all) struct ResponseBuffer {
 }
 pub fn ResponseBuffer::bytes(Self) -> Bytes
 pub fn ResponseBuffer::new() -> Self
+pub async fn ResponseBuffer::write(Self, &@io.Data) -> Unit
+pub async fn ResponseBuffer::write_once(Self, Bytes, offset~ : Int, len~ : Int) -> Int
+pub async fn ResponseBuffer::write_reader(Self, &@io.Reader) -> Unit
 pub impl @io.Writer for ResponseBuffer
 
 pub(all) struct StaticAssetMeta {
@@ -286,8 +296,11 @@ pub(all) enum StatusCode {
   NetworkAuthenticationRequired
   Custom(Int)
 } derive(Eq, ToJson)
+pub fn StatusCode::equal(Self, Self) -> Bool
 pub fn StatusCode::from_int(Int) -> Self
+pub fn StatusCode::not_equal(Self, Self) -> Bool
 pub fn StatusCode::to_int(Self) -> Int
+pub fn StatusCode::to_json(Self) -> Json
 
 pub(all) enum WebSocketAggregatedMessage {
   Text(String)

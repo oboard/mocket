@@ -14,6 +14,9 @@ pub(all) struct ResponseBuffer {
 }
 
 ///|
+pub extend ResponseBuffer with @io.Writer::{write_once, write, write_reader}
+
+///|
 pub fn ResponseBuffer::new() -> ResponseBuffer {
   { buffer: Buffer(), }
 }
@@ -32,9 +35,9 @@ fn ResponseBuffer::write_data(self : ResponseBuffer, data : &@io.Data) -> Unit {
 fn ResponseBuffer::write_chunk(
   self : ResponseBuffer,
   bytes : Bytes,
-  offset~ : Int,
-  len~ : Int,
-) -> Int {
+  offset~ : Int32,
+  len~ : Int32,
+) -> Int32 {
   self.buffer.write_bytes(bytes[offset:offset + len])
   len
 }

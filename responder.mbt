@@ -37,6 +37,9 @@ pub impl Responder for HttpResponse with fn options(self, res) -> Unit {
 }
 
 ///|
+pub extend HttpResponse with Responder::{options, output}
+
+///|
 pub impl Responder for HttpResponse with fn output(self, writer) {
   self.write_response(writer)
 }
@@ -106,7 +109,7 @@ pub impl Responder for StringView with fn output(self, writer) {
 
 ///|
 fn multipart_response_boundary() -> String {
-  let random = @random.Rand::new()
+  let random = @random.Rand()
   let suffix = StringBuilder()
   let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
   for _ in 0..<24 {
@@ -161,6 +164,9 @@ pub impl Responder for FormData with fn options(self, res) -> Unit {
 }
 
 ///|
+pub extend FormData with Responder::{options, output}
+
+///|
 pub impl Responder for FormData with fn output(self, writer) {
   self.write_response(writer)
 }
@@ -177,6 +183,9 @@ async fn Html::write_response(self : Html, writer : &@io.Writer) -> Unit {
 pub impl Responder for Html with fn options(_, res) -> Unit {
   res.headers["Content-Type"] = "text/html; charset=utf-8"
 }
+
+///|
+pub extend Html with Responder::{options, output}
 
 ///|
 pub impl Responder for Html with fn output(self, writer) {

@@ -126,11 +126,17 @@ pub(all) enum StatusCode {
   NotExtended
   /// RFC 6585, 6
   NetworkAuthenticationRequired
-  Custom(Int)
+  Custom(Int32)
 } derive(ToJson, Eq)
 
 ///|
-pub fn StatusCode::from_int(i : Int) -> StatusCode {
+pub extend StatusCode with ToJson::{to_json}
+
+///|
+pub extend StatusCode with Eq::{not_equal, equal}
+
+///|
+pub fn StatusCode::from_int(i : Int32) -> StatusCode {
   match i {
     100 => Continue
     101 => SwitchingProtocols
@@ -199,7 +205,7 @@ pub fn StatusCode::from_int(i : Int) -> StatusCode {
 }
 
 ///|
-pub fn StatusCode::to_int(self : StatusCode) -> Int {
+pub fn StatusCode::to_int(self : StatusCode) -> Int32 {
   match self {
     Continue => 100
     SwitchingProtocols => 101

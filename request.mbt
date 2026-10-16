@@ -76,6 +76,9 @@ pub(all) struct FormData {
 }
 
 ///|
+pub extend FormData with BodyReader::{from_request}
+
+///|
 /// Creates multipart form data for use as a request body or response body.
 pub fn FormData::new(fields : Map[String, MultipartFormValue]) -> FormData {
   { fields, response_boundary: None, }

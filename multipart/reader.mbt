@@ -4,6 +4,9 @@ pub suberror MultipartError {
 } derive(Debug)
 
 ///|
+pub extend MultipartError with Debug::{to_repr}
+
+///|
 /// A sequential, streaming MIME multipart reader (RFC 2046 section 5.1.1).
 /// The source must be limited to the enclosing message body.
 struct Reader {

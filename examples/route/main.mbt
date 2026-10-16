@@ -76,10 +76,10 @@ async fn main {
 }
 
 ///|
-fn example_port() -> Int {
+fn example_port() -> Int32 {
   match @env.get_env_var("MOCKET_PORT") {
     Some(port_text) => {
-      let port : Int = @string.from_str(port_text) catch { _ => 4000 }
+      let port : Int32 = @string.from_str(port_text) catch { _ => 4000 }
       port
     }
     None => 4000

@@ -1,6 +1,6 @@
 ///|
 test "async HTTP cookies preserve attributes and extensions" {
-  let response = HttpResponse(OK)
+  let response = @mocket.HttpResponse(@mocket.OK)
   response.set_cookie(
     @http.Cookie(
       "session_id",
@@ -24,7 +24,7 @@ test "async HTTP cookies preserve attributes and extensions" {
 
 ///|
 test "response retains cookies with the same name and distinct paths" {
-  let response = HttpResponse(OK)
+  let response = @mocket.HttpResponse(@mocket.OK)
   response.set_cookie(@http.Cookie("session", "root", path="/"))
   response.set_cookie(@http.Cookie("session", "api", path="/api"))
   @test.assert_eq(response.cookies.length(), 2)
@@ -34,7 +34,7 @@ test "response retains cookies with the same name and distinct paths" {
 
 ///|
 test "request cookies are parsed as name value pairs" {
-  let request = HttpRequest::{
+  let request = @mocket.HttpRequest::{
     http_method: "GET",
     url: "/",
     query: "",
@@ -57,7 +57,7 @@ test "request cookies are parsed as name value pairs" {
 
 ///|
 test "request cookie parser handles quoted and empty values" {
-  let cookies = parse_request_cookie(
+  let cookies = @mocket.parse_request_cookie(
     "name=\"value with spaces\"; empty=; ignored",
   )
   @test.assert_eq(

@@ -13,8 +13,8 @@ priv struct MemProvider {
 ///|
 fn MemProvider::new(
   files : Map[String, String],
-  fallthrough? : Bool = false,
-  index_names? : Array[String] = ["index.html"],
+  fallthrough~ : Bool = false,
+  index_names~ : Array[String] = ["index.html"],
 ) -> MemProvider {
   {
     files,
@@ -83,7 +83,7 @@ async fn request(
   app : App,
   http_method : String,
   url : String,
-  headers? : Map[@http.CaseInsensitiveString, StringView] = no_headers(),
+  headers~ : Map[@http.CaseInsensitiveString, StringView] = no_headers(),
 ) -> HttpResponse {
   dispatch_http(app, http_method, url, headers, b"")
 }

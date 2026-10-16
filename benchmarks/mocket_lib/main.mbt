@@ -36,10 +36,10 @@ async fn main {
 }
 
 ///|
-fn benchmark_port() -> Int {
+fn benchmark_port() -> Int32 {
   match @env.get_env_var("PORT") {
     Some(port_text) => {
-      let port : Int = @string.from_str(port_text) catch { _ => 3000 }
+      let port : Int32 = @string.from_str(port_text) catch { _ => 3000 }
       port
     }
     None => 3000

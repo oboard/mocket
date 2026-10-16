@@ -23,22 +23,22 @@ pub(all) struct App {
   ws_dynamic_routes : Array[(String, WebSocketHandler)]
   ws_clients : Map[String, Unit]
   ws_channels : Map[String, Map[String, Unit]]
-  ws_client_port : Map[String, Int]
-  max_body_size : Int
+  ws_client_port : Map[String, Int32]
+  max_body_size : Int32
   mut error_handler : ErrorHandler
 }
 
 ///|
 #deprecated("Use `App()` instead")
-pub fn new(base_path? : String = "", max_body_size? : Int = 1048576) -> App {
+pub fn new(base_path~ : String = "", max_body_size~ : Int32 = 1048576) -> App {
   App(base_path~, max_body_size~)
 }
 
 ///|
 #alias(new, deprecated="Use `App()` instead")
 pub fn App::App(
-  base_path? : String = "",
-  max_body_size? : Int = 1048576,
+  base_path~ : String = "",
+  max_body_size~ : Int32 = 1048576,
 ) -> App {
   {
     base_path,

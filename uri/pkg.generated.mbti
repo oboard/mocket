@@ -25,11 +25,17 @@ pub struct Authority {
   mut host : Host
   mut port : Int?
 } derive(Eq, @debug.Debug)
+pub fn Authority::equal(Self, Self) -> Bool
+pub fn Authority::not_equal(Self, Self) -> Bool
+pub fn Authority::to_repr(Self) -> @debug.Repr
 
 pub enum Host {
   IPv6Address(BytesView)
   RegName(BytesView)
 } derive(Eq, @debug.Debug)
+pub fn Host::equal(Self, Self) -> Bool
+pub fn Host::not_equal(Self, Self) -> Bool
+pub fn Host::to_repr(Self) -> @debug.Repr
 
 pub struct Uri {
   mut scheme : BytesView?
@@ -38,7 +44,10 @@ pub struct Uri {
   mut query : BytesView?
   mut fragment : BytesView?
 } derive(Eq, @debug.Debug)
+pub fn Uri::equal(Self, Self) -> Bool
+pub fn Uri::not_equal(Self, Self) -> Bool
 pub fn Uri::parse(BytesView) -> Self raise ParseError
+pub fn Uri::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

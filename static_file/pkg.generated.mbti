@@ -20,6 +20,12 @@ pub struct StaticFileProvider {
   fallthrough : Bool
   index_names : Array[String]
 }
+pub async fn StaticFileProvider::get_contents(Self, StringView) -> &@mocket.Responder
+pub fn StaticFileProvider::get_encodings(Self) -> Map[String, String]
+pub fn StaticFileProvider::get_fallthrough(Self) -> Bool
+pub fn StaticFileProvider::get_index_names(Self) -> Array[String]
+pub async fn StaticFileProvider::get_meta(Self, StringView) -> @mocket.StaticAssetMeta?
+pub fn StaticFileProvider::get_type(Self, String) -> String?
 pub impl @mocket.ServeStaticProvider for StaticFileProvider
 
 // Type aliases

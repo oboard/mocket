@@ -7,11 +7,23 @@ pub enum Host {
 } derive(Eq, Debug)
 
 ///|
+pub extend Host with Eq::{not_equal, equal}
+
+///|
+pub extend Host with Debug::{to_repr}
+
+///|
 pub struct Authority {
   mut userinfo : BytesView?
   mut host : Host
-  mut port : Int?
+  mut port : Int32?
 } derive(Eq, Debug)
+
+///|
+pub extend Authority with Eq::{not_equal, equal}
+
+///|
+pub extend Authority with Debug::{to_repr}
 
 ///|
 pub struct Uri {
@@ -21,6 +33,12 @@ pub struct Uri {
   mut query : BytesView?
   mut fragment : BytesView?
 } derive(Eq, Debug)
+
+///|
+pub extend Uri with Eq::{not_equal, equal}
+
+///|
+pub extend Uri with Debug::{to_repr}
 
 ///|
 pub suberror ParseError {
@@ -43,22 +61,22 @@ fn BytesView::slice_until(self : BytesView, other : BytesView) -> BytesView {
 
 ///|
 fn is_alpha_byte(b : Byte) -> Bool {
-  b is (b'A'..=b'Z' | b'a'..=b'z')
+  b is (b'A'..<=b'Z' | b'a'..<=b'z')
 }
 
 ///|
 fn is_digit_byte(b : Byte) -> Bool {
-  b is (b'0'..=b'9')
+  b is (b'0'..<=b'9')
 }
 
 ///|
 fn is_hexdig_byte(b : Byte) -> Bool {
-  b is (b'0'..=b'9' | b'A'..=b'F' | b'a'..=b'f')
+  b is (b'0'..<=b'9' | b'A'..<=b'F' | b'a'..<=b'f')
 }
 
 ///|
 fn is_unreserved_byte(b : Byte) -> Bool {
-  b is (b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~')
+  b is (b'A'..<=b'Z' | b'a'..<=b'z' | b'0'..<=b'9' | b'-' | b'.' | b'_' | b'~')
 }
 
 ///|

@@ -1,5 +1,5 @@
 ///|
-fn hex_digit(b : Byte) -> Int? {
+fn hex_digit(b : Byte) -> Int32? {
   if b >= b'0' && b <= b'9' {
     Some(b.to_int() - b'0'.to_int())
   } else if b >= b'a' && b <= b'f' {

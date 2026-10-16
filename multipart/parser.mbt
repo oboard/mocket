@@ -8,9 +8,9 @@ priv struct ReaderState {
   /// Buffered input. Unread bytes start at `cursor`.
   mut pending : Bytes
   /// Position of the next unread byte in `pending`.
-  mut cursor : Int
+  mut cursor : Int32
   /// Number of body bytes at `cursor` that can be returned without another scan.
-  mut ready : Int
+  mut ready : Int32
   /// The source has no more bytes, though buffered bytes may remain.
   mut eof : Bool
   /// The closing boundary has been read. There are no more parts.
@@ -19,7 +19,7 @@ priv struct ReaderState {
 
 ///|
 /// Retain only unread input when a delimiter/header spans source reads.
-async fn ReaderState::ensure(self : Self, length : Int) -> Bool {
+async fn ReaderState::ensure(self : Self, length : Int32) -> Bool {
   while self.pending.length() - self.cursor < length && !self.eof {
     if self.source.read_some(max_len=8192) is Some(chunk) {
       let remaining = self.pending.length() - self.cursor
@@ -104,7 +104,7 @@ async fn ReaderState::read_header_line(self : Self) -> BytesView {
 ///|
 /// The delimiter prefix has matched at cursor. Check its suffix before
 /// consuming it: a prefix followed by other bytes remains body data.
-async fn ReaderState::consume_boundary(self : Self, end : Int) -> Bool {
+async fn ReaderState::consume_boundary(self : Self, end : Int32) -> Bool {
   guard self.ensure(end + 1) else {
     raise MultipartError("Unexpected EOF in multipart boundary")
   }

@@ -97,7 +97,7 @@ extern "js" fn HttpResponseInternal::write(
 #borrow(self, headers)
 extern "js" fn HttpResponseInternal::write_head(
   self : HttpResponseInternal,
-  statusCode : Int,
+  statusCode : Int32,
   headers : JsValue,
 ) -> Unit = "(s, statusCode, headers) => s.writeHead(statusCode, headers)"
 
@@ -326,9 +326,9 @@ priv struct JsResponseWriter {
 fn JsResponseWriter::write_chunk(
   self : JsResponseWriter,
   bytes : Bytes,
-  offset~ : Int,
-  len~ : Int,
-) -> Int {
+  offset~ : Int32,
+  len~ : Int32,
+) -> Int32 {
   self.response.write(bytes[offset:offset + len].to_owned())
   len
 }
@@ -344,7 +344,7 @@ impl @io.Writer for JsResponseWriter with fn write_once(
 }
 
 ///|
-fn listen_port(address : String) -> Int {
+fn listen_port(address : String) -> Int32 {
   match address.rev_split_once(":") {
     Some((_, port_text)) => @string.parse_int(port_text) catch { _ => 0 }
     None => @string.parse_int(address) catch { _ => 0 }
@@ -466,23 +466,23 @@ pub fn listen_ffi(mocket : Mocket, address : String) -> Unit {
 }
 
 ///|
-pub fn serve_ffi(mocket : Mocket, port~ : Int) -> Unit {
+pub fn serve_ffi(mocket : Mocket, port~ : Int32) -> Unit {
   listen_ffi(mocket, "0.0.0.0:\{port}")
 }
 
 ///|
 /// 全局 handler 映射：port -> WebSocketHandler
-let ws_handler_map : Map[Int, WebSocketHandler] = Map([])
+let ws_handler_map : Map[Int32, WebSocketHandler] = Map([])
 
 ///|
-let ws_mocket_map : Map[Int, Mocket] = Map([])
+let ws_mocket_map : Map[Int32, Mocket] = Map([])
 
 ///|
 extern "js" fn _init_bindings_map() -> JsValue = "() => { if (!globalThis.ws_port_bindings) globalThis.ws_port_bindings = new Map(); return globalThis.ws_port_bindings; }"
 
 ///|
 /// 在 serve_ffi 里注册 WS handler（只取第一个静态路由）
-pub fn register_ws_handler(mocket : Mocket, port : Int) -> Unit {
+pub fn register_ws_handler(mocket : Mocket, port : Int32) -> Unit {
   let mut done = false
   mocket.ws_static_routes.each(fn(_, handler) {
     if !done {
@@ -498,7 +498,7 @@ pub fn register_ws_handler(mocket : Mocket, port : Int) -> Unit {
 /// 供 JS 调用的 MoonBit 事件入口：捕获异常，避免抛回 JS
 pub fn __ws_emit_js_port(
   event_type : String,
-  port : Int,
+  port : Int32,
   connection_id : String,
   payload : Bytes,
 ) -> Unit {
@@ -541,7 +541,7 @@ pub fn __ws_emit_js_port(
 /// 导出 MoonBit 函数到 JS 全局
 #owned(cb)
 pub extern "js" fn __ws_emit_js_export(
-  cb : (String, Int, String, Bytes) -> Unit,
+  cb : (String, Int32, String, Bytes) -> Unit,
 ) -> Unit = "(cb) => { globalThis.__ws_emit_port = (type, port, id, payload) => { try { cb(type, port, id, payload); } catch (_) {} }; }"
 
 ///|
@@ -599,16 +599,19 @@ pub extern "js" fn __ws_state_js_export_ffi(
   get_members : (String) -> FixedArray[String],
 ) -> Unit = "(sub, unsub, get_members) => { globalThis.__ws_subscribe_js = (id, ch) => { try { sub(id, ch); } catch (_) {} }; globalThis.__ws_unsubscribe_js = (id, ch) => { try { unsub(id, ch); } catch (_) {} }; globalThis.__ws_get_members_js = (ch) => { try { return get_members(ch); } catch (_) { return []; } }; }"
 
+///|
 pub fn __ws_state_js_export(
   sub : (String, String) -> Unit,
   unsub : (String, String) -> Unit,
   get_members : (String) -> Array[String],
 ) -> Unit {
-  __ws_state_js_export_ffi(sub, unsub, fn(__a1) { FixedArray::from_array(get_members(__a1)) })
+  __ws_state_js_export_ffi(sub, unsub, fn(__a1) {
+    FixedArray::from_array(get_members(__a1))
+  })
 }
 
 ///|
-pub fn __get_port_by_connection_js(id : String) -> Int {
+pub fn __get_port_by_connection_js(id : String) -> Int32 {
   let mut found = 0
   ws_mocket_map.each(fn(p, m) {
     if m.ws_clients.get(id) is Some(_) {
@@ -621,7 +624,7 @@ pub fn __get_port_by_connection_js(id : String) -> Int {
 ///|
 #owned(cb)
 pub extern "js" fn __get_port_by_connection_js_export(
-  cb : (String) -> Int,
+  cb : (String) -> Int32,
 ) -> Unit = "(cb) => { globalThis.__get_port_by_connection = (id) => { try { return cb(id); } catch (_) { return 0 } } }"
 
 ///|

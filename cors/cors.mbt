@@ -25,11 +25,11 @@ fn allowed_origin(
 ///|
 pub fn append_cors_preflight_headers(
   event : @mocket.MocketEvent,
-  origin? : String = "*",
-  methods? : String = "*",
-  allow_headers? : String = "*",
-  credentials? : Bool = false,
-  max_age? : Int = 86400,
+  origin~ : String = "*",
+  methods~ : String = "*",
+  allow_headers~ : String = "*",
+  credentials~ : Bool = false,
+  max_age~ : Int32 = 86400,
 ) -> Unit noraise {
   let headers = event.res.headers
   match allowed_origin(event, origin, credentials) {
@@ -47,11 +47,11 @@ pub fn append_cors_preflight_headers(
 ///|
 pub fn append_cors_headers(
   event : @mocket.MocketEvent,
-  origin? : String = "*",
-  methods? : String = "*",
-  allow_headers? : String = "*",
-  expose_headers? : String = "*",
-  credentials? : Bool = false,
+  origin~ : String = "*",
+  methods~ : String = "*",
+  allow_headers~ : String = "*",
+  expose_headers~ : String = "*",
+  credentials~ : Bool = false,
 ) -> Unit noraise {
   let headers = event.res.headers
   match allowed_origin(event, origin, credentials) {
@@ -68,12 +68,12 @@ pub fn append_cors_headers(
 
 ///|
 pub fn handle_cors(
-  origin? : String = "*",
-  methods? : String = "*",
-  allow_headers? : String = "*",
-  expose_headers? : String = "*",
-  credentials? : Bool = false,
-  max_age? : Int = 86400,
+  origin~ : String = "*",
+  methods~ : String = "*",
+  allow_headers~ : String = "*",
+  expose_headers~ : String = "*",
+  credentials~ : Bool = false,
+  max_age~ : Int32 = 86400,
 ) -> @mocket.Middleware {
   (event, next) => {
     if is_preflight_request(event) {

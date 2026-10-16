@@ -14,6 +14,7 @@ pub fn parse_header_value(String) -> (String, Map[@http.CaseInsensitiveString, S
 pub suberror MultipartError {
   MultipartError(String)
 } derive(@debug.Debug)
+pub fn MultipartError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
 type Form
@@ -21,10 +22,18 @@ pub fn Form::Form(&@io.Reader, boundary~ : String) -> Self raise MultipartError
 pub async fn Form::next_part(Self) -> FormPart?
 
 type FormPart
+pub async fn FormPart::_direct_read(Self, FixedArray[Byte], offset~ : Int, max_len~ : Int) -> Int
+pub fn FormPart::_get_internal_buffer(Self) -> @io.ReaderBuffer
 pub fn FormPart::content_type(Self) -> String
+pub async fn FormPart::drop(Self, Int) -> Int
 pub fn FormPart::filename(Self) -> String?
 pub fn FormPart::headers(Self) -> Map[@http.CaseInsensitiveString, String]
 pub fn FormPart::name(Self) -> String
+pub async fn FormPart::read(Self, FixedArray[Byte], offset? : Int, max_len? : Int) -> Int
+pub async fn FormPart::read_all(Self) -> &@io.Data
+pub async fn FormPart::read_exactly(Self, Int) -> Bytes
+pub async fn FormPart::read_some(Self, max_len? : Int) -> Bytes?
+pub async fn FormPart::read_until(Self, StringView) -> String?
 pub impl @io.Reader for FormPart
 
 type FormWriter

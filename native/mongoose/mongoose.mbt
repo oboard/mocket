@@ -32,7 +32,7 @@ extern "c" fn HttpRequestInternal::body(self : HttpRequestInternal) -> Bytes = "
 #borrow(self)
 extern "c" fn HttpRequestInternal::req_body_len(
   self : HttpRequestInternal,
-) -> Int = "req_body_len"
+) -> Int32 = "req_body_len"
 
 ///|
 #borrow(self, key, value)
@@ -47,14 +47,14 @@ extern "c" fn HttpResponseInternal::set_header(
 extern "c" fn HttpResponseInternal::end_bytes(
   self : HttpResponseInternal,
   body : Bytes,
-  body_len : Int,
+  body_len : Int32,
 ) -> Unit = "res_end_bytes"
 
 ///|
 #borrow(self)
 extern "c" fn HttpResponseInternal::status(
   self : HttpResponseInternal,
-  status_code : Int,
+  status_code : Int32,
 ) -> Unit = "res_status"
 
 ///|
@@ -62,13 +62,13 @@ extern "c" fn HttpResponseInternal::status(
 extern "c" fn server_listen_address(
   server : HttpServerInternal,
   address : Bytes,
-  port : Int,
+  port : Int32,
 ) -> Unit = "server_listen_address"
 
 ///|
 #owned(handler)
 extern "c" fn create_server(
-  handler : FuncRef[(Int, HttpRequestInternal, HttpResponseInternal) -> Unit],
+  handler : FuncRef[(Int32, HttpRequestInternal, HttpResponseInternal) -> Unit],
 ) -> HttpServerInternal = "create_server"
 
 ///|
@@ -84,7 +84,7 @@ extern "c" fn ws_send_native(id : Bytes, msg : Bytes) -> Unit = "ws_send"
 extern "c" fn ws_send_bytes_len_native(
   id : Bytes,
   msg : Bytes,
-  len : Int,
+  len : Int32,
 ) -> Unit = "ws_send_bytes_len"
 
 ///|
@@ -92,20 +92,20 @@ extern "c" fn ws_send_bytes_len_native(
 extern "c" fn ws_pong_native(id : Bytes) -> Unit = "ws_pong"
 
 ///|
-extern "c" fn ws_msg_body_len() -> Int = "ws_msg_body_len"
+extern "c" fn ws_msg_body_len() -> Int32 = "ws_msg_body_len"
 
 ///|
 #borrow(dst)
-extern "c" fn ws_msg_copy(dst : Bytes, max_len : Int) -> Int = "ws_msg_copy"
+extern "c" fn ws_msg_copy(dst : Bytes, max_len : Int32) -> Int32 = "ws_msg_copy"
 
 ///|
-let server_map : Map[Int, @mocket.App] = Map([])
+let server_map : Map[Int32, @mocket.App] = Map([])
 
 ///|
-let ws_handler_map : Map[Int, @mocket.WebSocketHandler] = Map([])
+let ws_handler_map : Map[Int32, @mocket.WebSocketHandler] = Map([])
 
 ///|
-let ws_max_body_size : Ref[Int] = Ref(1048576)
+let ws_max_body_size : Ref[Int32] = Ref(1048576)
 
 ///|
 fn[T : Show] to_cbytes(s : T) -> Bytes {
@@ -162,7 +162,7 @@ fn first_ws_handler() -> @mocket.WebSocketHandler {
 }
 
 ///|
-fn register_ws_handlers(mocket : @mocket.App, port : Int) -> Unit {
+fn register_ws_handlers(mocket : @mocket.App, port : Int32) -> Unit {
   ws_max_body_size.val = mocket.max_body_size
   let mut done = false
   mocket.ws_static_routes.each(fn(_, handler) {
@@ -178,7 +178,7 @@ fn async_run(f : async () -> Unit noraise) -> Unit = "%async.run"
 
 ///|
 fn handle_request(
-  port : Int,
+  port : Int32,
   req : HttpRequestInternal,
   res : HttpResponseInternal,
 ) -> Unit {
@@ -228,7 +228,7 @@ fn handle_request(
 
 ///|
 #deprecated("use `listen(mocket, address)` instead")
-pub fn serve(mocket : @mocket.App, port~ : Int) -> Unit {
+pub fn serve(mocket : @mocket.App, port~ : Int32) -> Unit {
   listen(mocket, "0.0.0.0:\{port}")
 }
 
@@ -242,7 +242,7 @@ pub fn listen(mocket : @mocket.App, address : String) -> Unit {
     __ws_emit(event_type, id, payload)
   })
   let server = create_server(fn(
-    port : Int,
+    port : Int32,
     req : HttpRequestInternal,
     res : HttpResponseInternal,
   ) {
@@ -261,7 +261,7 @@ fn normalize_listen_address(address : String) -> String {
 }
 
 ///|
-fn listen_port(address : String) -> Int {
+fn listen_port(address : String) -> Int32 {
   match address.rev_split_once(":") {
     Some((_, port_text)) => @string.parse_int(port_text) catch { _ => 0 }
     None => @string.parse_int(address) catch { _ => 0 }

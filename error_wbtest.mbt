@@ -4,6 +4,9 @@ suberror TestRequestError {
 } derive(Debug)
 
 ///|
+pub extend TestRequestError with Debug::{to_repr}
+
+///|
 async test "dispatch converts unhandled handler errors to 500" {
   let app = App()
   app.get("/boom", _ => raise TestRequestError("boom"))

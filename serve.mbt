@@ -1,6 +1,6 @@
 ///|
 #deprecated("use `Mocket::listen(address)` instead")
-pub fn Mocket::serve(self : Mocket, port~ : Int) -> Unit noraise {
+pub fn Mocket::serve(self : Mocket, port~ : Int32) -> Unit noraise {
   serve_ffi(self, port~)
 }
 

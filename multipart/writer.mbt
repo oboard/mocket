@@ -76,9 +76,9 @@ fn validate_boundary(boundary : String) -> Unit raise MultipartError {
   }
   for ch in boundary {
     match ch {
-      'a'..='z'
-      | 'A'..='Z'
-      | '0'..='9'
+      'a'..<='z'
+      | 'A'..<='Z'
+      | '0'..<='9'
       | '\''
       | '('
       | ')'

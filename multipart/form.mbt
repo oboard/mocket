@@ -41,6 +41,18 @@ struct FormPart {
 }
 
 ///|
+pub extend FormPart with @io.Reader::{
+  read,
+  read_some,
+  _direct_read,
+  drop,
+  read_all,
+  read_until,
+  read_exactly,
+  _get_internal_buffer,
+}
+
+///|
 /// Returns the supplied filename. When saving a file, the caller must discard
 /// directory components and choose a suitable local name (RFC 7578 §4.2).
 /// Percent escapes remain literal because multipart/form-data does not identify

@@ -24,8 +24,8 @@ pub let default_index_names : Array[String] = [
 ///|
 pub fn new(
   path : String,
-  fallthrough? : Bool = false,
-  index_names? : Array[String] = default_index_names,
+  fallthrough~ : Bool = false,
+  index_names~ : Array[String] = default_index_names,
 ) -> StaticFileProvider {
   { path, fallthrough, index_names, }
 }
@@ -68,6 +68,16 @@ pub impl ServeStaticProvider for StaticFileProvider with fn get_type(
   ext : String,
 ) -> String? {
   mime_type_of(ext)
+}
+
+///|
+pub extend StaticFileProvider with ServeStaticProvider::{
+  get_fallthrough,
+  get_contents,
+  get_type,
+  get_encodings,
+  get_meta,
+  get_index_names,
 }
 
 ///|
