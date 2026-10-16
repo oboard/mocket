@@ -1,0 +1,12 @@
+import {
+  "moonbitlang/async",
+  "moonbitlang/core/env",
+  "moonbitlang/x/jwt",
+  "oboard/mocket",
+}
+
+warnings = "-67"
+
+supported_targets = "+js+native"
+
+pkgtype(kind: "executable")
