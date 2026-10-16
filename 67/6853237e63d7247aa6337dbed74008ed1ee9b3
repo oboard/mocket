@@ -1,0 +1,15 @@
+examples/streaming/main.mbt
+  h_c7606fb8f0c97c 21,23-25
+  h_c7606fb8f0c97c 22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "676853237e63d7247aa6337dbed74008ed1ee9b3",
+  "prompts": {},
+  "humans": {
+    "h_c7606fb8f0c97c": {
+      "author": "oboard <oboard@outlook.com>"
+    }
+  }
+}
