@@ -10,18 +10,6 @@ fn EventStream::EventStream(messages : Array[String]) -> EventStream {
 }
 
 ///|
-async fn EventStream::write_response(
-  self : EventStream,
-  writer : &@io.Writer,
-) -> Unit {
-  for index, message in self.messages {
-    writer.write("data: message \{index + 1}: \{message}\n\n")
-    @async.sleep(1000)
-  }
-  writer.write("event: done\ndata: stream finished\n\n")
-}
-
-///|
 impl @mocket.Responder for EventStream with fn options(_, response) -> Unit {
   response.headers["Content-Type"] = "text/event-stream; charset=utf-8"
   response.headers["Cache-Control"] = "no-cache"
@@ -30,7 +18,11 @@ impl @mocket.Responder for EventStream with fn options(_, response) -> Unit {
 
 ///|
 impl @mocket.Responder for EventStream with fn output(self, writer) {
-  self.write_response(writer)
+  for index, message in self.messages {
+    writer.write("data: message \{index + 1}: \{message}\n\n")
+    @async.sleep(1000)
+  }
+  writer.write("event: done\ndata: stream finished\n\n")
 }
 
 ///|
