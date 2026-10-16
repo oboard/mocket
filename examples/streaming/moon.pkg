@@ -1,6 +1,5 @@
 import {
   "moonbitlang/async",
-  "moonbitlang/async/io",
   "oboard/mocket",
 }
 
