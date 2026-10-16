@@ -1,0 +1,120 @@
+status_code.mbt
+  s_4493ab2d2b74bc::t_75dc9595d92d5f 133-138
+  s_4493ab2d2b74bc::t_dac6c3f98180bb 139
+  s_4493ab2d2b74bc::t_1f5987c723b8b8 129,208
+cors/cors_test.mbt
+  s_4493ab2d2b74bc::t_3feb468e38556d 4,26,39
+uri/uri.mbt
+  s_4493ab2d2b74bc::t_e21a565565fc8d 9-14,19,22-27,37-41
+  s_4493ab2d2b74bc::t_1c19bdb0d58fbf 42
+  s_4493ab2d2b74bc::t_908859c625b0b3 64,69,74,79
+error_wbtest.mbt
+  s_4493ab2d2b74bc::t_85c4e4c57cb8cd 6
+  s_4493ab2d2b74bc::t_c88bb049c79650 7
+  s_4493ab2d2b74bc::t_8887db3581515c 8
+cookie_test.mbt
+  s_4493ab2d2b74bc::t_4225b9c4cfc875 3
+  s_4493ab2d2b74bc::t_05615d323abd12 60
+  s_4493ab2d2b74bc::t_43fc95ccbe09e6 27
+  s_4493ab2d2b74bc::t_c17817cbbef7b9 37
+responder_test.mbt
+  s_4493ab2d2b74bc::t_f5e732e8aed4ff 3,5,17,19,31-33,45,49,61,65,77,81,93-94,107,134,146,154
+  s_4493ab2d2b74bc::t_7e17b48439f581 46-48,62-64,78-80,136-138,141-143
+response.mbt
+  s_4493ab2d2b74bc::t_c4ea5992d9e56a 17
+  s_4493ab2d2b74bc::t_fe3ceb1a7946bb 18
+  s_4493ab2d2b74bc::t_5989e31fd6f0b6 16
+  s_4493ab2d2b74bc::t_d197ded0c5ed38 38-40
+responder.mbt
+  s_4493ab2d2b74bc::t_a11c5dc8316fb7 167-168
+  s_4493ab2d2b74bc::t_c2ba8782f29653 188-189
+  s_4493ab2d2b74bc::t_ce924819665c9c 40-41
+  s_4493ab2d2b74bc::t_4251744305bd93 112
+  s_4493ab2d2b74bc::t_8c46fd7e2d14a4 39
+  s_4493ab2d2b74bc::t_3f3e1015188529 166
+  s_4493ab2d2b74bc::t_0610cb96de4892 187
+request.mbt
+  s_4493ab2d2b74bc::t_342fc3da345a7e 79-80
+  s_4493ab2d2b74bc::t_426183a6a348d1 78
+static_file/static_file.mbt
+  s_4493ab2d2b74bc::t_42242760f977ad 74-79,81-82
+  h_c7606fb8f0c97c 27,80
+  s_4493ab2d2b74bc::t_95701c1f43a6a5 73
+  s_4493ab2d2b74bc::t_4cbf6c907b3892 28
+multipart/reader.mbt
+  s_4493ab2d2b74bc::t_15124dfdf3cda0 6
+  h_c7606fb8f0c97c 7
+  s_4493ab2d2b74bc::t_cdb17e9cbbd624 8
+static_file/static_file_blackbox_test.mbt
+  h_c7606fb8f0c97c 66,120,136,144
+  s_4493ab2d2b74bc::t_5777a59639f271 52
+utils_test.mbt
+  s_4493ab2d2b74bc::t_170bc8bed629ba 4,11,19,28,40
+multipart/form.mbt
+  s_4493ab2d2b74bc::t_d6d52a2a839347 54
+  s_4493ab2d2b74bc::t_9fe3773949a78d 44-53
+  s_4493ab2d2b74bc::t_ddb7221f265d5f 43
+static_file/static_file_metadata_test.mbt
+  s_4493ab2d2b74bc::t_5362bcca475b44 10
+multipart/pkg.generated.mbti
+  s_4493ab2d2b74bc::t_280a66b256a2c6 17,25-26,28,32-36
+pkg.generated.mbti
+  s_4493ab2d2b74bc::t_993db096be0d5e 158,161-162,167-168,194-195,219-221,299,301,303
+static_file/pkg.generated.mbti
+  s_4493ab2d2b74bc::t_c0ec6e41546618 23-28
+uri/pkg.generated.mbti
+  s_4493ab2d2b74bc::t_4b09916aafc129 28-30,36-38,47-48,50
+benchmarks/mocket_lib/main.mbt
+  h_c7606fb8f0c97c 39,42
+benchmarks/mocket_middleware/main.mbt
+  h_c7606fb8f0c97c 55,58
+cors/cors.mbt
+  h_c7606fb8f0c97c 28-32,50-54,71-76
+examples/route/main.mbt
+  h_c7606fb8f0c97c 79,82
+index.mbt
+  h_c7606fb8f0c97c 26-27,33,40-41
+middleware.mbt
+  h_c7606fb8f0c97c 10,42,168
+mocket.js.mbt
+  h_c7606fb8f0c97c 100,329-331,347,469,475,478,485,501,544,602,608-610,614,627
+mocket.native.mbt
+  h_c7606fb8f0c97c 45,144,181,356-358,469-472,497,524,616
+multipart/parser.mbt
+  h_c7606fb8f0c97c 11,13,22,107
+multipart/writer.mbt
+  h_c7606fb8f0c97c 79-81
+native/mongoose/mongoose.mbt
+  h_c7606fb8f0c97c 35,50,57,65,71,87,95,99,102,105,108,165,181,231,245,264
+path_match.mbt
+  h_c7606fb8f0c97c 20-21,116,137,177,243,297,398
+serve.mbt
+  h_c7606fb8f0c97c 3
+serve.native.mbt
+  h_c7606fb8f0c97c 3
+static_wbtest.mbt
+  h_c7606fb8f0c97c 16-17,86
+utils.mbt
+  h_c7606fb8f0c97c 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "f9564e039b8301cfc18f640c885abeefc0de6067",
+  "prompts": {},
+  "humans": {
+    "h_c7606fb8f0c97c": {
+      "author": "oboard <oboard@outlook.com>"
+    }
+  },
+  "sessions": {
+    "s_4493ab2d2b74bc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6b54bb76-26b3-4cf3-8f87-504bad31b52f",
+        "model": "GLM-5.2"
+      },
+      "human_author": "oboard <oboard@outlook.com>"
+    }
+  }
+}
