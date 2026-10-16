@@ -1,0 +1,45 @@
+mocket.js.mbt
+  h_c7606fb8f0c97c 427
+examples/websocket/moon.pkg
+  h_c7606fb8f0c97c 8
+examples/form-data/moon.pkg
+  h_c7606fb8f0c97c 8
+multipart/moon.pkg
+  h_c7606fb8f0c97c 10
+internal/header/moon.pkg
+  h_c7606fb8f0c97c 7
+async.mbt
+  h_c7606fb8f0c97c 5-6
+  h_c7606fb8f0c97c 7-8
+examples/static_assets/moon.pkg
+  h_c7606fb8f0c97c 10
+examples/streaming/moon.pkg
+  h_c7606fb8f0c97c 8
+cors/moon.pkg
+  h_c7606fb8f0c97c 14
+examples/cookie/moon.pkg
+  h_c7606fb8f0c97c 9
+static_file/moon.pkg
+  h_c7606fb8f0c97c 20
+examples/jwt-login/moon.pkg
+  h_c7606fb8f0c97c 10
+examples/route/moon.pkg
+  h_c7606fb8f0c97c 11
+moon.pkg
+  h_c7606fb8f0c97c 27,43,45,47
+examples/body-reader/moon.pkg
+  h_c7606fb8f0c97c 8
+examples/responder/moon.pkg
+  h_c7606fb8f0c97c 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "09bd3e591830d7e64d5f4d49ce5df636d0c07703",
+  "prompts": {},
+  "humans": {
+    "h_c7606fb8f0c97c": {
+      "author": "oboard <oboard@outlook.com>"
+    }
+  }
+}
