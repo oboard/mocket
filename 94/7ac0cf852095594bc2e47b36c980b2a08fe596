@@ -1,0 +1,26 @@
+README.md
+  h_c7606fb8f0c97c 38,51,55
+  s_4493ab2d2b74bc::t_872372beda8795 19,31-37
+  h_c7606fb8f0c97c 39-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "947ac0cf852095594bc2e47b36c980b2a08fe596",
+  "prompts": {},
+  "humans": {
+    "h_c7606fb8f0c97c": {
+      "author": "oboard <oboard@outlook.com>"
+    }
+  },
+  "sessions": {
+    "s_4493ab2d2b74bc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6b54bb76-26b3-4cf3-8f87-504bad31b52f",
+        "model": "GLM-5.2"
+      },
+      "human_author": "oboard <oboard@outlook.com>"
+    }
+  }
+}
