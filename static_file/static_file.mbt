@@ -1,5 +1,7 @@
 // ///|
 
+
+
 ///|
 /// Serves static assets from a directory on the local filesystem.
 ///
@@ -63,7 +65,7 @@ test "file_extension" {
 }
 
 ///|
-pub impl ServeStaticProvider for StaticFileProvider with fn get_type(
+pub impl @mocket.ServeStaticProvider for StaticFileProvider with fn get_type(
   _,
   ext : String,
 ) -> String? {
@@ -110,7 +112,7 @@ test "mime_type_of" {
 }
 
 ///|
-pub impl ServeStaticProvider for StaticFileProvider with fn get_encodings(_) -> Map[
+pub impl @mocket.ServeStaticProvider for StaticFileProvider with fn get_encodings(_) -> Map[
   String,
   String,
 ] {
@@ -118,14 +120,14 @@ pub impl ServeStaticProvider for StaticFileProvider with fn get_encodings(_) -> 
 }
 
 ///|
-pub impl ServeStaticProvider for StaticFileProvider with fn get_index_names(
+pub impl @mocket.ServeStaticProvider for StaticFileProvider with fn get_index_names(
   self,
 ) -> Array[String] {
   self.index_names
 }
 
 ///|
-pub impl ServeStaticProvider for StaticFileProvider with fn get_fallthrough(
+pub impl @mocket.ServeStaticProvider for StaticFileProvider with fn get_fallthrough(
   self,
 ) -> Bool {
   self.fallthrough

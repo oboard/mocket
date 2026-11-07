@@ -1,7 +1,8 @@
 ///|
+#derive(Debug)
 pub suberror MultipartError {
   MultipartError(String)
-} derive(Debug)
+}
 
 ///|
 pub extend MultipartError with Debug::{to_repr}

@@ -7,6 +7,6 @@ import {
 
 warnings = "-67"
 
-supported_targets = "+native+wasm+js"
+supported_targets = "+native+js"
 
 pkgtype(kind: "executable")

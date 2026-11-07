@@ -1,10 +1,11 @@
 // URI parser implementation following RFC 3986
 
 ///|
+#derive(Eq, Debug)
 pub enum Host {
   IPv6Address(BytesView)
   RegName(BytesView)
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Host with Eq::{not_equal, equal}
@@ -13,11 +14,12 @@ pub extend Host with Eq::{not_equal, equal}
 pub extend Host with Debug::{to_repr}
 
 ///|
+#derive(Eq, Debug)
 pub struct Authority {
   mut userinfo : BytesView?
   mut host : Host
   mut port : Int32?
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Authority with Eq::{not_equal, equal}
@@ -26,13 +28,14 @@ pub extend Authority with Eq::{not_equal, equal}
 pub extend Authority with Debug::{to_repr}
 
 ///|
+#derive(Eq, Debug)
 pub struct Uri {
   mut scheme : BytesView?
   mut authority : Authority?
   path : Array[BytesView]
   mut query : BytesView?
   mut fragment : BytesView?
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Uri with Eq::{not_equal, equal}

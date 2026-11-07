@@ -11,7 +11,7 @@ pub fn __ws_emit(Bytes, Bytes, Bytes) -> Unit
 pub fn listen(@mocket.App, String) -> Unit
 
 #deprecated
-pub fn serve(@mocket.App, port~ : Int) -> Unit
+pub fn serve(@mocket.App, port~ : Int32) -> Unit
 
 // Errors
 

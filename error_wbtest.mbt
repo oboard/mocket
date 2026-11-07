@@ -1,7 +1,8 @@
 ///|
+#derive(Debug)
 suberror TestRequestError {
   TestRequestError(String)
-} derive(Debug)
+}
 
 ///|
 pub extend TestRequestError with Debug::{to_repr}

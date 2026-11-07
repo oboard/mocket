@@ -28,7 +28,7 @@ pub fn html(&Show) -> &Responder
 pub async fn listen_ffi(App, String) -> Unit noraise
 
 #deprecated
-pub fn new(base_path? : String, max_body_size? : Int) -> App
+pub fn new(base_path? : String, max_body_size? : Int32) -> App
 
 pub fn parse_form_data(BytesView) -> Map[String, String]
 
@@ -38,11 +38,11 @@ pub fn parse_request_cookie(StringView) -> Map[String, @http.Cookie]
 
 pub fn register_ws_connection(String, (String) -> Unit, (Bytes) -> Unit, () -> Unit) -> Unit
 
-pub fn register_ws_handler(App, Int) -> Unit
+pub fn register_ws_handler(App, Int32) -> Unit
 
 pub fn serialize_cookie(@http.Cookie) -> String
 
-pub async fn serve_ffi(App, port~ : Int) -> Unit noraise
+pub async fn serve_ffi(App, port~ : Int32) -> Unit noraise
 
 pub async fn[T, E : Error] suspend(((T) -> Unit, (E) -> Unit) -> Unit) -> T raise E
 
@@ -93,13 +93,13 @@ pub(all) struct App {
   ws_dynamic_routes : Array[(String, (WebSocketEvent) -> Unit)]
   ws_clients : Map[String, Unit]
   ws_channels : Map[String, Map[String, Unit]]
-  ws_client_port : Map[String, Int]
-  max_body_size : Int
+  ws_client_port : Map[String, Int32]
+  max_body_size : Int32
   mut error_handler : (MocketEvent, Error) -> &Responder
   // private fields
 }
 #alias(new, deprecated)
-pub fn App::App(base_path? : String, max_body_size? : Int) -> Self
+pub fn App::App(base_path? : String, max_body_size? : Int32) -> Self
 pub fn App::acl(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn App::all(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn App::bind(Self, String, async (MocketEvent) -> &Responder) -> Unit
@@ -137,7 +137,7 @@ pub fn App::rebind(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn App::report(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn App::search(Self, String, async (MocketEvent) -> &Responder) -> Unit
 #deprecated
-pub async fn App::serve(Self, port~ : Int) -> Unit noraise
+pub async fn App::serve(Self, port~ : Int32) -> Unit noraise
 pub fn App::static_assets(Self, String, &ServeStaticProvider) -> Unit
 pub fn App::trace(Self, String, async (MocketEvent) -> &Responder) -> Unit
 pub fn App::unbind(Self, String, async (MocketEvent) -> &Responder) -> Unit
@@ -190,7 +190,7 @@ pub(all) struct HttpResponse {
 pub fn HttpResponse::HttpResponse(StatusCode, headers? : Map[@http.CaseInsensitiveString, StringView], cookies? : Array[@http.Cookie], body? : &Responder) -> Self
 pub fn HttpResponse::body(Self, &Responder) -> Self
 pub fn HttpResponse::delete_cookie(Self, String) -> Unit
-pub fn HttpResponse::json(Self, &ToJson) -> Self
+pub fn HttpResponse::json(Self, &@json.ToJson) -> Self
 pub fn HttpResponse::options(Self, Self) -> Unit
 pub async fn HttpResponse::output(Self, &@io.Writer) -> Unit
 pub async fn[T : BodyReader] HttpResponse::read_body(Self) -> T
@@ -217,7 +217,7 @@ pub(all) struct ResponseBuffer {
 pub fn ResponseBuffer::bytes(Self) -> Bytes
 pub fn ResponseBuffer::new() -> Self
 pub async fn ResponseBuffer::write(Self, &@io.Data) -> Unit
-pub async fn ResponseBuffer::write_once(Self, Bytes, offset~ : Int, len~ : Int) -> Int
+pub async fn ResponseBuffer::write_once(Self, Bytes, offset~ : Int32, len~ : Int32) -> Int32
 pub async fn ResponseBuffer::write_reader(Self, &@io.Reader) -> Unit
 pub impl @io.Writer for ResponseBuffer
 
@@ -231,6 +231,7 @@ pub(all) struct StaticAssetMeta {
 }
 pub fn StaticAssetMeta::new(asset_type? : String, etag? : String, mtime? : Int64, path? : String, size? : Int64, encoding? : String) -> Self
 
+#derive(Eq, @json.ToJson)
 pub(all) enum StatusCode {
   Continue
   SwitchingProtocols
@@ -294,13 +295,13 @@ pub(all) enum StatusCode {
   LoopDetected
   NotExtended
   NetworkAuthenticationRequired
-  Custom(Int)
-} derive(Eq, ToJson)
+  Custom(Int32)
+}
 pub fn StatusCode::equal(Self, Self) -> Bool
-pub fn StatusCode::from_int(Int) -> Self
+pub fn StatusCode::from_int(Int32) -> Self
 pub fn StatusCode::not_equal(Self, Self) -> Bool
-pub fn StatusCode::to_int(Self) -> Int
-pub fn StatusCode::to_json(Self) -> Json
+pub fn StatusCode::to_int(Self) -> Int32
+pub fn StatusCode::to_json(Self) -> @json.Json
 
 pub(all) enum WebSocketAggregatedMessage {
   Text(String)
@@ -345,7 +346,7 @@ pub impl BodyReader for String
 pub impl BodyReader for FixedArray[Byte]
 pub impl BodyReader for Bytes
 pub impl BodyReader for Array[Byte]
-pub impl BodyReader for Json
+pub impl BodyReader for @json.Json
 
 pub(open) trait Responder {
   fn options(Self, HttpResponse) -> Unit
@@ -353,8 +354,8 @@ pub(open) trait Responder {
 }
 pub impl Responder for String
 pub impl Responder for Bytes
-pub impl Responder for Json
-pub impl Responder for &ToJson
+pub impl Responder for @json.Json
+pub impl Responder for &@json.ToJson
 pub impl Responder for StringView
 
 pub(open) trait ServeStaticProvider {
