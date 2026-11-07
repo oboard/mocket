@@ -87,7 +87,7 @@ fn join_asset_id(id : String, suffix : String) -> String {
   if suffix == "" {
     return id
   }
-  let suffix = if suffix.has_prefix("/") { suffix[1:] } else { suffix.view() }
+  let suffix = if suffix.has_prefix("/") { suffix[1:] } else { suffix.clamped_view() }
   if id.has_suffix("/") {
     "\{id}\{suffix}"
   } else {
@@ -141,12 +141,12 @@ pub fn App::static_assets(
     }
 
     // Safe to slice now: `url` equals the mount or starts with "mount/".
-    let raw_id = if mount == "/" { url.view() } else { url[mount.length():] }
+    let raw_id = if mount == "/" { url.clamped_view() } else { url[mount.length():] }
     // Resolve under a virtual root so ".." segments can never escape it;
     // the normalized id is an absolute path confined to the mount root.
     let resolved_id = Show::to_string(
       @posix.Path::normalize(
-        (if raw_id == "" { "/".view() } else { raw_id }).to_owned(),
+        (if raw_id == "" { "/".clamped_view() } else { raw_id }).to_owned(),
       ),
     )
     // Parse Accept-Encoding

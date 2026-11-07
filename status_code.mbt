@@ -1,6 +1,7 @@
 ///|
 /// HTTP status codes as registered with IANA.
 /// See: https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
+#derive(ToJson, Eq)
 pub(all) enum StatusCode {
   /// RFC 9110, 15.2.1
   Continue
@@ -127,7 +128,7 @@ pub(all) enum StatusCode {
   /// RFC 6585, 6
   NetworkAuthenticationRequired
   Custom(Int32)
-} derive(ToJson, Eq)
+}
 
 ///|
 pub extend StatusCode with ToJson::{to_json}

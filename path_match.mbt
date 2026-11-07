@@ -52,7 +52,7 @@ fn match_path_segments(
   let path_part = path_parts[path_idx]
 
   // 使用正则匹配参数模式
-  if template_part.view() =~ (re"^:", after=param_name) {
+  if template_part.clamped_view() =~ (re"^:", after=param_name) {
     // 命名参数：:param_name
     params.set(param_name.to_owned(), path_part)
     match_path_segments(
@@ -260,7 +260,7 @@ fn DynamicRouteTrieNode::insert(
           child
         }
       }
-    } else if part.view() =~ (re"^:", after=param_name) {
+    } else if part.clamped_view() =~ (re"^:", after=param_name) {
       let param_name = param_name.to_owned()
       node = match node.param_child(param_name) {
         Some(child) => child
